@@ -27,7 +27,7 @@ requires-dist = [
     { name = "django", specifier = ">=6.0,<6.1" },
     { name = "django-simple-history", specifier = ">=3.10.1" },
     { name = "gunicorn", specifier = ">=23.0.0" },
-    { name = "psycopg", extras = ["binary"], specifier = ">=3.2.13" },
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.3.3" },
 ]
 
 [package.metadata.requires-dev]
