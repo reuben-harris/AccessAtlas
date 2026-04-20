@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen --dev
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Format check
+        run: uv run ruff format --check .
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: access_atlas
+          POSTGRES_USER: access_atlas
+          POSTGRES_PASSWORD: access_atlas
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U access_atlas -d access_atlas"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://access_atlas:access_atlas@localhost:5432/access_atlas
+      SECRET_KEY: ci-secret-key
+      DEBUG: "false"
+      ALLOWED_HOSTS: localhost,127.0.0.1
+      SITE_FEED_URL: http://127.0.0.1:8000/dummy/site-feed.json
+      SITE_FEED_TOKEN: ci-token
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen --dev
+
+      - name: Django check
+        run: uv run python manage.py check
+
+      - name: Test
+        run: uv run pytest

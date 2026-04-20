@@ -1,0 +1,24 @@
+{% extends "base/base.html" %}
+
+{% block title %}Search - Access Atlas{% endblock %}
+
+{% block content %}
+<h2 class="page-title">Search</h2>
+{% if not query %}
+  <p class="text-secondary">Enter a search term above.</p>
+{% else %}
+  <p class="text-secondary">Results for <strong>{{ query }}</strong></p>
+  {% for label, items in results.items %}
+    <div class="card mb-3">
+      <div class="card-header"><h3 class="card-title">{{ label|title }}</h3></div>
+      <div class="list-group list-group-flush">
+        {% for item in items %}
+          <a class="list-group-item list-group-item-action" href="{{ item.get_absolute_url }}">{{ item }}</a>
+        {% empty %}
+          <div class="list-group-item text-secondary">No results.</div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+{% endif %}
+{% endblock %}

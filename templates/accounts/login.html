@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Access Atlas Login</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css">
+  </head>
+  <body class="d-flex flex-column">
+    <div class="page page-center">
+      <div class="container container-tight py-4">
+        <div class="card card-md">
+          <div class="card-body">
+            <h1 class="h2 text-center mb-4">Access Atlas</h1>
+            <p class="text-secondary">Proof-of-concept internal login. Enter your email to continue.</p>
+            <form method="post">
+              {% csrf_token %}
+              {{ form.as_p }}
+              <button class="btn btn-primary w-100" type="submit">Continue</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

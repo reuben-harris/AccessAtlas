@@ -1,0 +1,22 @@
+{% extends "base/base.html" %}
+
+{% block title %}{{ object.code }} - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">{{ object.code }} <span class="text-secondary">{{ object.name }}</span></h2>
+</div>
+<div class="card">
+  <div class="card-body">
+    <dl class="row">
+      <dt class="col-sm-3">Source</dt><dd class="col-sm-9">{{ object.source_name }}</dd>
+      <dt class="col-sm-3">External ID</dt><dd class="col-sm-9">{{ object.external_id }}</dd>
+      <dt class="col-sm-3">Latitude</dt><dd class="col-sm-9">{{ object.latitude }}</dd>
+      <dt class="col-sm-3">Longitude</dt><dd class="col-sm-9">{{ object.longitude }}</dd>
+      <dt class="col-sm-3">Last Seen</dt><dd class="col-sm-9">{{ object.last_seen_at|default:"Never" }}</dd>
+    </dl>
+    <p class="text-secondary mb-0">Site fields are read-only and must be changed in the source of truth.</p>
+  </div>
+</div>
+{% include "base/history.html" with object=object %}
+{% endblock %}
