@@ -1,0 +1,29 @@
+{% extends "base/base.html" %}
+
+{% block title %}Trips - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+  <h2 class="page-title">Trips</h2>
+  <a class="btn btn-primary" href="{% url 'trip_create' %}">New trip</a>
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-vcenter">
+      <thead><tr><th>Name</th><th>Dates</th><th>Leader</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for trip in object_list %}
+          <tr>
+            <td><a href="{{ trip.get_absolute_url }}">{{ trip.name }}</a></td>
+            <td>{{ trip.start_date }} - {{ trip.end_date }}</td>
+            <td>{{ trip.trip_leader }}</td>
+            <td><span class="badge bg-blue-lt">{{ trip.get_status_display }}</span></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="text-secondary">No trips yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

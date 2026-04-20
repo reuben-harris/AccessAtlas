@@ -1,0 +1,36 @@
+[project]
+name = "access-atlas"
+version = "0.1.0"
+description = "Field work planning for site visits and jobs."
+readme = "README.md"
+requires-python = ">=3.14"
+license = "AGPL-3.0-or-later"
+dependencies = [
+    "dj-database-url>=3.0.1",
+    "django>=6.0,<6.1",
+    "django-simple-history>=3.10.1",
+    "gunicorn>=23.0.0",
+    "psycopg[binary]>=3.2.13",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-django>=4.11.1",
+    "ruff>=0.14.9",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "access_atlas.settings"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py314"
+extend-exclude = ["*/migrations/*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "DJ"]
+
+[tool.ruff.format]
+quote-style = "double"

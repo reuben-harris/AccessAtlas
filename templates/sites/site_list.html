@@ -1,0 +1,33 @@
+{% extends "base/base.html" %}
+
+{% block title %}Sites - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+  <h2 class="page-title">Sites</h2>
+  <form method="post" action="{% url 'sync_sites' %}">
+    {% csrf_token %}
+    <button class="btn btn-primary" type="submit">Sync sites</button>
+  </form>
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-vcenter">
+      <thead><tr><th>Code</th><th>Name</th><th>Source</th><th>Coordinates</th><th>Last Seen</th></tr></thead>
+      <tbody>
+        {% for site in object_list %}
+          <tr>
+            <td><a href="{% url 'site_detail' site.pk %}">{{ site.code }}</a></td>
+            <td>{{ site.name }}</td>
+            <td>{{ site.source_name }}</td>
+            <td>{{ site.latitude }}, {{ site.longitude }}</td>
+            <td>{{ site.last_seen_at|default:"Never" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-secondary">No sites synced yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

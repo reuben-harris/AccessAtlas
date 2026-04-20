@@ -1,0 +1,77 @@
+{% load static %}
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Access Atlas{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    <script src="https://unpkg.com/htmx.org@2.0.8" defer></script>
+    <script src="{% static 'js/theme.js' %}" defer></script>
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <div class="page">
+      <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
+        <div class="container-fluid">
+          <h1 class="navbar-brand navbar-brand-autodark d-flex align-items-center gap-2">
+            <a class="brand-mark" href="{% url 'dashboard' %}" aria-label="Access Atlas">
+              <svg viewBox="0 0 64 64" role="img" aria-hidden="true">
+                <path d="M32 6c5 0 9 4 9 9 0 3-1 5-3 7l5 10 9 5-3 6-9-4-4 19h-8l-4-19-9 4-3-6 9-5 5-10c-2-2-3-4-3-7 0-5 4-9 9-9z"/>
+                <path d="M22 58h20"/>
+              </svg>
+            </a>
+            <a href="{% url 'dashboard' %}">Access Atlas</a>
+          </h1>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="sidebar-menu">
+            <ul class="navbar-nav pt-lg-3">
+              <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'site_list' %}">Sites</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'trip_list' %}">Trips</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'job_list' %}">Jobs</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'job_template_list' %}">Job Templates</a></li>
+            </ul>
+          </div>
+        </div>
+      </aside>
+
+      <header class="navbar navbar-expand-md d-print-none">
+        <div class="container-xl">
+          <form class="navbar-form flex-fill" action="{% url 'search' %}" method="get">
+            <div class="input-icon w-100">
+              <span class="input-icon-addon">⌕</span>
+              <input class="form-control" type="search" name="q" placeholder="Search" value="{{ request.GET.q }}">
+            </div>
+          </form>
+          <div class="navbar-nav flex-row order-md-last ms-3">
+            <button class="btn btn-outline-secondary me-2" type="button" data-theme-toggle>Theme</button>
+            {% if request.user.is_authenticated %}
+              <form action="{% url 'logout' %}" method="post">
+                {% csrf_token %}
+                <button class="btn btn-outline-secondary" type="submit">{{ request.user }}</button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      </header>
+
+      <div class="page-wrapper">
+        <div class="page-body">
+          <div class="container-xl">
+            {% if messages %}
+              {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }}" role="alert">{{ message }}</div>
+              {% endfor %}
+            {% endif %}
+            {% block content %}{% endblock %}
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js"></script>
+  </body>
+</html>

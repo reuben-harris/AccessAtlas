@@ -1,0 +1,47 @@
+{% extends "base/base.html" %}
+
+{% block title %}{{ object.title }} - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+  <h2 class="page-title">{{ object.title }}</h2>
+  <a class="btn btn-outline-primary" href="{% url 'job_update' object.pk %}">Edit</a>
+</div>
+<div class="card">
+  <div class="card-body">
+    <p>{{ object.description|linebreaksbr }}</p>
+    <dl class="row">
+      <dt class="col-sm-3">Site</dt><dd class="col-sm-9"><a href="{{ object.site.get_absolute_url }}">{{ object.site }}</a></dd>
+      <dt class="col-sm-3">Status</dt><dd class="col-sm-9">{{ object.get_status_display }}</dd>
+      <dt class="col-sm-3">Priority</dt><dd class="col-sm-9">{{ object.get_priority_display }}</dd>
+      <dt class="col-sm-3">Estimate</dt><dd class="col-sm-9">{{ object.estimated_duration_minutes|default:"-" }} min</dd>
+      <dt class="col-sm-3">Template</dt><dd class="col-sm-9">{{ object.template|default:"-" }}</dd>
+      <dt class="col-sm-3">Notes</dt><dd class="col-sm-9">{{ object.notes|linebreaksbr }}</dd>
+    </dl>
+  </div>
+</div>
+<div class="card mt-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title">Requirements</h3>
+    <a class="btn btn-sm btn-primary" href="{% url 'requirement_create' object.pk %}">Add requirement</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-vcenter">
+      <tbody>
+        {% for requirement in object.requirements.all %}
+          <tr>
+            <td>{{ requirement.name }}</td>
+            <td>{{ requirement.get_requirement_type_display }}</td>
+            <td>{{ requirement.quantity }}</td>
+            <td>{{ requirement.is_checked|yesno:"Checked,Open" }}</td>
+            <td><a href="{% url 'requirement_update' requirement.pk %}">Edit</a></td>
+          </tr>
+        {% empty %}
+          <tr><td class="text-secondary">No requirements.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "base/history.html" with object=object %}
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base/base.html" %}
+
+{% block title %}{{ object.name }} - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+  <h2 class="page-title">{{ object.name }}</h2>
+  <div>
+    <a class="btn btn-outline-primary" href="{% url 'trip_update' object.pk %}">Edit</a>
+    <a class="btn btn-primary" href="{% url 'site_visit_create' object.pk %}">Add site visit</a>
+  </div>
+</div>
+<div class="card">
+  <div class="card-body">
+    <dl class="row">
+      <dt class="col-sm-3">Dates</dt><dd class="col-sm-9">{{ object.start_date }} - {{ object.end_date }}</dd>
+      <dt class="col-sm-3">Leader</dt><dd class="col-sm-9">{{ object.trip_leader }}</dd>
+      <dt class="col-sm-3">Team</dt><dd class="col-sm-9">{% for user in object.team_members.all %}{{ user }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</dd>
+      <dt class="col-sm-3">Status</dt><dd class="col-sm-9">{{ object.get_status_display }}</dd>
+      <dt class="col-sm-3">Notes</dt><dd class="col-sm-9">{{ object.notes|linebreaksbr }}</dd>
+    </dl>
+  </div>
+</div>
+<div class="card mt-3">
+  <div class="card-header"><h3 class="card-title">Site Visits</h3></div>
+  <div class="table-responsive">
+    <table class="table table-vcenter">
+      <thead><tr><th>Order</th><th>Site</th><th>Status</th><th>Jobs</th></tr></thead>
+      <tbody>
+        {% for visit in object.site_visits.all %}
+          <tr>
+            <td>{{ visit.planned_order }}</td>
+            <td><a href="{{ visit.get_absolute_url }}">{{ visit.site }}</a></td>
+            <td>{{ visit.get_status_display }}</td>
+            <td>{{ visit.sitevisitjob_set.count }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="text-secondary">No site visits yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "base/history.html" with object=object %}
+{% endblock %}
