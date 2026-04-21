@@ -74,6 +74,12 @@ class SiteVisitForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         trip = kwargs.pop("trip", None)
         super().__init__(*args, **kwargs)
+        self.fields["site"].widget.attrs.update(
+            {
+                "data-searchable-select": "true",
+                "data-search-placeholder": "Search sites",
+            }
+        )
         if trip is not None:
             self.instance.trip = trip
 
@@ -125,6 +131,13 @@ class AssignJobForm(forms.Form):
             site=site,
             status=JobStatus.UNASSIGNED,
             site_visit_assignment__isnull=True,
+        )
+        self.fields["job"].widget.attrs.update(
+            {
+                "class": "form-select",
+                "data-searchable-select": "true",
+                "data-search-placeholder": "Search jobs",
+            }
         )
 
 

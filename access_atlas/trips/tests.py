@@ -8,7 +8,7 @@ from django.utils import timezone
 from access_atlas.accounts.models import User
 from access_atlas.jobs.models import Job, JobStatus
 from access_atlas.sites.models import Site
-from access_atlas.trips.forms import TripForm
+from access_atlas.trips.forms import AssignJobForm, SiteVisitForm, TripForm
 from access_atlas.trips.models import (
     SiteVisit,
     SiteVisitJob,
@@ -216,6 +216,33 @@ def test_trip_form_only_offers_draft_and_planned_statuses():
     status_values = [value for value, _label in form.fields["status"].choices]
 
     assert status_values == [TripStatus.DRAFT, TripStatus.PLANNED]
+
+
+def test_site_visit_form_marks_site_select_as_searchable():
+    form = SiteVisitForm()
+
+    attrs = form.fields["site"].widget.attrs
+
+    assert attrs["data-searchable-select"] == "true"
+    assert attrs["data-search-placeholder"] == "Search sites"
+
+
+@pytest.mark.django_db
+def test_assign_job_form_marks_job_select_as_searchable():
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+
+    form = AssignJobForm(site=site)
+    attrs = form.fields["job"].widget.attrs
+
+    assert attrs["data-searchable-select"] == "true"
+    assert attrs["data-search-placeholder"] == "Search jobs"
 
 
 @pytest.mark.django_db

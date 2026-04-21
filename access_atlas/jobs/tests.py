@@ -1,7 +1,7 @@
 import pytest
 from django.core.exceptions import ValidationError
 
-from access_atlas.jobs.forms import JobForm
+from access_atlas.jobs.forms import JobForm, JobFromTemplateForm
 from access_atlas.jobs.models import Job, JobTemplate, TemplateRequirement
 from access_atlas.jobs.services import create_job_from_template
 from access_atlas.sites.models import Site
@@ -107,3 +107,33 @@ def test_job_form_does_not_offer_planned_status():
 
     assert "planned" not in status_values
     assert "blocked" not in status_values
+
+
+def test_job_form_marks_site_select_as_searchable():
+    form = JobForm()
+
+    attrs = form.fields["site"].widget.attrs
+
+    assert attrs["data-searchable-select"] == "true"
+    assert attrs["data-search-placeholder"] == "Search sites"
+
+
+@pytest.mark.django_db
+def test_job_from_template_form_marks_site_select_as_searchable():
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+
+    form = JobFromTemplateForm(site_queryset=Site.objects.filter(pk=site.pk))
+    site_attrs = form.fields["site"].widget.attrs
+    template_attrs = form.fields["template"].widget.attrs
+
+    assert site_attrs["data-searchable-select"] == "true"
+    assert site_attrs["data-search-placeholder"] == "Search sites"
+    assert template_attrs["data-searchable-select"] == "true"
+    assert template_attrs["data-search-placeholder"] == "Search templates"

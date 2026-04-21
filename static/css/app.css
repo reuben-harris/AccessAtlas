@@ -118,3 +118,7 @@ input[type="time"].form-control.is-invalid {
   display: block;
   text-align: left;
 }
+
+.searchable-select-input {
+  margin-bottom: .5rem;
+}

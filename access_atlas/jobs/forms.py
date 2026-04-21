@@ -25,6 +25,12 @@ class TemplateRequirementForm(forms.ModelForm):
 class JobForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["site"].widget.attrs.update(
+            {
+                "data-searchable-select": "true",
+                "data-search-placeholder": "Search sites",
+            }
+        )
         if self.instance.pk and self.instance.is_assigned:
             return
         choices = [
@@ -58,6 +64,18 @@ class JobFromTemplateForm(forms.Form):
         site_queryset = kwargs.pop("site_queryset")
         super().__init__(*args, **kwargs)
         self.fields["site"].queryset = site_queryset
+        self.fields["site"].widget.attrs.update(
+            {
+                "data-searchable-select": "true",
+                "data-search-placeholder": "Search sites",
+            }
+        )
+        self.fields["template"].widget.attrs.update(
+            {
+                "data-searchable-select": "true",
+                "data-search-placeholder": "Search templates",
+            }
+        )
 
 
 class RequirementForm(forms.ModelForm):
