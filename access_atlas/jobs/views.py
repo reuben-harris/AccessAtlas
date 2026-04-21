@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -93,6 +94,89 @@ class JobListView(LoginRequiredMixin, ListView):
                 site_visit_assignment__isnull=True,
             )
         return queryset
+
+
+class JobMapView(LoginRequiredMixin, ListView):
+    model = Job
+    template_name = "jobs/job_map.html"
+
+    def get_queryset(self):
+        return (
+            Job.objects.select_related("site")
+            .filter(status__in=JobStatus.values)
+            .order_by("site__code", "title")
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        sites = {}
+        for job in context["object_list"]:
+            site = job.site
+            site_data = sites.setdefault(
+                site.pk,
+                {
+                    "site": {
+                        "code": site.code,
+                        "name": site.name,
+                        "url": site.get_absolute_url(),
+                        "latitude": float(site.latitude),
+                        "longitude": float(site.longitude),
+                    },
+                    "jobs": [],
+                },
+            )
+            site_data["jobs"].append(
+                {
+                    "title": job.title,
+                    "url": job.get_absolute_url(),
+                    "statusValue": job.status,
+                    "status": job.get_status_display(),
+                    "priority": job.get_priority_display(),
+                }
+            )
+        context["map_sites"] = list(sites.values())
+        context["map_status_layers"] = [
+            {
+                "value": JobStatus.UNASSIGNED,
+                "label": JobStatus.UNASSIGNED.label,
+                "color": "#667382",
+                "rank": 20,
+                "visible": True,
+            },
+            {
+                "value": JobStatus.PLANNED,
+                "label": JobStatus.PLANNED.label,
+                "color": "#206bc4",
+                "rank": 30,
+                "visible": True,
+            },
+            {
+                "value": JobStatus.COMPLETED,
+                "label": JobStatus.COMPLETED.label,
+                "color": "#2fb344",
+                "rank": 10,
+                "visible": False,
+            },
+            {
+                "value": JobStatus.CANCELLED,
+                "label": JobStatus.CANCELLED.label,
+                "color": "#d63939",
+                "rank": 40,
+                "visible": False,
+            },
+        ]
+        context["map_tile_layer"] = {
+            "light": {
+                "url": settings.MAP_TILE_URL,
+                "attribution": settings.MAP_TILE_ATTRIBUTION,
+            },
+            "dark": {
+                "url": settings.MAP_TILE_DARK_URL,
+                "attribution": settings.MAP_TILE_DARK_ATTRIBUTION,
+            },
+            "maxZoom": settings.MAP_TILE_MAX_ZOOM,
+        }
+        return context
 
 
 class JobDetailView(LoginRequiredMixin, DetailView):

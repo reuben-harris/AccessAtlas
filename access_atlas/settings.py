@@ -102,3 +102,25 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 DEFAULT_SITE_FEED_URL = "http://127.0.0.1:8000/dummy/site-feed.json"
 SITE_FEED_URL = os.getenv("SITE_FEED_URL") or DEFAULT_SITE_FEED_URL
 SITE_FEED_TOKEN = os.getenv("SITE_FEED_TOKEN") or "dev-token"
+
+MAP_TILE_URL = os.getenv(
+    "MAP_TILE_URL",
+    "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+)
+MAP_TILE_DARK_URL = os.getenv(
+    "MAP_TILE_DARK_URL",
+    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+)
+MAP_TILE_ATTRIBUTION = os.getenv(
+    "MAP_TILE_ATTRIBUTION",
+    (
+        '&copy; <a href="https://www.openstreetmap.org/copyright">'
+        "OpenStreetMap</a> contributors &copy; "
+        '<a href="https://carto.com/attributions">CARTO</a>'
+    ),
+)
+MAP_TILE_DARK_ATTRIBUTION = os.getenv(
+    "MAP_TILE_DARK_ATTRIBUTION",
+    MAP_TILE_ATTRIBUTION,
+)
+MAP_TILE_MAX_ZOOM = int(os.getenv("MAP_TILE_MAX_ZOOM", "19"))

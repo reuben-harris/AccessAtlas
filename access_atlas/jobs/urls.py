@@ -4,6 +4,7 @@ from . import views
 
 urlpatterns = [
     path("", views.JobListView.as_view(), name="job_list"),
+    path("map/", views.JobMapView.as_view(), name="job_map"),
     path("new/", views.JobCreateView.as_view(), name="job_create"),
     path(
         "from-template/",

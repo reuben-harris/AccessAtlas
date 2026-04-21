@@ -1,0 +1,10 @@
+<nav class="view-toolbar" aria-label="Job views">
+  <a class="view-toolbar-item{% if active_job_view == 'table' %} is-active{% endif %}" href="{% url 'job_list' %}">
+    <i class="ti ti-table" aria-hidden="true"></i>
+    <span>Table</span>
+  </a>
+  <a class="view-toolbar-item{% if active_job_view == 'map' %} is-active{% endif %}" href="{% url 'job_map' %}">
+    <i class="ti ti-map" aria-hidden="true"></i>
+    <span>Map</span>
+  </a>
+</nav>

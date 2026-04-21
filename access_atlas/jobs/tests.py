@@ -1,8 +1,10 @@
 import pytest
 from django.core.exceptions import ValidationError
+from django.urls import reverse
 
+from access_atlas.accounts.models import User
 from access_atlas.jobs.forms import JobForm, JobFromTemplateForm
-from access_atlas.jobs.models import Job, JobTemplate, TemplateRequirement
+from access_atlas.jobs.models import Job, JobStatus, JobTemplate, TemplateRequirement
 from access_atlas.jobs.services import create_job_from_template
 from access_atlas.sites.models import Site
 
@@ -137,3 +139,48 @@ def test_job_from_template_form_marks_site_select_as_searchable():
     assert site_attrs["data-search-placeholder"] == "Search sites"
     assert template_attrs["data-searchable-select"] == "true"
     assert template_attrs["data-search-placeholder"] == "Search templates"
+
+
+@pytest.mark.django_db
+def test_job_list_links_to_map_view(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.get(reverse("job_list"))
+
+    assert response.status_code == 200
+    assert reverse("job_map") in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_job_map_includes_jobs_and_status_layers(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    Job.objects.create(site=site, title="Inspect cabinet")
+    Job.objects.create(site=site, title="Closed work", status=JobStatus.COMPLETED)
+    Job.objects.create(
+        site=site,
+        title="Cancelled work",
+        status=JobStatus.CANCELLED,
+        cancelled_reason="No longer required.",
+    )
+
+    response = client.get(reverse("job_map"))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "AA-001" in content
+    assert "Inspect cabinet" in content
+    assert "Closed work" in content
+    assert "Cancelled work" in content
+    assert "job-map-status-layers" in content
+    assert '"visible": true' in content
+    assert '"visible": false' in content
