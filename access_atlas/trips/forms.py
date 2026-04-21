@@ -45,6 +45,9 @@ class TripForm(forms.ModelForm):
         widgets = {
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "end_date": forms.DateInput(attrs={"type": "date"}),
+            "team_members": forms.CheckboxSelectMultiple(
+                attrs={"class": "form-selectgroup-input"}
+            ),
         }
 
 

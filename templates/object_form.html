@@ -16,7 +16,28 @@
     <form method="post">
       {% csrf_token %}
       {% for field in form %}
-        {% if field|field_widget_type == "CheckboxInput" %}
+        {% if field|field_widget_type == "CheckboxSelectMultiple" %}
+          <div class="mb-3">
+            <label class="form-label">{{ field.label }}</label>
+            <div class="form-selectgroup form-selectgroup-boxes d-flex flex-column">
+              {% for choice in field %}
+                <label class="form-selectgroup-item flex-fill">
+                  {{ choice.tag }}
+                  <span class="form-selectgroup-label d-flex align-items-center p-3">
+                    <span class="me-3">
+                      <span class="form-selectgroup-check"></span>
+                    </span>
+                    <span class="form-selectgroup-label-content">
+                      <span class="form-selectgroup-title strong mb-1">{{ choice.choice_label }}</span>
+                    </span>
+                  </span>
+                </label>
+              {% endfor %}
+            </div>
+            {% if field.help_text %}<div class="form-hint">{{ field.help_text }}</div>{% endif %}
+            {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+          </div>
+        {% elif field|field_widget_type == "CheckboxInput" %}
           <div class="form-check mb-3">
             {{ field|render_form_field }}
             <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
