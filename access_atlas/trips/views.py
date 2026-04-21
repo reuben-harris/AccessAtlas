@@ -93,7 +93,20 @@ class SiteVisitCreateView(
     template_name = "object_form.html"
 
     def get_trip(self):
-        return get_object_or_404(Trip, pk=self.kwargs["trip_pk"])
+        if hasattr(self, "_trip"):
+            return self._trip
+        self._trip = get_object_or_404(Trip, pk=self.kwargs["trip_pk"])
+        return self._trip
+
+    def dispatch(self, request, *args, **kwargs):
+        trip = self.get_trip()
+        if trip.is_terminal:
+            messages.info(
+                request,
+                "Site visits cannot be added to completed or cancelled trips.",
+            )
+            return redirect(trip)
+        return super().dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

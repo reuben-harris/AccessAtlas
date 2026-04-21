@@ -573,6 +573,48 @@ def test_site_visit_create_does_not_show_trip_date_hint_on_first_load(client):
 
 
 @pytest.mark.django_db
+def test_terminal_trip_detail_disables_add_site_visit(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+        status=TripStatus.COMPLETED,
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("trip_detail", kwargs={"pk": trip.pk}))
+
+    assert response.status_code == 200
+    assert b"Add site visit" in response.content
+    create_url = reverse("site_visit_create", kwargs={"trip_pk": trip.pk}).encode()
+    assert create_url not in response.content
+    assert (
+        b"Site visits cannot be added to completed or cancelled trips."
+        in response.content
+    )
+
+
+@pytest.mark.django_db
+def test_terminal_trip_blocks_site_visit_create(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+        status=TripStatus.COMPLETED,
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("site_visit_create", kwargs={"trip_pk": trip.pk}))
+
+    assert response.status_code == 302
+    assert response.url == trip.get_absolute_url()
+
+
+@pytest.mark.django_db
 def test_cancel_trip_returns_planned_jobs_and_skips_site_visits(client):
     user = User.objects.create_user(email="user@example.com")
     site = Site.objects.create(

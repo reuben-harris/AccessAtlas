@@ -23,7 +23,13 @@
           <a class="btn btn-outline-danger" href="{% url 'trip_cancel' object.pk %}">Cancel trip</a>
           <a class="btn btn-outline-success" href="{% url 'trip_close' object.pk %}">Close trip</a>
         {% endif %}
-        <a class="btn btn-primary" href="{% url 'site_visit_create' object.pk %}">Add site visit</a>
+        {% if object.is_terminal %}
+          <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="Site visits cannot be added to completed or cancelled trips.">
+            <button class="btn btn-outline-secondary disabled" type="button" disabled>Add site visit</button>
+          </span>
+        {% else %}
+          <a class="btn btn-primary" href="{% url 'site_visit_create' object.pk %}">Add site visit</a>
+        {% endif %}
       </div>
     </div>
   </div>
