@@ -110,7 +110,6 @@ class SiteVisitForm(forms.ModelForm):
             "site",
             "planned_start",
             "planned_end",
-            "planned_order",
             "status",
             "notes",
         ]

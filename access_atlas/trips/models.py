@@ -81,7 +81,6 @@ class SiteVisit(models.Model):
     )
     planned_start = models.DateTimeField(blank=True, null=True)
     planned_end = models.DateTimeField(blank=True, null=True)
-    planned_order = models.PositiveIntegerField(default=1, verbose_name="Sequence")
     status = models.CharField(
         max_length=20,
         choices=SiteVisitStatus.choices,
@@ -99,7 +98,7 @@ class SiteVisit(models.Model):
     history = HistoricalRecords()
 
     class Meta:
-        ordering = ["trip", "planned_start", "planned_order", "site__code"]
+        ordering = ["trip", "planned_start", "site__code", "id"]
 
     def __str__(self) -> str:
         return f"{self.trip} - {self.site}"

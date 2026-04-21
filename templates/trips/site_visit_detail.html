@@ -27,7 +27,6 @@
       <dt class="col-sm-3">Site</dt><dd class="col-sm-9"><a href="{{ object.site.get_absolute_url }}">{{ object.site }}</a></dd>
       <dt class="col-sm-3">Planned Start</dt><dd class="col-sm-9">{{ object.planned_start|date:"j M Y H:i"|default:"-" }}</dd>
       <dt class="col-sm-3">Planned End</dt><dd class="col-sm-9">{{ object.planned_end|date:"j M Y H:i"|default:"-" }}</dd>
-      <dt class="col-sm-3">Sequence</dt><dd class="col-sm-9">{{ object.planned_order }}</dd>
       <dt class="col-sm-3">Status</dt><dd class="col-sm-9"><span class="badge {{ object.status|status_badge_class }}">{{ object.get_status_display }}</span></dd>
       <dt class="col-sm-3">Notes</dt><dd class="col-sm-9">{{ object.notes|linebreaksbr }}</dd>
     </dl>

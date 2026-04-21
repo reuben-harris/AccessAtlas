@@ -135,7 +135,6 @@ Likely fields:
 - Site reference.
 - Planned start.
 - Planned end.
-- Sequence.
 - Notes.
 - Status.
 
@@ -151,7 +150,7 @@ Notes:
 - A site visit groups the jobs planned for that attendance.
 - A site visit should not be created without a site.
 - Multiple site visits to the same site may exist if the plan requires returning later or splitting jobs across different days or times.
-- Sequence is a fallback ordering field for unscheduled or same-time visits.
+- Scheduled site visits are ordered by planned start. Unscheduled visits appear after scheduled visits.
 - The proof of concept does not need access information or travel estimates.
 
 ### Job

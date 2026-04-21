@@ -282,14 +282,12 @@ def test_trip_detail_orders_site_visits_by_planned_start(client):
         site=afternoon_site,
         planned_start=timezone.make_aware(datetime(2026, 4, 21, 14, 0)),
         planned_end=timezone.make_aware(datetime(2026, 4, 21, 16, 0)),
-        planned_order=1,
     )
     SiteVisit.objects.create(
         trip=trip,
         site=morning_site,
         planned_start=timezone.make_aware(datetime(2026, 4, 21, 9, 0)),
         planned_end=timezone.make_aware(datetime(2026, 4, 21, 11, 0)),
-        planned_order=2,
     )
     client.force_login(user)
 
@@ -385,7 +383,6 @@ def test_invalid_site_visit_date_shows_error_summary_and_keeps_values(client):
             "site": site.pk,
             "planned_start": "2026-04-23T09:00",
             "planned_end": "2026-04-23T10:00",
-            "planned_order": 1,
             "status": SiteVisitStatus.PLANNED,
             "notes": "",
         },
@@ -433,7 +430,6 @@ def test_invalid_site_visit_time_order_shows_error_summary_and_keeps_values(clie
             "site": site.pk,
             "planned_start": "2026-04-22T11:00",
             "planned_end": "2026-04-22T09:00",
-            "planned_order": 1,
             "status": SiteVisitStatus.PLANNED,
             "notes": "",
         },
@@ -472,7 +468,6 @@ def test_site_visit_create_allows_blank_planned_start(client):
             "site": site.pk,
             "planned_start": "",
             "planned_end": "",
-            "planned_order": 1,
             "status": SiteVisitStatus.PLANNED,
             "notes": "",
         },
@@ -599,9 +594,9 @@ def test_close_trip_resolves_site_visits_and_jobs(client):
         trip_leader=user,
         status=TripStatus.PLANNED,
     )
-    completed_visit = SiteVisit.objects.create(trip=trip, site=site, planned_order=1)
-    returned_visit = SiteVisit.objects.create(trip=trip, site=site, planned_order=2)
-    cancelled_visit = SiteVisit.objects.create(trip=trip, site=site, planned_order=3)
+    completed_visit = SiteVisit.objects.create(trip=trip, site=site)
+    returned_visit = SiteVisit.objects.create(trip=trip, site=site)
+    cancelled_visit = SiteVisit.objects.create(trip=trip, site=site)
     completed_job = Job.objects.create(site=site, title="Complete")
     returned_job = Job.objects.create(site=site, title="Return")
     cancelled_job = Job.objects.create(site=site, title="Cancel")

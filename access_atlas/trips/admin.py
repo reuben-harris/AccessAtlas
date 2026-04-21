@@ -29,7 +29,6 @@ class SiteVisitAdmin(SimpleHistoryAdmin):
         "site",
         "planned_start",
         "planned_end",
-        "planned_order",
         "status",
     ]
     list_filter = ["status"]

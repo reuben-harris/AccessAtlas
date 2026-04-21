@@ -43,7 +43,7 @@
   <div class="card-header"><h3 class="card-title">Site Visits</h3></div>
   <div class="table-responsive">
     <table class="table table-vcenter">
-      <thead><tr><th>Planned Time</th><th>Sequence</th><th>Site</th><th>Status</th><th>Jobs</th></tr></thead>
+      <thead><tr><th>Planned Time</th><th>Site</th><th>Status</th><th>Jobs</th></tr></thead>
       <tbody>
         {% for visit in site_visits %}
           <tr>
@@ -55,13 +55,12 @@
                 <span class="text-secondary">Unscheduled</span>
               {% endif %}
             </td>
-            <td>{{ visit.planned_order }}</td>
             <td><a href="{{ visit.get_absolute_url }}">{{ visit.site }}</a></td>
             <td><span class="badge {{ visit.status|status_badge_class }}">{{ visit.get_status_display }}</span></td>
             <td>{{ visit.sitevisitjob_set.count }}</td>
           </tr>
         {% empty %}
-          <tr><td colspan="5" class="text-secondary">No site visits yet.</td></tr>
+          <tr><td colspan="4" class="text-secondary">No site visits yet.</td></tr>
         {% endfor %}
       </tbody>
     </table>

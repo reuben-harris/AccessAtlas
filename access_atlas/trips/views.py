@@ -33,16 +33,16 @@ class TripDetailView(LoginRequiredMixin, DetailView):
             "site"
         ).order_by(
             F("planned_start").asc(nulls_last=True),
-            "planned_order",
             "site__code",
+            "id",
         )
         context["job_assignments"] = (
             SiteVisitJob.objects.filter(site_visit__trip=self.object)
             .select_related("site_visit__site", "job")
             .order_by(
                 F("site_visit__planned_start").asc(nulls_last=True),
-                "site_visit__planned_order",
                 "site_visit__site__code",
+                "site_visit_id",
                 "job__title",
             )
         )
