@@ -12,6 +12,36 @@
   text-transform: uppercase;
 }
 
+.nav-item-with-create {
+  position: relative;
+}
+
+.nav-item-with-create .nav-link {
+  padding-right: 2.5rem;
+}
+
+.nav-create-link {
+  position: absolute;
+  top: 50%;
+  right: .5rem;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  color: var(--tblr-navbar-color);
+  border-radius: var(--tblr-border-radius);
+  text-decoration: none;
+}
+
+.nav-create-link:hover,
+.nav-create-link:focus {
+  color: var(--tblr-success);
+  background-color: rgba(var(--tblr-success-rgb), .12);
+  text-decoration: none;
+}
+
 .search-icon-addon {
   display: flex;
   align-items: center;
