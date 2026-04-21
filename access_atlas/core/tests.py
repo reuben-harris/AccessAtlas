@@ -66,6 +66,15 @@ def test_core_object_pages_render(logged_in_client, user, site):
 
 
 @pytest.mark.django_db
+def test_global_history_renders_changes(logged_in_client, site):
+    response = logged_in_client.get(reverse("global_history"))
+
+    assert response.status_code == 200
+    assert b"History" in response.content
+    assert site.code.encode() in response.content
+
+
+@pytest.mark.django_db
 def test_dummy_feed_requires_bearer_token(client, settings):
     settings.SITE_FEED_TOKEN = "secret"
 
