@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
 from simple_history.models import HistoricalRecords
@@ -114,8 +115,22 @@ class Job(models.Model):
     def __str__(self) -> str:
         return self.title
 
+    def save(self, *args, **kwargs) -> None:
+        skip_validation = kwargs.pop("skip_validation", False)
+        if not skip_validation:
+            self.full_clean()
+        super().save(*args, **kwargs)
+
     def get_absolute_url(self) -> str:
         return reverse("job_detail", kwargs={"pk": self.pk})
+
+    def clean(self) -> None:
+        if self.status != JobStatus.PLANNED:
+            return
+        if not self.pk or not self.is_assigned:
+            raise ValidationError(
+                {"status": "A job can only be planned when assigned to a site visit."}
+            )
 
     @property
     def is_assigned(self) -> bool:

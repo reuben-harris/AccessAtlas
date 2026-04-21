@@ -1,5 +1,6 @@
 import pytest
 from django.core.exceptions import ValidationError
+from django.urls import reverse
 
 from access_atlas.accounts.models import User
 from access_atlas.jobs.models import Job
@@ -65,3 +66,32 @@ def test_assigning_job_sets_status_to_planned():
 
     job.refresh_from_db()
     assert job.status == "planned"
+
+
+@pytest.mark.django_db
+def test_unassigning_planned_job_sets_status_to_unassigned(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Site job")
+    assignment = SiteVisitJob.objects.create(site_visit=site_visit, job=job)
+    client.force_login(user)
+
+    response = client.post(reverse("unassign_job", kwargs={"pk": assignment.pk}))
+
+    assert response.status_code == 302
+    job.refresh_from_db()
+    assert job.status == "unassigned"

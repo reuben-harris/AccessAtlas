@@ -89,7 +89,8 @@ def unassign_job(request, pk):
     site_visit = assignment.site_visit
     job = assignment.job
     assignment.delete()
-    job.status = JobStatus.UNASSIGNED
-    job.save(update_fields=["status", "updated_at"])
+    if job.status == JobStatus.PLANNED:
+        job.status = JobStatus.UNASSIGNED
+        job.save(update_fields=["status", "updated_at"])
     messages.success(request, f"Unassigned job: {job.title}")
     return redirect(site_visit)

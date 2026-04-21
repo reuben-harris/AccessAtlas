@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Job, JobTemplate, Requirement, TemplateRequirement
+from .models import Job, JobStatus, JobTemplate, Requirement, TemplateRequirement
 
 
 class JobTemplateForm(forms.ModelForm):
@@ -23,6 +23,17 @@ class TemplateRequirementForm(forms.ModelForm):
 
 
 class JobForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk and self.instance.is_assigned:
+            return
+        choices = [
+            (value, label)
+            for value, label in self.fields["status"].choices
+            if value != JobStatus.PLANNED
+        ]
+        self.fields["status"].choices = choices
+
     class Meta:
         model = Job
         fields = [

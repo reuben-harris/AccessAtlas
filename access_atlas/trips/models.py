@@ -119,7 +119,7 @@ class SiteVisitJob(models.Model):
         self.full_clean()
         if self.job.status == JobStatus.UNASSIGNED:
             self.job.status = JobStatus.PLANNED
-            self.job.save(update_fields=["status", "updated_at"])
+            self.job.save(update_fields=["status", "updated_at"], skip_validation=True)
         super().save(*args, **kwargs)
 
     def clean(self) -> None:
