@@ -90,7 +90,9 @@
         <div class="container-xl">
           <form class="navbar-form flex-fill" action="{% url 'search' %}" method="get">
             <div class="input-icon w-100">
-              <span class="input-icon-addon">⌕</span>
+              <span class="input-icon-addon search-icon-addon">
+                <i class="ti ti-search" aria-hidden="true"></i>
+              </span>
               <input class="form-control" type="search" name="q" placeholder="Search" value="{{ request.GET.q }}">
             </div>
           </form>
