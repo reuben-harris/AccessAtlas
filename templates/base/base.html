@@ -37,12 +37,50 @@
           </button>
           <div class="collapse navbar-collapse" id="sidebar-menu">
             <ul class="navbar-nav pt-lg-3">
-              <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'site_list' %}">Sites</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'trip_list' %}">Trips</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'job_list' %}">Jobs</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'job_template_list' %}">Job Templates</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'global_history' %}">History</a></li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'dashboard' %}">
+                  <span class="nav-link-icon"><i class="ti ti-layout-dashboard" aria-hidden="true"></i></span>
+                  <span class="nav-link-title">Dashboard</span>
+                </a>
+              </li>
+
+              <li class="nav-section">Planning</li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'trip_list' %}">
+                  <span class="nav-link-icon"><i class="ti ti-route" aria-hidden="true"></i></span>
+                  <span class="nav-link-title">Trips</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'job_list' %}">
+                  <span class="nav-link-icon"><i class="ti ti-briefcase" aria-hidden="true"></i></span>
+                  <span class="nav-link-title">Jobs</span>
+                </a>
+              </li>
+
+              <li class="nav-section">Library</li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'job_template_list' %}">
+                  <span class="nav-link-icon"><i class="ti ti-template" aria-hidden="true"></i></span>
+                  <span class="nav-link-title">Job Templates</span>
+                </a>
+              </li>
+
+              <li class="nav-section">Reference</li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'site_list' %}">
+                  <span class="nav-link-icon"><i class="ti ti-map-pin" aria-hidden="true"></i></span>
+                  <span class="nav-link-title">Sites</span>
+                </a>
+              </li>
+
+              <li class="nav-section">Audit</li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'global_history' %}">
+                  <span class="nav-link-icon"><i class="ti ti-history" aria-hidden="true"></i></span>
+                  <span class="nav-link-title">History</span>
+                </a>
+              </li>
             </ul>
           </div>
         </div>
