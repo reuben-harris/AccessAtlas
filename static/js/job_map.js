@@ -136,17 +136,22 @@
 
   function buildPopup(site, jobs) {
     const jobList = jobs
-      .map(
-        (job) =>
-          `<li><a href="${escapeHtml(job.url)}">${escapeHtml(job.title)}</a> <span class="text-secondary">${escapeHtml(job.status)}, ${escapeHtml(job.priority)}</span></li>`
-      )
+      .map((job) => {
+        const statusLayer = statusByValue.get(job.statusValue);
+        const statusColor = statusLayer ? statusLayer.color : "#667382";
+        return `
+          <li>
+            <a href="${escapeHtml(job.url)}">${escapeHtml(job.title)}</a>
+            <span class="job-map-popup-status" style="--job-map-status-color: ${escapeHtml(statusColor)};">${escapeHtml(job.status)}</span>
+          </li>
+        `;
+      })
       .join("");
 
     return `
       <div class="job-map-popup-title">
         <a href="${escapeHtml(site.url)}">${escapeHtml(site.code)} - ${escapeHtml(site.name)}</a>
       </div>
-      <div class="text-secondary mb-2">${jobs.length} visible job${jobs.length === 1 ? "" : "s"}</div>
       <ul class="job-map-popup-list">${jobList}</ul>
     `;
   }

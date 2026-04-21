@@ -36,20 +36,24 @@
   <div class="card-header"><h3 class="card-title">Planned Jobs</h3></div>
   <div class="table-responsive">
     <table class="table table-vcenter">
+      <thead><tr><th>Job</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
       <tbody>
         {% for assignment in object.sitevisitjob_set.all %}
           <tr>
             <td><a href="{{ assignment.job.get_absolute_url }}">{{ assignment.job.title }}</a></td>
             <td><span class="badge {{ assignment.job.status|status_badge_class }}">{{ assignment.job.get_status_display }}</span></td>
-            <td>
-              <form method="post" action="{% url 'unassign_job' assignment.pk %}">
+            <td class="text-end row-actions">
+              <a class="btn btn-icon btn-warning row-edit-button" href="{% url 'job_update' assignment.job.pk %}" aria-label="Edit {{ assignment.job.title }}" title="Edit {{ assignment.job.title }}">
+                <i class="ti ti-pencil" aria-hidden="true"></i>
+              </a>
+              <form class="d-inline" method="post" action="{% url 'unassign_job' assignment.pk %}">
                 {% csrf_token %}
                 <button class="btn btn-sm btn-outline-danger" type="submit">Unassign</button>
               </form>
             </td>
           </tr>
         {% empty %}
-          <tr><td class="text-secondary">No jobs assigned.</td></tr>
+          <tr><td colspan="3" class="text-secondary">No jobs assigned.</td></tr>
         {% endfor %}
       </tbody>
     </table>

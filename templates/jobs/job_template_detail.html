@@ -31,11 +31,19 @@
   </div>
   <div class="table-responsive">
     <table class="table table-vcenter">
+      <thead><tr><th>Name</th><th>Type</th><th>Quantity</th><th>Notes</th><th class="text-end">Actions</th></tr></thead>
       <tbody>
         {% for requirement in object.template_requirements.all %}
-          <tr><td>{{ requirement.name }}</td><td>{{ requirement.get_requirement_type_display }}</td><td>{{ requirement.quantity }}</td><td>{{ requirement.notes }}</td></tr>
+          <tr>
+            <td>{{ requirement.name }}</td>
+            <td>{{ requirement.get_requirement_type_display }}</td>
+            <td>{{ requirement.quantity }}</td>
+            <td>{{ requirement.notes }}</td>
+            {% url 'template_requirement_update' requirement.pk as edit_url %}
+            {% include "includes/row_actions.html" with edit_url=edit_url label=requirement.name %}
+          </tr>
         {% empty %}
-          <tr><td class="text-secondary">No requirements.</td></tr>
+          <tr><td colspan="5" class="text-secondary">No requirements.</td></tr>
         {% endfor %}
       </tbody>
     </table>

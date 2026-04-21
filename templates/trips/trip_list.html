@@ -17,7 +17,7 @@
 <div class="card">
   <div class="table-responsive">
     <table class="table table-vcenter">
-      <thead><tr><th>Name</th><th>Dates</th><th>Leader</th><th>Status</th></tr></thead>
+      <thead><tr><th>Name</th><th>Dates</th><th>Leader</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
       <tbody>
         {% for trip in object_list %}
           <tr>
@@ -25,9 +25,11 @@
             <td>{{ trip.start_date }} - {{ trip.end_date }}</td>
             <td>{{ trip.trip_leader }}</td>
             <td><span class="badge {{ trip.status|status_badge_class }}">{{ trip.get_status_display }}</span></td>
+            {% url 'trip_update' trip.pk as edit_url %}
+            {% include "includes/row_actions.html" with edit_url=edit_url label=trip.name %}
           </tr>
         {% empty %}
-          <tr><td colspan="4" class="text-secondary">No trips yet.</td></tr>
+          <tr><td colspan="5" class="text-secondary">No trips yet.</td></tr>
         {% endfor %}
       </tbody>
     </table>

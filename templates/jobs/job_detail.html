@@ -37,6 +37,7 @@
   </div>
   <div class="table-responsive">
     <table class="table table-vcenter">
+      <thead><tr><th>Name</th><th>Type</th><th>Quantity</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
       <tbody>
         {% for requirement in object.requirements.all %}
           <tr>
@@ -44,10 +45,11 @@
             <td>{{ requirement.get_requirement_type_display }}</td>
             <td>{{ requirement.quantity }}</td>
             <td>{{ requirement.is_checked|yesno:"Checked,Open" }}</td>
-            <td><a href="{% url 'requirement_update' requirement.pk %}">Edit</a></td>
+            {% url 'requirement_update' requirement.pk as edit_url %}
+            {% include "includes/row_actions.html" with edit_url=edit_url label=requirement.name %}
           </tr>
         {% empty %}
-          <tr><td class="text-secondary">No requirements.</td></tr>
+          <tr><td colspan="5" class="text-secondary">No requirements.</td></tr>
         {% endfor %}
       </tbody>
     </table>

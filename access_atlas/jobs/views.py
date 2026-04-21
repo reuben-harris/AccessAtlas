@@ -95,6 +95,23 @@ class TemplateRequirementCreateView(
         ).get_absolute_url()
 
 
+class TemplateRequirementUpdateView(
+    HistoryReasonMixin,
+    ObjectFormMixin,
+    LoginRequiredMixin,
+    UpdateView,
+):
+    model = TemplateRequirement
+    form_class = TemplateRequirementForm
+    template_name = "object_form.html"
+
+    def get_success_url(self):
+        return self.object.job_template.get_absolute_url()
+
+    def get_cancel_url(self):
+        return self.object.job_template.get_absolute_url()
+
+
 class JobListView(LoginRequiredMixin, ListView):
     model = Job
     paginate_by = 50

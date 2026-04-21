@@ -46,4 +46,9 @@ urlpatterns = [
         views.TemplateRequirementCreateView.as_view(),
         name="template_requirement_create",
     ),
+    path(
+        "templates/requirements/<int:pk>/edit/",
+        views.TemplateRequirementUpdateView.as_view(),
+        name="template_requirement_update",
+    ),
 ]
