@@ -17,9 +17,19 @@ from access_atlas.sites.models import Site
 from .forms import (
     JobForm,
     JobFromTemplateForm,
+    JobImportUploadForm,
     JobTemplateForm,
     RequirementForm,
     TemplateRequirementForm,
+)
+from .imports import (
+    SESSION_KEY as JOB_IMPORT_SESSION_KEY,
+)
+from .imports import (
+    create_jobs_from_import_rows,
+    has_import_errors,
+    parse_job_import_csv,
+    rows_from_session,
 )
 from .models import Job, JobStatus, JobTemplate, Requirement, TemplateRequirement
 from .services import create_job_from_template
@@ -227,6 +237,50 @@ def create_job_from_template_view(request):
         messages.success(request, f"Created job from template: {job.title}")
         return redirect(job)
     return render(request, "jobs/job_from_template.html", {"form": form})
+
+
+@login_required
+def import_jobs_view(request):
+    form = JobImportUploadForm(request.POST or None, request.FILES or None)
+    rows = None
+    if request.method == "POST" and form.is_valid():
+        rows = parse_job_import_csv(form.cleaned_data["csv_file"])
+        if not has_import_errors(rows):
+            request.session[JOB_IMPORT_SESSION_KEY] = [
+                row.as_session_data() for row in rows
+            ]
+            request.session.modified = True
+        else:
+            request.session.pop(JOB_IMPORT_SESSION_KEY, None)
+            request.session.modified = True
+
+    return render(
+        request,
+        "jobs/job_import.html",
+        {
+            "form": form,
+            "rows": rows,
+            "has_errors": has_import_errors(rows) if rows is not None else False,
+        },
+    )
+
+
+@login_required
+def confirm_jobs_import_view(request):
+    if request.method != "POST":
+        return redirect("job_import")
+
+    session_rows = request.session.get(JOB_IMPORT_SESSION_KEY)
+    if not session_rows:
+        messages.error(request, "Upload and review a valid jobs CSV before importing.")
+        return redirect("job_import")
+
+    rows = rows_from_session(session_rows)
+    jobs = create_jobs_from_import_rows(rows)
+    request.session.pop(JOB_IMPORT_SESSION_KEY, None)
+    request.session.modified = True
+    messages.success(request, f"Imported {len(jobs)} jobs.")
+    return redirect("job_list")
 
 
 class RequirementCreateView(

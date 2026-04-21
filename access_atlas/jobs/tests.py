@@ -1,5 +1,6 @@
 import pytest
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
 from access_atlas.accounts.models import User
@@ -13,16 +14,20 @@ from access_atlas.jobs.services import create_job_from_template
 from access_atlas.sites.models import Site
 
 
-@pytest.mark.django_db
-def test_create_job_from_template_copies_template_and_requirements():
-    site = Site.objects.create(
+def create_site(code="AA-001"):
+    return Site.objects.create(
         source_name="dummy",
-        external_id="001",
-        code="AA-001",
+        external_id=code,
+        code=code,
         name="Site",
         latitude=-41.1,
         longitude=174.1,
     )
+
+
+@pytest.mark.django_db
+def test_create_job_from_template_copies_template_and_requirements():
+    site = create_site()
     template = JobTemplate.objects.create(
         title="Replace sensor",
         description="Replace the field sensor.",
@@ -57,14 +62,7 @@ def test_create_job_from_template_copies_template_and_requirements():
 
 @pytest.mark.django_db
 def test_job_created_manually_is_unassigned_by_default():
-    site = Site.objects.create(
-        source_name="dummy",
-        external_id="001",
-        code="AA-001",
-        name="Site",
-        latitude=-41.1,
-        longitude=174.1,
-    )
+    site = create_site()
 
     job = Job.objects.create(site=site, title="Inspect cabinet")
 
@@ -73,14 +71,7 @@ def test_job_created_manually_is_unassigned_by_default():
 
 @pytest.mark.django_db
 def test_job_cannot_be_manually_set_to_planned_without_assignment():
-    site = Site.objects.create(
-        source_name="dummy",
-        external_id="001",
-        code="AA-001",
-        name="Site",
-        latitude=-41.1,
-        longitude=174.1,
-    )
+    site = create_site()
     job = Job(site=site, title="Inspect cabinet", status="planned")
 
     with pytest.raises(ValidationError):
@@ -89,14 +80,7 @@ def test_job_cannot_be_manually_set_to_planned_without_assignment():
 
 @pytest.mark.django_db
 def test_cancelled_job_requires_reason():
-    site = Site.objects.create(
-        source_name="dummy",
-        external_id="001",
-        code="AA-001",
-        name="Site",
-        latitude=-41.1,
-        longitude=174.1,
-    )
+    site = create_site()
     job = Job(site=site, title="Inspect cabinet", status="cancelled")
 
     with pytest.raises(ValidationError):
@@ -126,14 +110,7 @@ def test_job_form_marks_site_select_as_searchable():
 
 @pytest.mark.django_db
 def test_job_from_template_form_marks_site_select_as_searchable():
-    site = Site.objects.create(
-        source_name="dummy",
-        external_id="001",
-        code="AA-001",
-        name="Site",
-        latitude=-41.1,
-        longitude=174.1,
-    )
+    site = create_site()
 
     form = JobFromTemplateForm(site_queryset=Site.objects.filter(pk=site.pk))
     site_attrs = form.fields["site"].widget.attrs
@@ -160,14 +137,7 @@ def test_job_list_links_to_map_view(client):
 def test_job_map_includes_jobs_and_status_layers(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
-    site = Site.objects.create(
-        source_name="dummy",
-        external_id="001",
-        code="AA-001",
-        name="Site",
-        latitude=-41.1,
-        longitude=174.1,
-    )
+    site = create_site()
     Job.objects.create(site=site, title="Inspect cabinet")
     Job.objects.create(site=site, title="Closed work", status=JobStatus.COMPLETED)
     Job.objects.create(
@@ -216,3 +186,87 @@ def test_job_map_uses_saved_status_preference(client):
         '"rank": 30, "visible": false'
     ) in content
     assert '"viewport": {"lat": -41.2, "lng": 174.7, "zoom": 8}' in content
+
+
+@pytest.mark.django_db
+def test_job_import_upload_reviews_valid_csv_without_creating_jobs(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    create_site()
+    JobTemplate.objects.create(title="Replace sensor", is_active=True)
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        b"site_code,template_title\nAA-001,Replace sensor\n",
+        content_type="text/csv",
+    )
+
+    response = client.post(reverse("job_import"), {"csv_file": csv_file})
+
+    assert response.status_code == 200
+    assert "Ready" in response.content.decode()
+    assert Job.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_job_import_confirm_creates_jobs_from_reviewed_rows(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    template = JobTemplate.objects.create(title="Replace sensor", is_active=True)
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        b"site_code,template_title\nAA-001,Replace sensor\n",
+        content_type="text/csv",
+    )
+    client.post(reverse("job_import"), {"csv_file": csv_file})
+
+    response = client.post(reverse("job_import_confirm"))
+
+    assert response.status_code == 302
+    job = Job.objects.get()
+    assert job.site == site
+    assert job.template == template
+    assert job.title == "Replace sensor"
+    assert job.status == JobStatus.UNASSIGNED
+    assert job.history.first().history_change_reason == (
+        "Imported from CSV using job template"
+    )
+
+
+@pytest.mark.django_db
+def test_job_import_rejects_unknown_site(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    JobTemplate.objects.create(title="Replace sensor", is_active=True)
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        b"site_code,template_title\nBAD-001,Replace sensor\n",
+        content_type="text/csv",
+    )
+
+    response = client.post(reverse("job_import"), {"csv_file": csv_file})
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Unknown site_code" in content
+    assert "Create jobs" not in content
+
+
+@pytest.mark.django_db
+def test_job_import_rejects_duplicate_rows(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    create_site()
+    JobTemplate.objects.create(title="Replace sensor", is_active=True)
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        (b"site_code,template_title\nAA-001,Replace sensor\nAA-001,Replace sensor\n"),
+        content_type="text/csv",
+    )
+
+    response = client.post(reverse("job_import"), {"csv_file": csv_file})
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Duplicate site_code/template_title row" in content
+    assert "Create jobs" not in content

@@ -3,7 +3,11 @@ from access_atlas.sites.models import Site
 from .models import Job, JobTemplate, Requirement
 
 
-def create_job_from_template(site: Site, template: JobTemplate) -> Job:
+def create_job_from_template(
+    site: Site,
+    template: JobTemplate,
+    change_reason: str = "Created job from template",
+) -> Job:
     job = Job(
         site=site,
         template=template,
@@ -13,7 +17,7 @@ def create_job_from_template(site: Site, template: JobTemplate) -> Job:
         priority=template.priority,
         notes=template.notes,
     )
-    job._change_reason = "Created job from template"
+    job._change_reason = change_reason
     job.save()
 
     for template_requirement in template.template_requirements.all():

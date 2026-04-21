@@ -20,6 +20,14 @@
   padding-right: 2.5rem;
 }
 
+.nav-item-with-actions {
+  position: relative;
+}
+
+.nav-item-with-actions .nav-link {
+  padding-right: 4.75rem;
+}
+
 .nav-create-link {
   position: absolute;
   top: 50%;
@@ -35,11 +43,21 @@
   text-decoration: none;
 }
 
+.nav-create-link-secondary {
+  right: 2.5rem;
+}
+
 .nav-create-link:hover,
 .nav-create-link:focus {
   color: var(--tblr-success);
   background-color: rgba(var(--tblr-success-rgb), .12);
   text-decoration: none;
+}
+
+.nav-create-link-import:hover,
+.nav-create-link-import:focus {
+  color: var(--tblr-orange);
+  background-color: rgba(var(--tblr-orange-rgb), .12);
 }
 
 .search-icon-addon {

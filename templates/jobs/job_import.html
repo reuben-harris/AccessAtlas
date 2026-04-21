@@ -1,0 +1,96 @@
+{% extends "base/base.html" %}
+
+{% block title %}Import Jobs - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">Import Jobs</h2>
+    </div>
+    <div class="col-auto ms-auto">
+      <div class="btn-list">
+        <a class="btn btn-outline-secondary" href="{% url 'job_list' %}">Cancel</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-cards">
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Upload CSV</h3>
+      </div>
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          {{ form.as_p }}
+          <button class="btn btn-primary" type="submit">Review import</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">CSV Specification</h3>
+      </div>
+      <div class="card-body">
+        <p>The CSV must contain exactly these headers:</p>
+        <pre class="mb-3"><code>site_code,template_title</code></pre>
+        <p>Each row creates one unassigned job by copying an active job template for a synced site.</p>
+        <pre class="mb-0"><code>site_code,template_title
+AA-001,Replace sensor
+AA-002,Inspect cabinet</code></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if rows %}
+  <div class="card mt-3">
+    <div class="card-header">
+      <h3 class="card-title">Review Import</h3>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-vcenter">
+        <thead>
+          <tr>
+            <th>Row</th>
+            <th>Site Code</th>
+            <th>Template Title</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td>{{ row.row_number|default:"-" }}</td>
+              <td>{{ row.site_code|default:"-" }}</td>
+              <td>{{ row.template_title|default:"-" }}</td>
+              <td>
+                {% if row.is_valid %}
+                  <span class="badge bg-green-lt">Ready</span>
+                {% else %}
+                  <span class="badge bg-red-lt">{{ row.error }}</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card-footer">
+      {% if has_errors %}
+        <span class="text-secondary">Fix the CSV and upload it again before importing.</span>
+      {% else %}
+        <form method="post" action="{% url 'job_import_confirm' %}">
+          {% csrf_token %}
+          <button class="btn btn-primary" type="submit">Create jobs</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

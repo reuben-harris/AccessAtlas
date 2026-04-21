@@ -78,6 +78,10 @@ class JobFromTemplateForm(forms.Form):
         )
 
 
+class JobImportUploadForm(forms.Form):
+    csv_file = forms.FileField(label="CSV file")
+
+
 class RequirementForm(forms.ModelForm):
     class Meta:
         model = Requirement
