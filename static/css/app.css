@@ -73,6 +73,10 @@
   margin-bottom: 1rem;
 }
 
+.page-header .col-auto {
+  padding-bottom: 1rem;
+}
+
 form p {
   margin-bottom: 1rem;
 }
