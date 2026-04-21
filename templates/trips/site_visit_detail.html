@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load status_badges %}
 
 {% block title %}{{ object.site.code }} Visit - Access Atlas{% endblock %}
 
@@ -13,7 +14,7 @@
       <dt class="col-sm-3">Trip</dt><dd class="col-sm-9"><a href="{{ object.trip.get_absolute_url }}">{{ object.trip }}</a></dd>
       <dt class="col-sm-3">Site</dt><dd class="col-sm-9"><a href="{{ object.site.get_absolute_url }}">{{ object.site }}</a></dd>
       <dt class="col-sm-3">Order</dt><dd class="col-sm-9">{{ object.planned_order }}</dd>
-      <dt class="col-sm-3">Status</dt><dd class="col-sm-9">{{ object.get_status_display }}</dd>
+      <dt class="col-sm-3">Status</dt><dd class="col-sm-9"><span class="badge {{ object.status|status_badge_class }}">{{ object.get_status_display }}</span></dd>
       <dt class="col-sm-3">Notes</dt><dd class="col-sm-9">{{ object.notes|linebreaksbr }}</dd>
     </dl>
   </div>
@@ -26,7 +27,7 @@
         {% for assignment in object.sitevisitjob_set.all %}
           <tr>
             <td><a href="{{ assignment.job.get_absolute_url }}">{{ assignment.job.title }}</a></td>
-            <td>{{ assignment.job.get_status_display }}</td>
+            <td><span class="badge {{ assignment.job.status|status_badge_class }}">{{ assignment.job.get_status_display }}</span></td>
             <td>
               <form method="post" action="{% url 'unassign_job' assignment.pk %}">
                 {% csrf_token %}

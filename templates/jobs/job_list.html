@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load status_badges %}
 
 {% block title %}Jobs - Access Atlas{% endblock %}
 
@@ -19,7 +20,7 @@
           <tr>
             <td><a href="{{ job.get_absolute_url }}">{{ job.title }}</a></td>
             <td><a href="{{ job.site.get_absolute_url }}">{{ job.site.code }}</a></td>
-            <td><span class="badge bg-blue-lt">{{ job.get_status_display }}</span></td>
+            <td><span class="badge {{ job.status|status_badge_class }}">{{ job.get_status_display }}</span></td>
             <td>{{ job.get_priority_display }}</td>
             <td>{{ job.estimated_duration_minutes|default:"-" }} min</td>
           </tr>

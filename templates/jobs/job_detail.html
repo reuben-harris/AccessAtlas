@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load status_badges %}
 
 {% block title %}{{ object.title }} - Access Atlas{% endblock %}
 
@@ -12,7 +13,7 @@
     <p>{{ object.description|linebreaksbr }}</p>
     <dl class="row">
       <dt class="col-sm-3">Site</dt><dd class="col-sm-9"><a href="{{ object.site.get_absolute_url }}">{{ object.site }}</a></dd>
-      <dt class="col-sm-3">Status</dt><dd class="col-sm-9">{{ object.get_status_display }}</dd>
+      <dt class="col-sm-3">Status</dt><dd class="col-sm-9"><span class="badge {{ object.status|status_badge_class }}">{{ object.get_status_display }}</span></dd>
       <dt class="col-sm-3">Priority</dt><dd class="col-sm-9">{{ object.get_priority_display }}</dd>
       <dt class="col-sm-3">Estimate</dt><dd class="col-sm-9">{{ object.estimated_duration_minutes|default:"-" }} min</dd>
       <dt class="col-sm-3">Template</dt><dd class="col-sm-9">{{ object.template|default:"-" }}</dd>

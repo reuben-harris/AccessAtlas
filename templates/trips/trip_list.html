@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load status_badges %}
 
 {% block title %}Trips - Access Atlas{% endblock %}
 
@@ -17,7 +18,7 @@
             <td><a href="{{ trip.get_absolute_url }}">{{ trip.name }}</a></td>
             <td>{{ trip.start_date }} - {{ trip.end_date }}</td>
             <td>{{ trip.trip_leader }}</td>
-            <td><span class="badge bg-blue-lt">{{ trip.get_status_display }}</span></td>
+            <td><span class="badge {{ trip.status|status_badge_class }}">{{ trip.get_status_display }}</span></td>
           </tr>
         {% empty %}
           <tr><td colspan="4" class="text-secondary">No trips yet.</td></tr>

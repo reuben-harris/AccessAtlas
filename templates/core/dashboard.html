@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load status_badges %}
 
 {% block title %}Dashboard - Access Atlas{% endblock %}
 
@@ -16,7 +17,7 @@
       <div class="card-header"><h3 class="card-title">Planned Trips</h3></div>
       <div class="list-group list-group-flush">
         {% for trip in planned_trips %}
-          <a class="list-group-item list-group-item-action" href="{{ trip.get_absolute_url }}">{{ trip.name }} <span class="badge bg-blue-lt">{{ trip.get_status_display }}</span></a>
+          <a class="list-group-item list-group-item-action" href="{{ trip.get_absolute_url }}">{{ trip.name }} <span class="badge {{ trip.status|status_badge_class }}">{{ trip.get_status_display }}</span></a>
         {% empty %}
           <div class="list-group-item text-secondary">No planned trips.</div>
         {% endfor %}
