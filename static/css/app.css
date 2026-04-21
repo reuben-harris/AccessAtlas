@@ -19,13 +19,53 @@
   font-size: 1.125rem;
 }
 
+.brand-home {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .25rem .375rem;
+  color: #fff;
+  text-decoration: none;
+}
+
+.brand-home:hover,
+.brand-home:focus {
+  color: #fff;
+  text-decoration: none;
+}
+
+.brand-outline {
+  position: absolute;
+  inset: -.125rem;
+  width: calc(100% + .25rem);
+  height: calc(100% + .25rem);
+  overflow: visible;
+  pointer-events: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5px;
+}
+
+.brand-home:hover .brand-outline,
+.brand-home:focus-visible .brand-outline {
+  animation: brand-outline-draw .5s ease-out forwards;
+}
+
+@keyframes brand-outline-draw {
+  to { stroke-dashoffset: 0; }
+}
+
 .brand-mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 2rem;
   height: 2rem;
-  color: #fff;
   font-size: 1.75rem;
 }
 

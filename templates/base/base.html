@@ -26,11 +26,14 @@
     <div class="page">
       <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
         <div class="container-fluid">
-          <h1 class="navbar-brand navbar-brand-autodark d-flex align-items-center gap-2">
-            <a class="brand-mark" href="{% url 'dashboard' %}" aria-label="Access Atlas">
-              <i class="ti ti-map-2" aria-hidden="true"></i>
+          <h1 class="navbar-brand navbar-brand-autodark">
+            <a class="brand-home" href="{% url 'dashboard' %}" aria-label="Access Atlas">
+              <span class="brand-mark"><i class="ti ti-map-2" aria-hidden="true"></i></span>
+              <span>Access Atlas</span>
+              <svg class="brand-outline" aria-hidden="true">
+                <rect pathLength="100" x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="4" ry="4"/>
+              </svg>
             </a>
-            <a href="{% url 'dashboard' %}">Access Atlas</a>
           </h1>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu">
             <span class="navbar-toggler-icon"></span>
