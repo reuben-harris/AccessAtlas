@@ -222,7 +222,7 @@ input[type="time"].form-control.is-invalid {
 }
 
 .job-map-card {
-  height: calc(100dvh - 15.25rem);
+  height: calc(100dvh - 18rem);
   margin-bottom: 0;
 }
 
@@ -266,7 +266,7 @@ input[type="time"].form-control.is-invalid {
 
 @media (max-width: 767.98px) {
   .job-map-card {
-    height: calc(100dvh - 19rem);
+    height: calc(100dvh - 22rem);
   }
 }
 
