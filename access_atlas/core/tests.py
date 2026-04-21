@@ -75,6 +75,11 @@ def test_global_history_renders_changes(logged_in_client, site):
 
 
 @pytest.mark.django_db
+def test_history_records_get_default_reason(site):
+    assert site.history.first().history_change_reason == "Created site"
+
+
+@pytest.mark.django_db
 def test_dummy_feed_requires_bearer_token(client, settings):
     settings.SITE_FEED_TOKEN = "secret"
 

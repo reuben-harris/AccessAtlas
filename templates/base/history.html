@@ -1,3 +1,5 @@
+{% load history_extras %}
+
 {% if object.history.all %}
 <div class="card mt-3">
   <div class="card-header"><h3 class="card-title">History</h3></div>
@@ -7,6 +9,7 @@
         <tr>
           <th>When</th>
           <th>Type</th>
+          <th>Reason</th>
           <th>User</th>
         </tr>
       </thead>
@@ -15,6 +18,7 @@
           <tr>
             <td>{{ record.history_date }}</td>
             <td>{{ record.get_history_type_display }}</td>
+            <td>{{ record|change_reason }}</td>
             <td>{{ record.history_user|default:"System" }}</td>
           </tr>
         {% endfor %}

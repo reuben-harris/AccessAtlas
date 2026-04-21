@@ -4,7 +4,7 @@ from .models import Job, JobTemplate, Requirement
 
 
 def create_job_from_template(site: Site, template: JobTemplate) -> Job:
-    job = Job.objects.create(
+    job = Job(
         site=site,
         template=template,
         title=template.title,
@@ -13,17 +13,19 @@ def create_job_from_template(site: Site, template: JobTemplate) -> Job:
         priority=template.priority,
         notes=template.notes,
     )
-    Requirement.objects.bulk_create(
-        [
-            Requirement(
-                job=job,
-                requirement_type=requirement.requirement_type,
-                name=requirement.name,
-                quantity=requirement.quantity,
-                notes=requirement.notes,
-                is_required=requirement.is_required,
-            )
-            for requirement in template.template_requirements.all()
-        ]
-    )
+    job._change_reason = "Created job from template"
+    job.save()
+
+    for template_requirement in template.template_requirements.all():
+        requirement = Requirement(
+            job=job,
+            requirement_type=template_requirement.requirement_type,
+            name=template_requirement.name,
+            quantity=template_requirement.quantity,
+            notes=template_requirement.notes,
+            is_required=template_requirement.is_required,
+        )
+        requirement._change_reason = "Copied requirement from job template"
+        requirement.save()
+
     return job

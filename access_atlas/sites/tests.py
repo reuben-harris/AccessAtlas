@@ -29,6 +29,7 @@ def test_sync_sites_from_payload_creates_and_updates_sites():
     site = Site.objects.get(source_name="dummy", external_id="001")
     assert site.code == "AA-001"
     assert site.name == "Original"
+    assert site.history.first().history_change_reason == "Created from site feed"
 
     payload["sites"][0]["name"] = "Updated"
     result = sync_sites_from_payload(payload)
@@ -36,6 +37,7 @@ def test_sync_sites_from_payload_creates_and_updates_sites():
     assert result.updated == 1
     site.refresh_from_db()
     assert site.name == "Updated"
+    assert site.history.first().history_change_reason == "Updated from site feed"
 
 
 @pytest.mark.django_db

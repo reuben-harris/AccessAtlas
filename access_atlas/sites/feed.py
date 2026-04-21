@@ -9,6 +9,7 @@ from urllib.request import Request, urlopen
 
 from django.conf import settings
 from django.utils import timezone
+from simple_history.utils import update_change_reason
 
 from .models import Site
 
@@ -92,7 +93,7 @@ def sync_sites_from_payload(payload: dict[str, Any]) -> SyncResult:
             rejected += 1
             continue
 
-        _, was_created = Site.objects.update_or_create(
+        site, was_created = Site.objects.update_or_create(
             source_name=source_name,
             external_id=str(record["external_id"]),
             defaults={
@@ -105,8 +106,10 @@ def sync_sites_from_payload(payload: dict[str, Any]) -> SyncResult:
         )
         if was_created:
             created += 1
+            update_change_reason(site, "Created from site feed")
         else:
             updated += 1
+            update_change_reason(site, "Updated from site feed")
 
     return SyncResult(created=created, updated=updated, rejected=rejected)
 

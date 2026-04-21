@@ -37,6 +37,11 @@ def test_create_job_from_template_copies_template_and_requirements():
     assert job.estimated_duration_minutes == 90
     assert job.requirements.count() == 1
     assert job.requirements.get().name == "Sensor cable"
+    assert job.history.first().history_change_reason == "Created job from template"
+    assert (
+        job.requirements.get().history.first().history_change_reason
+        == "Copied requirement from job template"
+    )
 
     template.title = "Changed template"
     template.save()
@@ -76,9 +81,29 @@ def test_job_cannot_be_manually_set_to_planned_without_assignment():
         job.full_clean()
 
 
+@pytest.mark.django_db
+def test_cancelled_job_requires_reason():
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    job = Job(site=site, title="Inspect cabinet", status="cancelled")
+
+    with pytest.raises(ValidationError):
+        job.full_clean()
+
+    job.cancelled_reason = "No longer required."
+    job.full_clean()
+
+
 def test_job_form_does_not_offer_planned_status():
     form = JobForm()
 
     status_values = [value for value, _label in form.fields["status"].choices]
 
     assert "planned" not in status_values
+    assert "blocked" not in status_values

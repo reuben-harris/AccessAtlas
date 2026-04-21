@@ -20,6 +20,7 @@
           <th>Object</th>
           <th>Type</th>
           <th>Action</th>
+          <th>Reason</th>
           <th>User</th>
         </tr>
       </thead>
@@ -36,11 +37,12 @@
             </td>
             <td>{{ entry.object_type }}</td>
             <td>{{ entry.action }}</td>
+            <td>{{ entry.reason|default:"-" }}</td>
             <td>{{ entry.user|default:"System" }}</td>
           </tr>
         {% empty %}
           <tr>
-            <td colspan="5" class="text-secondary">No history has been recorded yet.</td>
+            <td colspan="6" class="text-secondary">No history has been recorded yet.</td>
           </tr>
         {% endfor %}
       </tbody>

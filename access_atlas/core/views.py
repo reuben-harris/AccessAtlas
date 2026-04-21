@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import render
 
+from access_atlas.core.history import history_reason
 from access_atlas.jobs.models import (
     Job,
     JobStatus,
@@ -20,6 +21,7 @@ from access_atlas.trips.models import SiteVisit, SiteVisitJob, Trip, TripStatus
 class HistoryEntry:
     date: object
     action: str
+    reason: str
     object_type: str
     object_display: str
     object_url: str
@@ -46,6 +48,7 @@ def build_history_entry(record) -> HistoryEntry:
     return HistoryEntry(
         date=record.history_date,
         action=record.get_history_type_display(),
+        reason=history_reason(record),
         object_type=instance._meta.verbose_name.title(),
         object_display=str(instance),
         object_url=object_url,
@@ -61,7 +64,6 @@ def dashboard(request):
             status=JobStatus.UNASSIGNED,
             site_visit_assignment__isnull=True,
         )[:10],
-        "blocked_jobs": Job.objects.filter(status=JobStatus.BLOCKED)[:10],
         "site_count": Site.objects.count(),
         "job_template_count": JobTemplate.objects.filter(is_active=True).count(),
     }

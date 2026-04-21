@@ -4,6 +4,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
+from access_atlas.core.history import HistoryReasonMixin
 from access_atlas.sites.models import Site
 
 from .forms import (
@@ -27,19 +28,21 @@ class JobTemplateDetailView(LoginRequiredMixin, DetailView):
     template_name = "jobs/job_template_detail.html"
 
 
-class JobTemplateCreateView(LoginRequiredMixin, CreateView):
+class JobTemplateCreateView(HistoryReasonMixin, LoginRequiredMixin, CreateView):
+    history_action = "Created"
     model = JobTemplate
     form_class = JobTemplateForm
     template_name = "object_form.html"
 
 
-class JobTemplateUpdateView(LoginRequiredMixin, UpdateView):
+class JobTemplateUpdateView(HistoryReasonMixin, LoginRequiredMixin, UpdateView):
     model = JobTemplate
     form_class = JobTemplateForm
     template_name = "object_form.html"
 
 
-class TemplateRequirementCreateView(LoginRequiredMixin, CreateView):
+class TemplateRequirementCreateView(HistoryReasonMixin, LoginRequiredMixin, CreateView):
+    history_action = "Created"
     model = TemplateRequirement
     form_class = TemplateRequirementForm
     template_name = "object_form.html"
@@ -76,13 +79,14 @@ class JobDetailView(LoginRequiredMixin, DetailView):
     template_name = "jobs/job_detail.html"
 
 
-class JobCreateView(LoginRequiredMixin, CreateView):
+class JobCreateView(HistoryReasonMixin, LoginRequiredMixin, CreateView):
+    history_action = "Created"
     model = Job
     form_class = JobForm
     template_name = "object_form.html"
 
 
-class JobUpdateView(LoginRequiredMixin, UpdateView):
+class JobUpdateView(HistoryReasonMixin, LoginRequiredMixin, UpdateView):
     model = Job
     form_class = JobForm
     template_name = "object_form.html"
@@ -101,7 +105,8 @@ def create_job_from_template_view(request):
     return render(request, "jobs/job_from_template.html", {"form": form})
 
 
-class RequirementCreateView(LoginRequiredMixin, CreateView):
+class RequirementCreateView(HistoryReasonMixin, LoginRequiredMixin, CreateView):
+    history_action = "Created"
     model = Requirement
     form_class = RequirementForm
     template_name = "object_form.html"
@@ -114,7 +119,7 @@ class RequirementCreateView(LoginRequiredMixin, CreateView):
         return self.object.job.get_absolute_url()
 
 
-class RequirementUpdateView(LoginRequiredMixin, UpdateView):
+class RequirementUpdateView(HistoryReasonMixin, LoginRequiredMixin, UpdateView):
     model = Requirement
     form_class = RequirementForm
     template_name = "object_form.html"
