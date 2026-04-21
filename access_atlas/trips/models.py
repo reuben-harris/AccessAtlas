@@ -56,6 +56,10 @@ class Trip(models.Model):
     def get_absolute_url(self) -> str:
         return reverse("trip_detail", kwargs={"pk": self.pk})
 
+    @property
+    def is_terminal(self) -> bool:
+        return self.status in {TripStatus.COMPLETED, TripStatus.CANCELLED}
+
     def clean(self) -> None:
         if self.end_date < self.start_date:
             raise ValidationError({"end_date": "End date cannot be before start date."})

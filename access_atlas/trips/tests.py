@@ -382,3 +382,49 @@ def test_close_trip_requires_reason_for_cancelled_jobs(client):
     job.refresh_from_db()
     assert trip.status == TripStatus.PLANNED
     assert job.status == JobStatus.PLANNED
+
+
+@pytest.mark.django_db
+def test_terminal_trip_detail_disables_close_and_cancel_actions(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+        status=TripStatus.COMPLETED,
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("trip_detail", kwargs={"pk": trip.pk}))
+
+    assert response.status_code == 200
+    assert (
+        reverse("trip_cancel", kwargs={"pk": trip.pk}).encode() not in response.content
+    )
+    assert (
+        reverse("trip_close", kwargs={"pk": trip.pk}).encode() not in response.content
+    )
+    assert b"cannot be cancelled" in response.content
+    assert b"cannot be closed again" in response.content
+
+
+@pytest.mark.django_db
+def test_terminal_trip_close_and_cancel_urls_redirect(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+        status=TripStatus.CANCELLED,
+    )
+    client.force_login(user)
+
+    close_response = client.get(reverse("trip_close", kwargs={"pk": trip.pk}))
+    cancel_response = client.get(reverse("trip_cancel", kwargs={"pk": trip.pk}))
+
+    assert close_response.status_code == 302
+    assert close_response.url == trip.get_absolute_url()
+    assert cancel_response.status_code == 302
+    assert cancel_response.url == trip.get_absolute_url()

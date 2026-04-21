@@ -110,6 +110,11 @@ def unassign_job(request, pk):
 @login_required
 def close_trip_view(request, pk):
     trip = get_object_or_404(Trip, pk=pk)
+    if trip.is_terminal:
+        messages.info(
+            request, "This trip is already closed and cannot be closed again."
+        )
+        return redirect(trip)
     form = TripCloseoutForm(request.POST or None, trip=trip)
     if request.method == "POST" and form.is_valid():
         close_trip(trip, form.cleaned_data)
@@ -121,6 +126,12 @@ def close_trip_view(request, pk):
 @login_required
 def cancel_trip_view(request, pk):
     trip = get_object_or_404(Trip, pk=pk)
+    if trip.is_terminal:
+        messages.info(
+            request,
+            "This trip is already closed and cannot be cancelled.",
+        )
+        return redirect(trip)
     summary = get_trip_cancel_summary(trip)
     if request.method == "POST":
         try:
