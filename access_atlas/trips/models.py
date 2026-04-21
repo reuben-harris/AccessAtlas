@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
+from django.utils import timezone
 from simple_history.models import HistoricalRecords
 
 from access_atlas.jobs.models import Job, JobStatus
@@ -78,7 +79,9 @@ class SiteVisit(models.Model):
         related_name="site_visits",
         on_delete=models.PROTECT,
     )
-    planned_order = models.PositiveIntegerField(default=1)
+    planned_start = models.DateTimeField(blank=True, null=True)
+    planned_end = models.DateTimeField(blank=True, null=True)
+    planned_order = models.PositiveIntegerField(default=1, verbose_name="Sequence")
     status = models.CharField(
         max_length=20,
         choices=SiteVisitStatus.choices,
@@ -96,13 +99,48 @@ class SiteVisit(models.Model):
     history = HistoricalRecords()
 
     class Meta:
-        ordering = ["trip", "planned_order", "site__code"]
+        ordering = ["trip", "planned_start", "planned_order", "site__code"]
 
     def __str__(self) -> str:
         return f"{self.trip} - {self.site}"
 
     def get_absolute_url(self) -> str:
         return reverse("site_visit_detail", kwargs={"pk": self.pk})
+
+    @staticmethod
+    def planned_date(value):
+        if timezone.is_aware(value):
+            return timezone.localtime(value).date()
+        return value.date()
+
+    def clean(self) -> None:
+        errors = {}
+        if self.planned_end and not self.planned_start:
+            errors["planned_start"] = "A planned end requires a planned start."
+        if (
+            self.planned_start
+            and self.planned_end
+            and self.planned_end <= self.planned_start
+        ):
+            errors["planned_end"] = "Planned end must be after planned start."
+        if errors or not self.trip_id:
+            if errors:
+                raise ValidationError(errors)
+            return
+
+        trip_start = self.trip.start_date
+        trip_end = self.trip.end_date
+        trip_date_message = f"Must be between {trip_start} and {trip_end}."
+        if self.planned_start:
+            planned_start_date = self.planned_date(self.planned_start)
+            if planned_start_date < trip_start or planned_start_date > trip_end:
+                errors["planned_start"] = trip_date_message
+        if self.planned_end:
+            planned_end_date = self.planned_date(self.planned_end)
+            if planned_end_date < trip_start or planned_end_date > trip_end:
+                errors["planned_end"] = trip_date_message
+        if errors:
+            raise ValidationError(errors)
 
 
 class SiteVisitJob(models.Model):

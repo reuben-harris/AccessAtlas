@@ -16,7 +16,7 @@ In the proof of concept, a trip groups the sites to visit, the jobs to complete,
 
 A planned visit to one site during a trip.
 
-A site visit groups the jobs planned for that site.
+A site visit represents one planned attendance at one site, with optional planned start and end times. A trip can include multiple site visits for the same site when work is split across different days or times.
 
 ### Job
 

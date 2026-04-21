@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
+from django.db.models import F
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
@@ -28,10 +29,18 @@ class TripDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context["site_visits"] = self.object.site_visits.select_related(
+            "site"
+        ).order_by(
+            F("planned_start").asc(nulls_last=True),
+            "planned_order",
+            "site__code",
+        )
         context["job_assignments"] = (
             SiteVisitJob.objects.filter(site_visit__trip=self.object)
             .select_related("site_visit__site", "job")
             .order_by(
+                F("site_visit__planned_start").asc(nulls_last=True),
                 "site_visit__planned_order",
                 "site_visit__site__code",
                 "job__title",
@@ -83,15 +92,22 @@ class SiteVisitCreateView(
     form_class = SiteVisitForm
     template_name = "object_form.html"
 
+    def get_trip(self):
+        return get_object_or_404(Trip, pk=self.kwargs["trip_pk"])
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["trip"] = self.get_trip()
+        return kwargs
+
     def form_valid(self, form):
-        form.instance.trip = get_object_or_404(Trip, pk=self.kwargs["trip_pk"])
         return super().form_valid(form)
 
     def get_success_url(self):
         return self.object.trip.get_absolute_url()
 
     def get_cancel_url(self):
-        return get_object_or_404(Trip, pk=self.kwargs["trip_pk"]).get_absolute_url()
+        return self.get_trip().get_absolute_url()
 
 
 class SiteVisitUpdateView(

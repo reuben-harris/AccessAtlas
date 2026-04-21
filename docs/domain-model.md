@@ -133,7 +133,9 @@ Likely fields:
 
 - Trip.
 - Site reference.
-- Planned order.
+- Planned start.
+- Planned end.
+- Sequence.
 - Notes.
 - Status.
 
@@ -145,10 +147,12 @@ Relationships:
 
 Notes:
 
-- A site visit groups all jobs planned for one site during a trip.
+- A site visit represents one planned attendance at one site during a trip.
+- A site visit groups the jobs planned for that attendance.
 - A site visit should not be created without a site.
-- Multiple site visits to the same site may exist if the plan requires returning later.
-- The proof of concept does not need arrival time, departure time, access information, or travel estimates.
+- Multiple site visits to the same site may exist if the plan requires returning later or splitting jobs across different days or times.
+- Sequence is a fallback ordering field for unscheduled or same-time visits.
+- The proof of concept does not need access information or travel estimates.
 
 ### Job
 
@@ -336,7 +340,6 @@ Access Atlas may store references, links, and small snapshots where needed for p
 - Logged-in users can do everything in the proof of concept.
 - History records should capture meaningful changes to proof-of-concept objects.
 - A trip can have multiple site visits.
-- A trip does not need day-by-day scheduling in the proof of concept.
 - A trip does not need trip locations in the proof of concept.
 - A site visit does not need travel or access data in the proof of concept.
 

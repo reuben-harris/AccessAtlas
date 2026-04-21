@@ -52,9 +52,68 @@ class TripForm(forms.ModelForm):
 
 
 class SiteVisitForm(forms.ModelForm):
+    planned_start = forms.DateTimeField(
+        required=False,
+        label="Planned start",
+        input_formats=["%Y-%m-%dT%H:%M"],
+        widget=forms.DateTimeInput(
+            attrs={"type": "datetime-local"},
+            format="%Y-%m-%dT%H:%M",
+        ),
+    )
+    planned_end = forms.DateTimeField(
+        required=False,
+        label="Planned end",
+        input_formats=["%Y-%m-%dT%H:%M"],
+        widget=forms.DateTimeInput(
+            attrs={"type": "datetime-local"},
+            format="%Y-%m-%dT%H:%M",
+        ),
+    )
+
+    def __init__(self, *args, **kwargs):
+        trip = kwargs.pop("trip", None)
+        super().__init__(*args, **kwargs)
+        if trip is not None:
+            self.instance.trip = trip
+
+    def clean(self):
+        cleaned_data = super().clean()
+        planned_start = cleaned_data.get("planned_start")
+        planned_end = cleaned_data.get("planned_end")
+        trip = self.instance.trip
+
+        if planned_end and not planned_start:
+            self.add_error("planned_start", "A planned end requires a planned start.")
+        if planned_start and planned_end and planned_end <= planned_start:
+            self.add_error("planned_end", "Planned end must be after planned start.")
+        if not trip:
+            return cleaned_data
+
+        trip_date_message = f"Must be between {trip.start_date} and {trip.end_date}."
+        if planned_start:
+            planned_start_date = SiteVisit.planned_date(planned_start)
+            if (
+                planned_start_date < trip.start_date
+                or planned_start_date > trip.end_date
+            ):
+                self.add_error("planned_start", trip_date_message)
+        if planned_end:
+            planned_end_date = SiteVisit.planned_date(planned_end)
+            if planned_end_date < trip.start_date or planned_end_date > trip.end_date:
+                self.add_error("planned_end", trip_date_message)
+        return cleaned_data
+
     class Meta:
         model = SiteVisit
-        fields = ["site", "planned_order", "status", "notes"]
+        fields = [
+            "site",
+            "planned_start",
+            "planned_end",
+            "planned_order",
+            "status",
+            "notes",
+        ]
 
 
 class AssignJobForm(forms.Form):

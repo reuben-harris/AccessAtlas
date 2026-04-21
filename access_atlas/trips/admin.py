@@ -24,7 +24,14 @@ class TripAdmin(SimpleHistoryAdmin):
 
 @admin.register(SiteVisit)
 class SiteVisitAdmin(SimpleHistoryAdmin):
-    list_display = ["trip", "site", "planned_order", "status"]
+    list_display = [
+        "trip",
+        "site",
+        "planned_start",
+        "planned_end",
+        "planned_order",
+        "status",
+    ]
     list_filter = ["status"]
     search_fields = ["trip__name", "site__code", "site__name", "notes"]
     inlines = [SiteVisitJobInline]
