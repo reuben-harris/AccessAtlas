@@ -25,6 +25,11 @@ urlpatterns = [
         views.RequirementUpdateView.as_view(),
         name="requirement_update",
     ),
+    path(
+        "requirements/<int:pk>/delete/",
+        views.RequirementDeleteView.as_view(),
+        name="requirement_delete",
+    ),
     path("templates/", views.JobTemplateListView.as_view(), name="job_template_list"),
     path(
         "templates/new/",
@@ -50,5 +55,10 @@ urlpatterns = [
         "templates/requirements/<int:pk>/edit/",
         views.TemplateRequirementUpdateView.as_view(),
         name="template_requirement_update",
+    ),
+    path(
+        "templates/requirements/<int:pk>/delete/",
+        views.TemplateRequirementDeleteView.as_view(),
+        name="template_requirement_delete",
     ),
 ]

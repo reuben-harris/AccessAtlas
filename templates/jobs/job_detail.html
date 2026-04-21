@@ -48,7 +48,8 @@
             <td>{{ requirement.quantity }}</td>
             <td>{{ requirement.is_checked|yesno:"Checked,Open" }}</td>
             {% url 'requirement_update' requirement.pk as edit_url %}
-            {% include "includes/row_actions.html" with edit_url=edit_url label=requirement.name %}
+            {% url 'requirement_delete' requirement.pk as delete_url %}
+            {% include "includes/requirement_row_actions.html" with edit_url=edit_url delete_url=delete_url label=requirement.name %}
           </tr>
         {% empty %}
           <tr><td colspan="5" class="text-secondary">No requirements.</td></tr>

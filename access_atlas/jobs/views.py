@@ -3,7 +3,13 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.generic import CreateView, DetailView, ListView, UpdateView
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
+)
 
 from access_atlas.accounts.preferences import (
     JOBS_MAP_PREFERENCE_KEY,
@@ -104,6 +110,17 @@ class TemplateRequirementUpdateView(
     model = TemplateRequirement
     form_class = TemplateRequirementForm
     template_name = "object_form.html"
+
+    def get_success_url(self):
+        return self.object.job_template.get_absolute_url()
+
+    def get_cancel_url(self):
+        return self.object.job_template.get_absolute_url()
+
+
+class TemplateRequirementDeleteView(LoginRequiredMixin, DeleteView):
+    model = TemplateRequirement
+    template_name = "object_confirm_delete.html"
 
     def get_success_url(self):
         return self.object.job_template.get_absolute_url()
@@ -333,4 +350,18 @@ class RequirementUpdateView(
     template_name = "object_form.html"
 
     def get_success_url(self):
+        return self.object.job.get_absolute_url()
+
+    def get_cancel_url(self):
+        return self.object.job.get_absolute_url()
+
+
+class RequirementDeleteView(LoginRequiredMixin, DeleteView):
+    model = Requirement
+    template_name = "object_confirm_delete.html"
+
+    def get_success_url(self):
+        return self.object.job.get_absolute_url()
+
+    def get_cancel_url(self):
         return self.object.job.get_absolute_url()

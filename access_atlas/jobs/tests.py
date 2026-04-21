@@ -9,7 +9,13 @@ from access_atlas.accounts.preferences import (
     set_user_preference,
 )
 from access_atlas.jobs.forms import JobForm, JobFromTemplateForm
-from access_atlas.jobs.models import Job, JobStatus, JobTemplate, TemplateRequirement
+from access_atlas.jobs.models import (
+    Job,
+    JobStatus,
+    JobTemplate,
+    Requirement,
+    TemplateRequirement,
+)
 from access_atlas.jobs.services import create_job_from_template
 from access_atlas.sites.models import Site
 
@@ -270,3 +276,38 @@ def test_job_import_rejects_duplicate_rows(client):
     assert response.status_code == 200
     assert "Duplicate site_code/template_title row" in content
     assert "Create jobs" not in content
+
+
+@pytest.mark.django_db
+def test_requirement_delete_removes_requirement_and_returns_to_job(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    requirement = Requirement.objects.create(job=job, name="Cable")
+
+    response = client.post(reverse("requirement_delete", args=[requirement.pk]))
+
+    assert response.status_code == 302
+    assert response.url == job.get_absolute_url()
+    assert not Requirement.objects.filter(pk=requirement.pk).exists()
+
+
+@pytest.mark.django_db
+def test_template_requirement_delete_removes_requirement_and_returns_to_template(
+    client,
+):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    template = JobTemplate.objects.create(title="Replace sensor")
+    requirement = TemplateRequirement.objects.create(
+        job_template=template, name="Cable"
+    )
+
+    response = client.post(
+        reverse("template_requirement_delete", args=[requirement.pk])
+    )
+
+    assert response.status_code == 302
+    assert response.url == template.get_absolute_url()
+    assert not TemplateRequirement.objects.filter(pk=requirement.pk).exists()

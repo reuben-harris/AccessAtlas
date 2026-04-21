@@ -195,6 +195,25 @@ input[type="time"].form-control.is-invalid {
   font-size: 1.125rem;
 }
 
+.row-actions .row-delete-button {
+  width: 2.25rem;
+  height: 2.25rem;
+  color: #fff;
+  background-color: var(--tblr-danger);
+  border-color: var(--tblr-danger);
+}
+
+.row-actions .row-delete-button:hover,
+.row-actions .row-delete-button:focus {
+  color: #fff;
+  background-color: #b42626;
+  border-color: var(--tblr-danger);
+}
+
+.row-actions .row-delete-button i {
+  font-size: 1.125rem;
+}
+
 .view-toolbar {
   display: inline-flex;
   align-items: center;

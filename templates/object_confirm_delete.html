@@ -1,0 +1,25 @@
+{% extends "base/base.html" %}
+
+{% block title %}Delete {{ object }} - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">Delete {{ object }}</h2>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-body">
+    <p>Are you sure you want to delete <strong>{{ object }}</strong>?</p>
+    <form method="post">
+      {% csrf_token %}
+      <div class="btn-list">
+        <button class="btn btn-danger" type="submit">Delete</button>
+        <a class="btn btn-outline-secondary" href="{{ view.get_cancel_url }}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
