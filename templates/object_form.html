@@ -1,12 +1,12 @@
 {% extends "base/base.html" %}
 
-{% block title %}Form - Access Atlas{% endblock %}
+{% block title %}{{ form_title|default:"Edit" }} - Access Atlas{% endblock %}
 
 {% block content %}
 <div class="page-header">
   <div class="row align-items-center">
     <div class="col">
-      <h2 class="page-title">Edit</h2>
+      <h2 class="page-title">{{ form_title|default:"Edit" }}</h2>
     </div>
   </div>
 </div>
@@ -16,7 +16,7 @@
       {% csrf_token %}
       {{ form.as_p }}
       <button class="btn btn-primary" type="submit">Save</button>
-      <a class="btn btn-outline-secondary" href="{{ request.META.HTTP_REFERER|default:'/' }}">Cancel</a>
+      <a class="btn btn-outline-secondary" href="{{ cancel_url|default:'/' }}">Cancel</a>
     </form>
   </div>
 </div>

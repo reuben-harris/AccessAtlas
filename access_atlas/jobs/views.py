@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from access_atlas.core.history import HistoryReasonMixin
+from access_atlas.core.mixins import ObjectFormMixin
 from access_atlas.sites.models import Site
 
 from .forms import (
@@ -28,20 +29,35 @@ class JobTemplateDetailView(LoginRequiredMixin, DetailView):
     template_name = "jobs/job_template_detail.html"
 
 
-class JobTemplateCreateView(HistoryReasonMixin, LoginRequiredMixin, CreateView):
+class JobTemplateCreateView(
+    HistoryReasonMixin,
+    ObjectFormMixin,
+    LoginRequiredMixin,
+    CreateView,
+):
     history_action = "Created"
     model = JobTemplate
     form_class = JobTemplateForm
     template_name = "object_form.html"
 
 
-class JobTemplateUpdateView(HistoryReasonMixin, LoginRequiredMixin, UpdateView):
+class JobTemplateUpdateView(
+    HistoryReasonMixin,
+    ObjectFormMixin,
+    LoginRequiredMixin,
+    UpdateView,
+):
     model = JobTemplate
     form_class = JobTemplateForm
     template_name = "object_form.html"
 
 
-class TemplateRequirementCreateView(HistoryReasonMixin, LoginRequiredMixin, CreateView):
+class TemplateRequirementCreateView(
+    HistoryReasonMixin,
+    ObjectFormMixin,
+    LoginRequiredMixin,
+    CreateView,
+):
     history_action = "Created"
     model = TemplateRequirement
     form_class = TemplateRequirementForm
@@ -56,6 +72,11 @@ class TemplateRequirementCreateView(HistoryReasonMixin, LoginRequiredMixin, Crea
 
     def get_success_url(self):
         return self.object.job_template.get_absolute_url()
+
+    def get_cancel_url(self):
+        return get_object_or_404(
+            JobTemplate, pk=self.kwargs["template_pk"]
+        ).get_absolute_url()
 
 
 class JobListView(LoginRequiredMixin, ListView):
@@ -79,14 +100,18 @@ class JobDetailView(LoginRequiredMixin, DetailView):
     template_name = "jobs/job_detail.html"
 
 
-class JobCreateView(HistoryReasonMixin, LoginRequiredMixin, CreateView):
+class JobCreateView(
+    HistoryReasonMixin, ObjectFormMixin, LoginRequiredMixin, CreateView
+):
     history_action = "Created"
     model = Job
     form_class = JobForm
     template_name = "object_form.html"
 
 
-class JobUpdateView(HistoryReasonMixin, LoginRequiredMixin, UpdateView):
+class JobUpdateView(
+    HistoryReasonMixin, ObjectFormMixin, LoginRequiredMixin, UpdateView
+):
     model = Job
     form_class = JobForm
     template_name = "object_form.html"
@@ -105,7 +130,12 @@ def create_job_from_template_view(request):
     return render(request, "jobs/job_from_template.html", {"form": form})
 
 
-class RequirementCreateView(HistoryReasonMixin, LoginRequiredMixin, CreateView):
+class RequirementCreateView(
+    HistoryReasonMixin,
+    ObjectFormMixin,
+    LoginRequiredMixin,
+    CreateView,
+):
     history_action = "Created"
     model = Requirement
     form_class = RequirementForm
@@ -118,8 +148,16 @@ class RequirementCreateView(HistoryReasonMixin, LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return self.object.job.get_absolute_url()
 
+    def get_cancel_url(self):
+        return get_object_or_404(Job, pk=self.kwargs["job_pk"]).get_absolute_url()
 
-class RequirementUpdateView(HistoryReasonMixin, LoginRequiredMixin, UpdateView):
+
+class RequirementUpdateView(
+    HistoryReasonMixin,
+    ObjectFormMixin,
+    LoginRequiredMixin,
+    UpdateView,
+):
     model = Requirement
     form_class = RequirementForm
     template_name = "object_form.html"

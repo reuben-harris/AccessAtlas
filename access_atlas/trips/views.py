@@ -8,6 +8,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from simple_history.utils import update_change_reason
 
 from access_atlas.core.history import HistoryReasonMixin
+from access_atlas.core.mixins import ObjectFormMixin
 from access_atlas.jobs.models import JobStatus
 
 from .forms import AssignJobForm, SiteVisitForm, TripCloseoutForm, TripForm
@@ -26,7 +27,9 @@ class TripDetailView(LoginRequiredMixin, DetailView):
     template_name = "trips/trip_detail.html"
 
 
-class TripCreateView(HistoryReasonMixin, LoginRequiredMixin, CreateView):
+class TripCreateView(
+    HistoryReasonMixin, ObjectFormMixin, LoginRequiredMixin, CreateView
+):
     history_action = "Created"
     model = Trip
     form_class = TripForm
@@ -38,7 +41,9 @@ class TripCreateView(HistoryReasonMixin, LoginRequiredMixin, CreateView):
         return initial
 
 
-class TripUpdateView(HistoryReasonMixin, LoginRequiredMixin, UpdateView):
+class TripUpdateView(
+    HistoryReasonMixin, ObjectFormMixin, LoginRequiredMixin, UpdateView
+):
     model = Trip
     form_class = TripForm
     template_name = "object_form.html"
@@ -54,7 +59,12 @@ class SiteVisitDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class SiteVisitCreateView(HistoryReasonMixin, LoginRequiredMixin, CreateView):
+class SiteVisitCreateView(
+    HistoryReasonMixin,
+    ObjectFormMixin,
+    LoginRequiredMixin,
+    CreateView,
+):
     history_action = "Created"
     model = SiteVisit
     form_class = SiteVisitForm
@@ -67,8 +77,16 @@ class SiteVisitCreateView(HistoryReasonMixin, LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return self.object.trip.get_absolute_url()
 
+    def get_cancel_url(self):
+        return get_object_or_404(Trip, pk=self.kwargs["trip_pk"]).get_absolute_url()
 
-class SiteVisitUpdateView(HistoryReasonMixin, LoginRequiredMixin, UpdateView):
+
+class SiteVisitUpdateView(
+    HistoryReasonMixin,
+    ObjectFormMixin,
+    LoginRequiredMixin,
+    UpdateView,
+):
     model = SiteVisit
     form_class = SiteVisitForm
     template_name = "object_form.html"
