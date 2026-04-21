@@ -11,7 +11,10 @@
     </div>
     <div class="col-auto ms-auto">
       <div class="btn-list">
-        <a class="btn btn-outline-primary" href="{% url 'trip_update' object.pk %}">Edit</a>
+        <a class="btn btn-warning" href="{% url 'trip_update' object.pk %}">
+          <i class="ti ti-pencil" aria-hidden="true"></i>
+          Edit
+        </a>
         {% if object.is_terminal %}
           <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="This trip is already {{ object.get_status_display|lower }} and cannot be cancelled.">
             <button class="btn btn-outline-secondary disabled" type="button" disabled>Cancel trip</button>

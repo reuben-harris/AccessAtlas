@@ -16,7 +16,10 @@
       </h2>
     </div>
     <div class="col-auto ms-auto">
-      <a class="btn btn-outline-primary" href="{% url 'site_visit_update' object.pk %}">Edit</a>
+      <a class="btn btn-warning" href="{% url 'site_visit_update' object.pk %}">
+        <i class="ti ti-pencil" aria-hidden="true"></i>
+        Edit
+      </a>
     </div>
   </div>
 </div>

@@ -9,7 +9,10 @@
       <h2 class="page-title">{{ object.title }}</h2>
     </div>
     <div class="col-auto ms-auto">
-      <a class="btn btn-outline-primary" href="{% url 'job_template_update' object.pk %}">Edit</a>
+      <a class="btn btn-warning" href="{% url 'job_template_update' object.pk %}">
+        <i class="ti ti-pencil" aria-hidden="true"></i>
+        Edit
+      </a>
     </div>
   </div>
 </div>
