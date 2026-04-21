@@ -7,6 +7,8 @@ urlpatterns = [
     path("new/", views.TripCreateView.as_view(), name="trip_create"),
     path("<int:pk>/", views.TripDetailView.as_view(), name="trip_detail"),
     path("<int:pk>/edit/", views.TripUpdateView.as_view(), name="trip_update"),
+    path("<int:pk>/close/", views.close_trip_view, name="trip_close"),
+    path("<int:pk>/cancel/", views.cancel_trip_view, name="trip_cancel"),
     path(
         "<int:trip_pk>/site-visits/new/",
         views.SiteVisitCreateView.as_view(),

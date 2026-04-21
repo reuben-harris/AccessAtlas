@@ -3,7 +3,6 @@ from django import template
 register = template.Library()
 
 STATUS_BADGE_CLASSES = {
-    "blocked": "bg-red-lt",
     "cancelled": "bg-red-lt",
     "completed": "bg-green-lt",
     "draft": "bg-secondary-lt",

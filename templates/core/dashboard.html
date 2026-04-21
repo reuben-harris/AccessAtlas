@@ -37,14 +37,4 @@
     </div>
   </div>
 </div>
-{% if blocked_jobs %}
-<div class="card mt-3">
-  <div class="card-header"><h3 class="card-title">Blocked Jobs</h3></div>
-  <div class="list-group list-group-flush">
-    {% for job in blocked_jobs %}
-      <a class="list-group-item list-group-item-action" href="{{ job.get_absolute_url }}">{{ job.title }} <span class="text-secondary">{{ job.site.code }}</span></a>
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
 {% endblock %}

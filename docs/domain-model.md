@@ -389,6 +389,6 @@ These are working recommendations only. They should be reviewed before implement
 4. Start with simple statuses:
    - Trip: `draft`, `planned`, `completed`, `cancelled`.
    - Site Visit: `planned`, `skipped`, `completed`.
-   - Job: `unassigned`, `planned`, `completed`, `blocked`, `cancelled`.
+   - Job: `unassigned`, `planned`, `completed`, `cancelled`.
 5. Keep job requirements free-form in the proof of concept.
 6. Add trip approval later by extending trip statuses, for example with `planned_approved`, rather than building an approval workflow in the proof of concept.

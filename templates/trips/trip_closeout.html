@@ -1,0 +1,56 @@
+{% extends "base/base.html" %}
+
+{% block title %}Close {{ trip.name }} - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">Close {{ trip.name }}</h2>
+    </div>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">Site Visits</h3></div>
+    <div class="card-body">
+      {% for field in form.site_visit_fields %}
+        <div class="mb-3">
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+      {% empty %}
+        <p class="text-secondary mb-0">No site visits are attached to this trip.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card mt-3">
+    <div class="card-header"><h3 class="card-title">Assigned Jobs</h3></div>
+    <div class="card-body">
+      {% for group in form.job_decision_fields %}
+        <div class="mb-4">
+          <div class="fw-bold">{{ group.assignment.job }}</div>
+          <div class="text-secondary mb-2">{{ group.assignment.site_visit.site }}</div>
+          <label class="form-label" for="{{ group.outcome.id_for_label }}">Outcome</label>
+          {{ group.outcome }}
+          {% for error in group.outcome.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+          <label class="form-label mt-2" for="{{ group.reason.id_for_label }}">Cancellation reason</label>
+          {{ group.reason }}
+          {% for error in group.reason.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+      {% empty %}
+        <p class="text-secondary mb-0">No unresolved jobs are assigned to this trip.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="btn-list mt-3">
+    <button class="btn btn-success" type="submit">Close trip</button>
+    <a class="btn btn-outline-secondary" href="{{ trip.get_absolute_url }}">Back</a>
+  </div>
+</form>
+{% endblock %}

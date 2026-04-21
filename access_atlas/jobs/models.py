@@ -19,7 +19,6 @@ class JobStatus(models.TextChoices):
     UNASSIGNED = "unassigned", "Unassigned"
     PLANNED = "planned", "Planned"
     COMPLETED = "completed", "Completed"
-    BLOCKED = "blocked", "Blocked"
     CANCELLED = "cancelled", "Cancelled"
 
 
@@ -104,6 +103,7 @@ class Job(models.Model):
         choices=JobStatus.choices,
         default=JobStatus.UNASSIGNED,
     )
+    cancelled_reason = models.TextField(blank=True)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -125,11 +125,13 @@ class Job(models.Model):
         return reverse("job_detail", kwargs={"pk": self.pk})
 
     def clean(self) -> None:
-        if self.status != JobStatus.PLANNED:
-            return
-        if not self.pk or not self.is_assigned:
+        if self.status == JobStatus.PLANNED and (not self.pk or not self.is_assigned):
             raise ValidationError(
                 {"status": "A job can only be planned when assigned to a site visit."}
+            )
+        if self.status == JobStatus.CANCELLED and not self.cancelled_reason.strip():
+            raise ValidationError(
+                {"cancelled_reason": "A cancelled job requires a reason."}
             )
 
     @property

@@ -43,6 +43,7 @@ class JobForm(forms.ModelForm):
             "estimated_duration_minutes",
             "priority",
             "status",
+            "cancelled_reason",
             "notes",
         ]
 

@@ -1,0 +1,40 @@
+{% extends "base/base.html" %}
+
+{% block title %}Cancel {{ trip.name }} - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">Cancel {{ trip.name }}</h2>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    {% if summary.can_cancel %}
+      <p>This will cancel the trip and return unresolved work to the planning pool.</p>
+      <dl class="row">
+        <dt class="col-sm-4">Site visits to mark skipped</dt>
+        <dd class="col-sm-8">{{ summary.site_visits_to_skip }}</dd>
+        <dt class="col-sm-4">Jobs to return to unassigned</dt>
+        <dd class="col-sm-8">{{ summary.jobs_to_return }}</dd>
+      </dl>
+      <form method="post">
+        {% csrf_token %}
+        <button class="btn btn-danger" type="submit">Cancel trip</button>
+        <a class="btn btn-outline-secondary" href="{{ trip.get_absolute_url }}">Back</a>
+      </form>
+    {% else %}
+      <div class="alert alert-warning" role="alert">
+        This trip has site visits or jobs that have moved forward. Close the trip instead so the remaining work can be handled correctly.
+      </div>
+      <div class="btn-list">
+        <a class="btn btn-primary" href="{% url 'trip_close' trip.pk %}">Close trip</a>
+        <a class="btn btn-outline-secondary" href="{{ trip.get_absolute_url }}">Back</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
