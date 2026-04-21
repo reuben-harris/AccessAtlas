@@ -4,11 +4,17 @@
 {% block title %}Jobs - Access Atlas{% endblock %}
 
 {% block content %}
-<div class="page-header d-flex justify-content-between align-items-center">
-  <h2 class="page-title">Jobs</h2>
-  <div>
-    <a class="btn btn-outline-primary" href="{% url 'job_create_from_template' %}">From template</a>
-    <a class="btn btn-primary" href="{% url 'job_create' %}">New job</a>
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">Jobs</h2>
+    </div>
+    <div class="col-auto ms-auto">
+      <div class="btn-list">
+        <a class="btn btn-outline-primary" href="{% url 'job_create_from_template' %}">From template</a>
+        <a class="btn btn-primary" href="{% url 'job_create' %}">New job</a>
+      </div>
+    </div>
   </div>
 </div>
 <div class="card">

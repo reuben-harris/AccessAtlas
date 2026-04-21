@@ -4,9 +4,15 @@
 {% block title %}{{ object.site.code }} Visit - Access Atlas{% endblock %}
 
 {% block content %}
-<div class="page-header d-flex justify-content-between align-items-center">
-  <h2 class="page-title">{{ object.site }} <span class="text-secondary">{{ object.trip }}</span></h2>
-  <a class="btn btn-outline-primary" href="{% url 'site_visit_update' object.pk %}">Edit</a>
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">{{ object.site }} <span class="text-secondary">{{ object.trip }}</span></h2>
+    </div>
+    <div class="col-auto ms-auto">
+      <a class="btn btn-outline-primary" href="{% url 'site_visit_update' object.pk %}">Edit</a>
+    </div>
+  </div>
 </div>
 <div class="card">
   <div class="card-body">

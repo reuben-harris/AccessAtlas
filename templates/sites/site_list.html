@@ -3,12 +3,18 @@
 {% block title %}Sites - Access Atlas{% endblock %}
 
 {% block content %}
-<div class="page-header d-flex justify-content-between align-items-center">
-  <h2 class="page-title">Sites</h2>
-  <form method="post" action="{% url 'sync_sites' %}">
-    {% csrf_token %}
-    <button class="btn btn-primary" type="submit">Sync sites</button>
-  </form>
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">Sites</h2>
+    </div>
+    <div class="col-auto ms-auto">
+      <form method="post" action="{% url 'sync_sites' %}">
+        {% csrf_token %}
+        <button class="btn btn-primary" type="submit">Sync sites</button>
+      </form>
+    </div>
+  </div>
 </div>
 <div class="card">
   <div class="table-responsive">
