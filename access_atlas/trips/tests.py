@@ -210,6 +210,54 @@ def test_invalid_trip_date_edit_shows_error_summary_and_stable_cancel(client):
     assert f'href="{trip.get_absolute_url()}"'.encode() in response.content
 
 
+@pytest.mark.django_db
+def test_invalid_trip_date_create_shows_error_summary(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.post(
+        reverse("trip_create"),
+        {
+            "name": "Trip",
+            "start_date": "2026-04-23",
+            "end_date": "2026-04-22",
+            "trip_leader": user.pk,
+            "team_members": [],
+            "status": TripStatus.DRAFT,
+            "notes": "",
+        },
+    )
+
+    assert response.status_code == 200
+    assert b"Unable to save changes" in response.content
+    assert b"End date must be on or after the start date." in response.content
+    assert not Trip.objects.filter(name="Trip").exists()
+
+
+@pytest.mark.django_db
+def test_trip_create_with_missing_date_shows_field_error(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.post(
+        reverse("trip_create"),
+        {
+            "name": "Trip",
+            "start_date": "",
+            "end_date": "2026-04-22",
+            "trip_leader": user.pk,
+            "team_members": [],
+            "status": TripStatus.DRAFT,
+            "notes": "",
+        },
+    )
+
+    assert response.status_code == 200
+    assert b"Unable to save changes" in response.content
+    assert b"Start date: This field is required." in response.content
+    assert not Trip.objects.filter(name="Trip").exists()
+
+
 def test_trip_form_only_offers_draft_and_planned_statuses():
     form = TripForm()
 

@@ -62,7 +62,7 @@ class Trip(models.Model):
         return self.status in {TripStatus.COMPLETED, TripStatus.CANCELLED}
 
     def clean(self) -> None:
-        if self.end_date < self.start_date:
+        if self.start_date and self.end_date and self.end_date < self.start_date:
             raise ValidationError(
                 {"end_date": "End date must be on or after the start date."}
             )
