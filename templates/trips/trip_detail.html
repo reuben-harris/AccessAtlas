@@ -59,5 +59,26 @@
     </table>
   </div>
 </div>
+<div class="card mt-3">
+  <div class="card-header"><h3 class="card-title">Jobs</h3></div>
+  <div class="table-responsive">
+    <table class="table table-vcenter">
+      <thead><tr><th>Job</th><th>Site Visit</th><th>Status</th><th>Priority</th><th>Estimate</th></tr></thead>
+      <tbody>
+        {% for assignment in job_assignments %}
+          <tr>
+            <td><a href="{{ assignment.job.get_absolute_url }}">{{ assignment.job.title }}</a></td>
+            <td><a href="{{ assignment.site_visit.get_absolute_url }}">{{ assignment.site_visit.site }}</a></td>
+            <td><span class="badge {{ assignment.job.status|status_badge_class }}">{{ assignment.job.get_status_display }}</span></td>
+            <td>{{ assignment.job.get_priority_display }}</td>
+            <td>{{ assignment.job.estimated_duration_minutes|default:"-" }} min</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-secondary">No jobs assigned to this trip.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% include "base/history.html" with object=object %}
 {% endblock %}

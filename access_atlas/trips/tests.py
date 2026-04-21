@@ -216,6 +216,40 @@ def test_trip_form_only_offers_draft_and_planned_statuses():
 
 
 @pytest.mark.django_db
+def test_trip_detail_shows_assigned_jobs(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(
+        site=site,
+        title="Replace access panel",
+        estimated_duration_minutes=45,
+    )
+    SiteVisitJob.objects.create(site_visit=site_visit, job=job)
+    client.force_login(user)
+
+    response = client.get(reverse("trip_detail", kwargs={"pk": trip.pk}))
+
+    assert response.status_code == 200
+    assert b"Jobs" in response.content
+    assert b"Replace access panel" in response.content
+    assert b"45 min" in response.content
+
+
+@pytest.mark.django_db
 def test_cancel_trip_returns_planned_jobs_and_skips_site_visits(client):
     user = User.objects.create_user(email="user@example.com")
     site = Site.objects.create(

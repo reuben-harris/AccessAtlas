@@ -26,6 +26,19 @@ class TripDetailView(LoginRequiredMixin, DetailView):
     model = Trip
     template_name = "trips/trip_detail.html"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["job_assignments"] = (
+            SiteVisitJob.objects.filter(site_visit__trip=self.object)
+            .select_related("site_visit__site", "job")
+            .order_by(
+                "site_visit__planned_order",
+                "site_visit__site__code",
+                "job__title",
+            )
+        )
+        return context
+
 
 class TripCreateView(
     HistoryReasonMixin, ObjectFormMixin, LoginRequiredMixin, CreateView
