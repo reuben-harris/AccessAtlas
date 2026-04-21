@@ -294,6 +294,24 @@ def test_requirement_delete_removes_requirement_and_returns_to_job(client):
 
 
 @pytest.mark.django_db
+def test_requirement_delete_confirmation_names_requirement_and_job(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    requirement = Requirement.objects.create(job=job, name="Cable")
+
+    response = client.get(reverse("requirement_delete", args=[requirement.pk]))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Delete job requirement" in content
+    assert "delete" in content
+    assert "Cable" in content
+    assert "Inspect cabinet" in content
+
+
+@pytest.mark.django_db
 def test_template_requirement_delete_removes_requirement_and_returns_to_template(
     client,
 ):
@@ -311,3 +329,24 @@ def test_template_requirement_delete_removes_requirement_and_returns_to_template
     assert response.status_code == 302
     assert response.url == template.get_absolute_url()
     assert not TemplateRequirement.objects.filter(pk=requirement.pk).exists()
+
+
+@pytest.mark.django_db
+def test_template_requirement_delete_confirmation_names_requirement_and_template(
+    client,
+):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    template = JobTemplate.objects.create(title="Replace sensor")
+    requirement = TemplateRequirement.objects.create(
+        job_template=template, name="Cable"
+    )
+
+    response = client.get(reverse("template_requirement_delete", args=[requirement.pk]))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Delete job template requirement" in content
+    assert "delete" in content
+    assert "Cable" in content
+    assert "Replace sensor" in content

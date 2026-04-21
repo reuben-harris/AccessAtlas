@@ -122,6 +122,15 @@ class TemplateRequirementDeleteView(LoginRequiredMixin, DeleteView):
     model = TemplateRequirement
     template_name = "object_confirm_delete.html"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["delete_title"] = "Delete job template requirement"
+        context["delete_message"] = (
+            f'Are you sure you want to delete "{self.object.name}" from '
+            f'"{self.object.job_template}"?'
+        )
+        return context
+
     def get_success_url(self):
         return self.object.job_template.get_absolute_url()
 
@@ -359,6 +368,15 @@ class RequirementUpdateView(
 class RequirementDeleteView(LoginRequiredMixin, DeleteView):
     model = Requirement
     template_name = "object_confirm_delete.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["delete_title"] = "Delete job requirement"
+        context["delete_message"] = (
+            f'Are you sure you want to delete "{self.object.name}" from '
+            f'"{self.object.job}"?'
+        )
+        return context
 
     def get_success_url(self):
         return self.object.job.get_absolute_url()
