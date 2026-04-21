@@ -4,19 +4,12 @@
 
 .brand-mark {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 2rem;
   height: 2rem;
   color: #fff;
-}
-
-.brand-mark svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  font-size: 1.75rem;
 }
 
 .page-title {

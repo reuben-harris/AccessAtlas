@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Access Atlas{% endblock %}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.1/dist/tabler-icons.min.css">
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
     <script src="https://unpkg.com/htmx.org@2.0.8" defer></script>
     <script src="{% static 'js/theme.js' %}" defer></script>
@@ -17,10 +18,7 @@
         <div class="container-fluid">
           <h1 class="navbar-brand navbar-brand-autodark d-flex align-items-center gap-2">
             <a class="brand-mark" href="{% url 'dashboard' %}" aria-label="Access Atlas">
-              <svg viewBox="0 0 64 64" role="img" aria-hidden="true">
-                <path d="M32 6c5 0 9 4 9 9 0 3-1 5-3 7l5 10 9 5-3 6-9-4-4 19h-8l-4-19-9 4-3-6 9-5 5-10c-2-2-3-4-3-7 0-5 4-9 9-9z"/>
-                <path d="M22 58h20"/>
-              </svg>
+              <i class="ti ti-map-2" aria-hidden="true"></i>
             </a>
             <a href="{% url 'dashboard' %}">Access Atlas</a>
           </h1>
@@ -48,7 +46,9 @@
             </div>
           </form>
           <div class="navbar-nav flex-row order-md-last ms-3">
-            <button class="btn btn-outline-secondary me-2" type="button" data-theme-toggle>Theme</button>
+            <button class="btn btn-icon btn-outline-secondary me-2" type="button" data-theme-toggle aria-label="Switch to dark theme" title="Switch to dark theme">
+              <i class="ti ti-bulb" aria-hidden="true"></i>
+            </button>
             {% if request.user.is_authenticated %}
               <form action="{% url 'logout' %}" method="post">
                 {% csrf_token %}

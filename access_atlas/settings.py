@@ -7,8 +7,22 @@ import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+def load_env_file(path: Path) -> None:
+    if not path.exists():
+        return
+    for line in path.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
+
+
+load_env_file(BASE_DIR / ".env")
+
 SECRET_KEY = os.getenv("SECRET_KEY", "insecure-dev-secret-key")
-DEBUG = os.getenv("DEBUG", "false").lower() in {"1", "true", "yes", "on"}
+DEBUG = os.getenv("DEBUG", "true").lower() in {"1", "true", "yes", "on"}
 ALLOWED_HOSTS = [
     host.strip()
     for host in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
@@ -79,7 +93,7 @@ TIME_ZONE = os.getenv("TIME_ZONE", "Pacific/Auckland")
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 

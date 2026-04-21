@@ -36,6 +36,8 @@ def test_dashboard_renders(logged_in_client):
 
     assert response.status_code == 200
     assert b"Dashboard" in response.content
+    assert b'href="/static/css/app.css"' in response.content
+    assert b'src="/static/js/theme.js"' in response.content
 
 
 @pytest.mark.django_db
