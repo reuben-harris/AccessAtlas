@@ -98,3 +98,23 @@ form p textarea {
   color: var(--tblr-body-color);
   background-color: var(--tblr-bg-forms);
 }
+
+.form-control.is-invalid,
+input[type="date"].form-control.is-invalid,
+input[type="datetime-local"].form-control.is-invalid,
+input[type="time"].form-control.is-invalid {
+  padding-right: .75rem;
+  background-image: none !important;
+}
+
+.form-select.is-invalid:not([multiple]):not([size]) {
+  padding-right: 2.25rem;
+  background-image: var(--tblr-form-select-bg-img, var(--bs-form-select-bg-img)) !important;
+  background-position: right .75rem center;
+  background-size: 16px 12px;
+}
+
+.object-form-errors {
+  display: block;
+  text-align: left;
+}
