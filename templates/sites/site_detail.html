@@ -4,12 +4,14 @@
 
 {% block content %}
 <div class="page-header">
-  <h2 class="page-title">{{ object.code }} <span class="text-secondary">{{ object.name }}</span></h2>
+  <h2 class="page-title">{{ object.name }}</h2>
 </div>
 <div class="card">
   <div class="card-body">
     <dl class="row">
       <dt class="col-sm-3">Source</dt><dd class="col-sm-9">{{ object.source_name }}</dd>
+      <dt class="col-sm-3">Site Code</dt><dd class="col-sm-9">{{ object.code }}</dd>
+      <dt class="col-sm-3">Site Name</dt><dd class="col-sm-9">{{ object.name }}</dd>
       <dt class="col-sm-3">External ID</dt><dd class="col-sm-9">{{ object.external_id }}</dd>
       <dt class="col-sm-3">Latitude</dt><dd class="col-sm-9">{{ object.latitude }}</dd>
       <dt class="col-sm-3">Longitude</dt><dd class="col-sm-9">{{ object.longitude }}</dd>
