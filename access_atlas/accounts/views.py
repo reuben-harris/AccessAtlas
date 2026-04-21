@@ -1,9 +1,15 @@
+import json
+
 from django.contrib.auth import login, logout
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
 
 from .forms import EmailLoginForm
 from .models import User
+from .preferences import set_user_preference
 
 
 @require_http_methods(["GET", "POST"])
@@ -34,3 +40,24 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect("login")
+
+
+@login_required
+@require_POST
+def preference_view(request):
+    try:
+        payload = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON payload."}, status=400)
+
+    key = payload.get("key")
+    value = payload.get("value")
+    if not isinstance(key, str):
+        return JsonResponse({"error": "Preference key is required."}, status=400)
+
+    try:
+        preference = set_user_preference(request.user, key, value)
+    except ValidationError as error:
+        return JsonResponse({"error": error.messages[0]}, status=400)
+
+    return JsonResponse({"key": preference.key, "value": preference.value})

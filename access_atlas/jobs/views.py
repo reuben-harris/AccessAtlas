@@ -5,6 +5,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
+from access_atlas.accounts.preferences import (
+    JOBS_MAP_PREFERENCE_KEY,
+    default_jobs_map_preference,
+    get_user_preference,
+)
 from access_atlas.core.history import HistoryReasonMixin
 from access_atlas.core.mixins import ObjectFormMixin
 from access_atlas.sites.models import Site
@@ -109,6 +114,12 @@ class JobMapView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        map_preference = get_user_preference(
+            self.request.user,
+            JOBS_MAP_PREFERENCE_KEY,
+            default_jobs_map_preference(),
+        )
+        visible_statuses = set(map_preference.get("visible_statuses", []))
         sites = {}
         for job in context["object_list"]:
             site = job.site
@@ -141,30 +152,34 @@ class JobMapView(LoginRequiredMixin, ListView):
                 "label": JobStatus.UNASSIGNED.label,
                 "color": "#667382",
                 "rank": 20,
-                "visible": True,
+                "visible": JobStatus.UNASSIGNED in visible_statuses,
             },
             {
                 "value": JobStatus.PLANNED,
                 "label": JobStatus.PLANNED.label,
                 "color": "#206bc4",
                 "rank": 30,
-                "visible": True,
+                "visible": JobStatus.PLANNED in visible_statuses,
             },
             {
                 "value": JobStatus.COMPLETED,
                 "label": JobStatus.COMPLETED.label,
                 "color": "#2fb344",
                 "rank": 10,
-                "visible": False,
+                "visible": JobStatus.COMPLETED in visible_statuses,
             },
             {
                 "value": JobStatus.CANCELLED,
                 "label": JobStatus.CANCELLED.label,
                 "color": "#d63939",
                 "rank": 40,
-                "visible": False,
+                "visible": JobStatus.CANCELLED in visible_statuses,
             },
         ]
+        context["map_preference"] = {
+            "key": JOBS_MAP_PREFERENCE_KEY,
+            "value": map_preference,
+        }
         context["map_tile_layer"] = {
             "light": {
                 "url": settings.MAP_TILE_URL,

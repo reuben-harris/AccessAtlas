@@ -24,7 +24,12 @@
 
 {% include "jobs/_job_view_toolbar.html" with active_job_view="map" %}
 
-<div id="job-map-status-controls" class="job-map-toolbar" aria-label="Job status map filters"></div>
+<div
+  id="job-map-status-controls"
+  class="job-map-toolbar"
+  data-preference-url="{% url 'account_preference' %}"
+  aria-label="Job status map filters"
+></div>
 
 <div class="card job-map-card">
   <div class="card-body p-0">
@@ -34,6 +39,7 @@
 
 {{ map_sites|json_script:"job-map-data" }}
 {{ map_status_layers|json_script:"job-map-status-layers" }}
+{{ map_preference|json_script:"job-map-preference" }}
 {{ map_tile_layer|json_script:"job-map-tile-layer" }}
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="{% static 'js/job_map.js' %}"></script>

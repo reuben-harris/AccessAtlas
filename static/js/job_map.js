@@ -9,6 +9,7 @@
   const dataElement = document.getElementById("job-map-data");
   const statusControlsElement = document.getElementById("job-map-status-controls");
   const statusLayersElement = document.getElementById("job-map-status-layers");
+  const preferenceElement = document.getElementById("job-map-preference");
   const tileLayerElement = document.getElementById("job-map-tile-layer");
 
   if (
@@ -16,6 +17,7 @@
     !dataElement ||
     !statusControlsElement ||
     !statusLayersElement ||
+    !preferenceElement ||
     !tileLayerElement ||
     typeof L === "undefined"
   ) {
@@ -24,7 +26,9 @@
 
   const sites = JSON.parse(dataElement.textContent);
   const statusLayers = JSON.parse(statusLayersElement.textContent);
+  const preference = JSON.parse(preferenceElement.textContent);
   const tileLayer = JSON.parse(tileLayerElement.textContent);
+  const savedPreference = preference.value || {};
   const statusByValue = new Map(
     statusLayers.map((statusLayer) => [statusLayer.value, statusLayer])
   );
@@ -37,6 +41,54 @@
   const map = L.map(mapElement).setView([-41.2865, 174.7762], 5);
   const markerLayer = L.layerGroup().addTo(map);
   let activeTileLayer = null;
+  let viewportSaveTimeout = null;
+  let homeMarkers = [];
+
+  function getCookie(name) {
+    const cookie = document.cookie
+      .split(";")
+      .map((item) => item.trim())
+      .find((item) => item.startsWith(`${name}=`));
+    return cookie ? decodeURIComponent(cookie.slice(name.length + 1)) : "";
+  }
+
+  function currentViewport() {
+    const center = map.getCenter();
+    return {
+      lat: center.lat,
+      lng: center.lng,
+      zoom: map.getZoom(),
+    };
+  }
+
+  function savePreference() {
+    const url = statusControlsElement.dataset.preferenceUrl;
+
+    if (!url) {
+      return;
+    }
+
+    fetch(url, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCookie("csrftoken"),
+      },
+      body: JSON.stringify({
+        key: preference.key,
+        value: {
+          visible_statuses: Array.from(visibleStatuses),
+          viewport: currentViewport(),
+        },
+      }),
+    }).catch(() => {});
+  }
+
+  function queueViewportSave() {
+    window.clearTimeout(viewportSaveTimeout);
+    viewportSaveTimeout = window.setTimeout(savePreference, 500);
+  }
 
   function currentTheme() {
     return document.documentElement.getAttribute("data-bs-theme") === "dark"
@@ -134,6 +186,8 @@
     if (markers.length > 0) {
       const group = L.featureGroup(markers);
       map.fitBounds(group.getBounds().pad(0.2));
+    } else {
+      map.setView([-41.2865, 174.7762], 5);
     }
   }
 
@@ -162,15 +216,55 @@
           updateStatusButton(button, true);
         }
         drawMarkers();
+        savePreference();
       });
 
       statusControlsElement.appendChild(button);
     });
   }
 
+  const HomeControl = L.Control.extend({
+    onAdd() {
+      const container = L.DomUtil.create("div", "leaflet-bar job-map-home-control");
+      const button = L.DomUtil.create("button", "", container);
+      button.type = "button";
+      button.title = "Reset map view";
+      button.setAttribute("aria-label", "Reset map view");
+      button.innerHTML = '<i class="ti ti-home" aria-hidden="true"></i>';
+
+      L.DomEvent.disableClickPropagation(container);
+      L.DomEvent.on(button, "click", () => {
+        fitMarkers(homeMarkers);
+        savePreference();
+      });
+
+      return container;
+    },
+  });
+
+  function addHomeControl() {
+    map.addControl(new HomeControl({ position: "topleft" }));
+  }
+
   buildStatusControls();
+  addHomeControl();
   applyTileLayer();
-  fitMarkers(drawMarkers());
+  homeMarkers = drawMarkers();
+  if (
+    savedPreference.viewport &&
+    Number.isFinite(Number(savedPreference.viewport.lat)) &&
+    Number.isFinite(Number(savedPreference.viewport.lng)) &&
+    Number.isInteger(savedPreference.viewport.zoom)
+  ) {
+    map.setView(
+      [Number(savedPreference.viewport.lat), Number(savedPreference.viewport.lng)],
+      savedPreference.viewport.zoom
+    );
+  } else {
+    fitMarkers(homeMarkers);
+  }
+
+  map.on("moveend zoomend", queueViewportSave);
 
   new MutationObserver((mutations) => {
     if (mutations.some((mutation) => mutation.attributeName === "data-bs-theme")) {

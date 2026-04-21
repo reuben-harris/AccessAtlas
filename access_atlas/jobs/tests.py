@@ -3,6 +3,10 @@ from django.core.exceptions import ValidationError
 from django.urls import reverse
 
 from access_atlas.accounts.models import User
+from access_atlas.accounts.preferences import (
+    JOBS_MAP_PREFERENCE_KEY,
+    set_user_preference,
+)
 from access_atlas.jobs.forms import JobForm, JobFromTemplateForm
 from access_atlas.jobs.models import Job, JobStatus, JobTemplate, TemplateRequirement
 from access_atlas.jobs.services import create_job_from_template
@@ -184,3 +188,31 @@ def test_job_map_includes_jobs_and_status_layers(client):
     assert "job-map-status-layers" in content
     assert '"visible": true' in content
     assert '"visible": false' in content
+
+
+@pytest.mark.django_db
+def test_job_map_uses_saved_status_preference(client):
+    user = User.objects.create_user(email="user@example.com")
+    set_user_preference(
+        user,
+        JOBS_MAP_PREFERENCE_KEY,
+        {
+            "visible_statuses": [JobStatus.COMPLETED],
+            "viewport": {"lat": -41.2, "lng": 174.7, "zoom": 8},
+        },
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("job_map"))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert (
+        '"value": "completed", "label": "Completed", "color": "#2fb344", '
+        '"rank": 10, "visible": true'
+    ) in content
+    assert (
+        '"value": "planned", "label": "Planned", "color": "#206bc4", '
+        '"rank": 30, "visible": false'
+    ) in content
+    assert '"viewport": {"lat": -41.2, "lng": 174.7, "zoom": 8}' in content

@@ -69,3 +69,26 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self) -> str:
         return self.display_name or self.email
+
+
+class UserPreference(models.Model):
+    user = models.ForeignKey(
+        User,
+        related_name="preferences",
+        on_delete=models.CASCADE,
+    )
+    key = models.CharField(max_length=120)
+    value = models.JSONField(default=dict)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["key"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "key"],
+                name="unique_user_preference",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user}: {self.key}"
