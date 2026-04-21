@@ -62,7 +62,9 @@ class Trip(models.Model):
 
     def clean(self) -> None:
         if self.end_date < self.start_date:
-            raise ValidationError({"end_date": "End date cannot be before start date."})
+            raise ValidationError(
+                {"end_date": "End date must be on or after the start date."}
+            )
 
 
 class SiteVisit(models.Model):

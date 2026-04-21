@@ -174,6 +174,39 @@ def test_simple_trip_edit_records_history_reason(client):
     assert trip.history.first().history_change_reason == "Updated trip"
 
 
+@pytest.mark.django_db
+def test_invalid_trip_date_edit_shows_error_summary_and_stable_cancel(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    client.force_login(user)
+
+    response = client.post(
+        reverse("trip_update", kwargs={"pk": trip.pk}),
+        {
+            "name": "Trip",
+            "start_date": "2026-04-23",
+            "end_date": "2026-04-22",
+            "trip_leader": user.pk,
+            "team_members": [],
+            "status": TripStatus.DRAFT,
+            "notes": "",
+        },
+    )
+
+    assert response.status_code == 200
+    assert b"Unable to save changes" in response.content
+    assert b"Review the highlighted fields and try again." in response.content
+    assert b"End date must be on or after the start date." in response.content
+    assert b'name="end_date"' in response.content
+    assert b"is-invalid" in response.content
+    assert f'href="{trip.get_absolute_url()}"'.encode() in response.content
+
+
 def test_trip_form_only_offers_draft_and_planned_statuses():
     form = TripForm()
 

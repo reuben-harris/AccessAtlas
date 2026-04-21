@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load form_extras %}
 
 {% block title %}{{ form_title|default:"Edit" }} - Access Atlas{% endblock %}
 
@@ -14,9 +15,40 @@
   <div class="card-body">
     <form method="post">
       {% csrf_token %}
-      {{ form.as_p }}
-      <button class="btn btn-primary" type="submit">Save</button>
-      <a class="btn btn-outline-secondary" href="{{ cancel_url|default:'/' }}">Cancel</a>
+      {% for field in form %}
+        {% if field|field_widget_type == "CheckboxInput" %}
+          <div class="form-check mb-3">
+            {{ field|render_form_field }}
+            <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {% if field.help_text %}<div class="form-hint">{{ field.help_text }}</div>{% endif %}
+            {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+          </div>
+        {% else %}
+          <div class="mb-3">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field|render_form_field }}
+            {% if field.help_text %}<div class="form-hint">{{ field.help_text }}</div>{% endif %}
+            {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+          </div>
+        {% endif %}
+      {% endfor %}
+
+      {% if form.errors %}
+        <div class="alert alert-danger" role="alert">
+          <h4 class="alert-title">Unable to save changes</h4>
+          <div>Review the highlighted fields and try again.</div>
+          {% if form.non_field_errors %}
+            <ul class="mb-0 mt-2">
+              {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <div class="btn-list">
+        <button class="btn btn-primary" type="submit">Save</button>
+        <a class="btn btn-outline-secondary" href="{{ cancel_url|default:'/' }}">Cancel</a>
+      </div>
     </form>
   </div>
 </div>
