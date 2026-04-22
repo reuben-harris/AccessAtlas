@@ -185,6 +185,14 @@ input[type="time"].form-control.is-invalid {
   line-height: 1;
 }
 
+.user-menu-button {
+  padding: .125rem;
+}
+
+.user-menu-button::after {
+  display: none;
+}
+
 .row-actions {
   width: 1%;
   white-space: nowrap;

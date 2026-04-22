@@ -129,10 +129,22 @@
               </div>
             </div>
             {% if request.user.is_authenticated %}
-              <form action="{% url 'logout' %}" method="post">
-                {% csrf_token %}
-                <button class="btn btn-outline-secondary" type="submit">{{ request.user }}</button>
-              </form>
+              <div class="dropdown">
+                <button class="btn btn-outline-secondary user-menu-button" type="button" data-bs-toggle="dropdown" aria-label="User menu" title="User menu">
+                  {% include "includes/user_avatar.html" with user=request.user %}
+                </button>
+                <div class="dropdown-menu dropdown-menu-end">
+                  <div class="dropdown-header">
+                    <div class="fw-semibold">{{ request.user }}</div>
+                    <div class="text-secondary">{{ request.user.email }}</div>
+                  </div>
+                  <div class="dropdown-divider"></div>
+                  <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <button class="dropdown-item" type="submit">Log out</button>
+                  </form>
+                </div>
+              </div>
             {% endif %}
           </div>
         </div>
