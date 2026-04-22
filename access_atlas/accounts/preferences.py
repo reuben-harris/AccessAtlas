@@ -9,14 +9,20 @@ from access_atlas.jobs.models import JobStatus
 from .models import User, UserPreference
 
 JOBS_MAP_PREFERENCE_KEY = "jobs.map"
+UI_THEME_PREFERENCE_KEY = "ui.theme"
 MAX_PREFERENCE_KEY_LENGTH = 120
 
-ALLOWED_PREFERENCE_KEYS = {JOBS_MAP_PREFERENCE_KEY}
+ALLOWED_PREFERENCE_KEYS = {JOBS_MAP_PREFERENCE_KEY, UI_THEME_PREFERENCE_KEY}
 ALLOWED_JOB_STATUSES = set(JobStatus.values)
+ALLOWED_THEME_MODES = {"system", "light", "dark"}
 
 
 def default_jobs_map_preference() -> dict[str, Any]:
     return {"visible_statuses": [JobStatus.UNASSIGNED, JobStatus.PLANNED]}
+
+
+def default_theme_preference() -> dict[str, Any]:
+    return {"mode": "system"}
 
 
 def validate_preference(key: str, value: object) -> dict[str, Any]:
@@ -57,6 +63,12 @@ def validate_preference(key: str, value: object) -> dict[str, Any]:
             }
 
         return cleaned_value
+
+    if key == UI_THEME_PREFERENCE_KEY:
+        mode = value.get("mode")
+        if not isinstance(mode, str) or mode not in ALLOWED_THEME_MODES:
+            raise ValidationError("mode must be system, light, or dark.")
+        return {"mode": mode}
 
     raise ValidationError("Unknown preference key.")
 
