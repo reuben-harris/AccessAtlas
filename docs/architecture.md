@@ -117,7 +117,15 @@ access_atlas/
 
 Use a minimal custom user model from the start, even if the proof of concept uses Django's built-in login screens initially. This keeps the project ready for Microsoft organization SSO later and avoids changing Django's user model after migrations exist.
 
-For the proof of concept, users should identify themselves by email without password authentication. The app is intended to be hosted internally while the workflow is being tested. Logged-in users can do everything in the application. Microsoft organization SSO can replace the proof-of-concept login later.
+For the proof of concept, users can identify themselves by email without password authentication. The app is intended to be hosted internally while the workflow is being tested. Logged-in users can do everything in the application.
+
+Authentication is now structured around explicit modes:
+
+- `local`: passwordless email login only. This is the development default.
+- `oidc`: OpenID Connect single sign-on only.
+- `local-oidc`: both login methods are shown, useful while testing a provider.
+
+OIDC is wired through `django-allauth` and configured from environment variables. The first production SSO target should use OpenID Connect if possible, because Microsoft Entra ID and AWS Cognito both fit that pattern. SAML remains a later compatibility option if a specific environment requires it.
 
 The proof of concept should include object history/auditing in the NetBox style: users should be able to see what changed, when it changed, and which logged-in user made the change. Use `django-simple-history` for this unless a concrete incompatibility appears.
 

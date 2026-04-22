@@ -6,6 +6,10 @@ from pathlib import Path
 import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+AUTH_MODE_LOCAL = "local"
+AUTH_MODE_OIDC = "oidc"
+AUTH_MODE_LOCAL_OIDC = "local-oidc"
+AUTH_MODE_CHOICES = {AUTH_MODE_LOCAL, AUTH_MODE_OIDC, AUTH_MODE_LOCAL_OIDC}
 
 
 def load_env_file(path: Path) -> None:
@@ -28,6 +32,41 @@ ALLOWED_HOSTS = [
     for host in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
     if host.strip()
 ]
+AUTH_MODE = os.getenv("AUTH_MODE", AUTH_MODE_LOCAL).lower()
+if AUTH_MODE not in AUTH_MODE_CHOICES:
+    msg = (
+        "AUTH_MODE must be one of "
+        f"{', '.join(sorted(AUTH_MODE_CHOICES))}; got {AUTH_MODE!r}."
+    )
+    raise ValueError(msg)
+LOCAL_LOGIN_ENABLED = AUTH_MODE in {AUTH_MODE_LOCAL, AUTH_MODE_LOCAL_OIDC}
+OIDC_LOGIN_ENABLED = AUTH_MODE in {AUTH_MODE_OIDC, AUTH_MODE_LOCAL_OIDC}
+OIDC_PROVIDER_ID = os.getenv("OIDC_PROVIDER_ID", "access-atlas")
+OIDC_PROVIDER_NAME = os.getenv("OIDC_PROVIDER_NAME", "Single Sign-On")
+OIDC_SERVER_URL = os.getenv("OIDC_SERVER_URL", "")
+OIDC_CLIENT_ID = os.getenv("OIDC_CLIENT_ID", "")
+OIDC_CLIENT_SECRET = os.getenv("OIDC_CLIENT_SECRET", "")
+OIDC_TOKEN_AUTH_METHOD = os.getenv("OIDC_TOKEN_AUTH_METHOD", "")
+OIDC_FETCH_USERINFO = os.getenv("OIDC_FETCH_USERINFO", "true").lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+OIDC_PKCE_ENABLED = os.getenv("OIDC_PKCE_ENABLED", "true").lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+if OIDC_LOGIN_ENABLED and not all(
+    [OIDC_SERVER_URL, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET]
+):
+    msg = (
+        "AUTH_MODE enables OIDC, so OIDC_SERVER_URL, OIDC_CLIENT_ID, "
+        "and OIDC_CLIENT_SECRET must be set."
+    )
+    raise ValueError(msg)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -36,6 +75,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.openid_connect",
     "simple_history",
     "access_atlas.accounts.apps.AccountsConfig",
     "access_atlas.core.apps.CoreConfig",
@@ -50,6 +93,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -84,10 +128,44 @@ DATABASES = {
 }
 
 AUTH_USER_MODEL = "accounts.User"
-AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "login"
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*"]
+ACCOUNT_EMAIL_VERIFICATION = "none"
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
+SOCIALACCOUNT_EMAIL_REQUIRED = True
+SOCIALACCOUNT_LOGIN_ON_GET = False
+SOCIALACCOUNT_PROVIDERS = {}
+if OIDC_LOGIN_ENABLED:
+    oidc_app_settings = {
+        "server_url": OIDC_SERVER_URL,
+        "fetch_userinfo": OIDC_FETCH_USERINFO,
+        "oauth_pkce_enabled": OIDC_PKCE_ENABLED,
+    }
+    if OIDC_TOKEN_AUTH_METHOD:
+        oidc_app_settings["token_auth_method"] = OIDC_TOKEN_AUTH_METHOD
+    SOCIALACCOUNT_PROVIDERS = {
+        "openid_connect": {
+            "OAUTH_PKCE_ENABLED": OIDC_PKCE_ENABLED,
+            "APPS": [
+                {
+                    "provider_id": OIDC_PROVIDER_ID,
+                    "name": OIDC_PROVIDER_NAME,
+                    "client_id": OIDC_CLIENT_ID,
+                    "secret": OIDC_CLIENT_SECRET,
+                    "settings": oidc_app_settings,
+                }
+            ],
+        }
+    }
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = os.getenv("TIME_ZONE", "Pacific/Auckland")

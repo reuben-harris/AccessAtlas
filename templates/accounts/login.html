@@ -29,13 +29,35 @@
           <div class="card-body p-4">
             <div class="mb-4">
               <h1 class="h2 mb-2">Access Atlas</h1>
-              <p class="text-secondary mb-0">Proof-of-concept internal login. Enter your email to continue.</p>
+              <p class="text-secondary mb-0">Sign in to continue planning field work.</p>
             </div>
-            <form method="post">
-              {% csrf_token %}
-              {{ form.as_p }}
-              <button class="btn btn-primary w-100" type="submit">Continue</button>
-            </form>
+            {% if oidc_login_enabled and oidc_login_url %}
+              <form method="post" action="{{ oidc_login_url }}" class="mb-3">
+                {% csrf_token %}
+                <button class="btn btn-primary w-100" type="submit">Continue with {{ oidc_provider_name }}</button>
+              </form>
+            {% endif %}
+            {% if local_login_enabled and oidc_login_enabled %}
+              <div class="hr-text my-3">or</div>
+            {% endif %}
+            {% if local_login_enabled %}
+              <form method="post">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                  <div class="alert alert-danger">
+                    {{ form.non_field_errors }}
+                  </div>
+                {% endif %}
+                {{ form.as_p }}
+                <button class="btn btn-primary w-100" type="submit">Continue with email</button>
+              </form>
+            {% elif form.non_field_errors %}
+              <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+              </div>
+            {% elif not oidc_login_enabled %}
+              <div class="alert alert-warning mb-0">No login method is configured.</div>
+            {% endif %}
           </div>
         </div>
       </div>

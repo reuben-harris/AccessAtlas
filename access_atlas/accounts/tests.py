@@ -1,4 +1,5 @@
 import pytest
+from django.test import override_settings
 from django.urls import reverse
 
 from access_atlas.accounts.models import User, UserPreference
@@ -21,6 +22,52 @@ def test_passwordless_login_creates_user(client):
     assert user.display_name == "User Example"
     assert not user.has_usable_password()
     assert user.avatar_seed
+
+
+@pytest.mark.django_db
+@override_settings(
+    LOCAL_LOGIN_ENABLED=False,
+    OIDC_LOGIN_ENABLED=True,
+    OIDC_PROVIDER_ID="work",
+    OIDC_PROVIDER_NAME="Work SSO",
+)
+def test_login_page_shows_oidc_when_enabled(client):
+    response = client.get(reverse("login"))
+
+    assert response.status_code == 200
+    assert b"Continue with Work SSO" in response.content
+    assert b"/accounts/sso/oidc/work/login/" in response.content
+    assert b"Continue with email" not in response.content
+
+
+@pytest.mark.django_db
+@override_settings(
+    LOCAL_LOGIN_ENABLED=False,
+    OIDC_LOGIN_ENABLED=True,
+    OIDC_PROVIDER_ID="work",
+    OIDC_PROVIDER_NAME="Work SSO",
+)
+def test_passwordless_login_is_blocked_when_local_login_is_disabled(client):
+    response = client.post(reverse("login"), {"email": "user@example.com"})
+
+    assert response.status_code == 200
+    assert b"Local email login is disabled." in response.content
+    assert not User.objects.filter(email="user@example.com").exists()
+
+
+@pytest.mark.django_db
+@override_settings(
+    LOCAL_LOGIN_ENABLED=True,
+    OIDC_LOGIN_ENABLED=True,
+    OIDC_PROVIDER_ID="work",
+    OIDC_PROVIDER_NAME="Work SSO",
+)
+def test_login_page_can_show_local_and_oidc_together(client):
+    response = client.get(reverse("login"))
+
+    assert response.status_code == 200
+    assert b"Continue with Work SSO" in response.content
+    assert b"Continue with email" in response.content
 
 
 @pytest.mark.django_db

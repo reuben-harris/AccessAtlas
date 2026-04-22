@@ -97,6 +97,23 @@ http://127.0.0.1:8000/
 
 The proof-of-concept login is passwordless and internal. Enter an email address to create/sign in as that user.
 
+Authentication defaults to local email login for development. OIDC single sign-on can be enabled with environment variables:
+
+```text
+AUTH_MODE=oidc
+OIDC_PROVIDER_ID=access-atlas
+OIDC_PROVIDER_NAME=Single Sign-On
+OIDC_SERVER_URL=https://identity.example.com
+OIDC_CLIENT_ID=...
+OIDC_CLIENT_SECRET=...
+```
+
+Use `AUTH_MODE=local-oidc` to show both local email login and OIDC on the login page. The OIDC callback URL is:
+
+```text
+https://<host>/accounts/sso/oidc/<OIDC_PROVIDER_ID>/login/callback/
+```
+
 Sync dummy sites:
 
 ```bash
