@@ -118,16 +118,9 @@
             </div>
           </form>
           <div class="navbar-nav flex-row order-md-last ms-3">
-            <div class="dropdown me-2">
-              <button class="btn btn-icon btn-outline-secondary" type="button" data-bs-toggle="dropdown" data-theme-menu-toggle data-theme-current-mode="{{ theme_preference.mode|default:'system' }}" data-theme-preference-key="{{ theme_preference_key }}" data-theme-preference-url="{% url 'account_preference' %}" aria-label="Theme: {{ theme_preference.mode|title }}" title="Theme: {{ theme_preference.mode|title }}">
-                <i class="ti ti-bulb" aria-hidden="true"></i>
-              </button>
-              <div class="dropdown-menu dropdown-menu-end">
-                <button class="dropdown-item" type="button" data-theme-mode="system">System</button>
-                <button class="dropdown-item" type="button" data-theme-mode="light">Light</button>
-                <button class="dropdown-item" type="button" data-theme-mode="dark">Dark</button>
-              </div>
-            </div>
+            <button class="btn btn-icon btn-outline-secondary me-2" type="button" data-theme-cycle data-theme-current-mode="{{ theme_preference.mode|default:'system' }}" data-theme-preference-key="{{ theme_preference_key }}" data-theme-preference-url="{% url 'account_preference' %}" aria-label="Theme: {{ theme_preference.mode|title }}" title="Theme: {{ theme_preference.mode|title }}">
+              <i class="ti ti-device-desktop" aria-hidden="true"></i>
+            </button>
             {% if request.user.is_authenticated %}
               <div class="dropdown">
                 <button class="btn btn-outline-secondary user-menu-button" type="button" data-bs-toggle="dropdown" aria-label="User menu" title="User menu">

@@ -1,6 +1,11 @@
 (function () {
   const storageKey = "access-atlas-theme-mode";
-  const modes = new Set(["system", "light", "dark"]);
+  const modes = ["system", "light", "dark"];
+  const modeIcons = {
+    system: "ti-device-desktop",
+    light: "ti-sun",
+    dark: "ti-moon",
+  };
   const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
   function getCookie(name) {
@@ -11,6 +16,10 @@
     return cookie ? decodeURIComponent(cookie.slice(name.length + 1)) : "";
   }
 
+  function isMode(mode) {
+    return modes.includes(mode);
+  }
+
   function resolvedTheme(mode) {
     if (mode === "dark" || (mode === "system" && mediaQuery.matches)) {
       return "dark";
@@ -19,41 +28,44 @@
   }
 
   function currentMode() {
-    const active = document.querySelector("[data-theme-mode].active");
-    if (active && modes.has(active.dataset.themeMode)) {
-      return active.dataset.themeMode;
-    }
-    const toggle = document.querySelector("[data-theme-menu-toggle]");
-    if (toggle && modes.has(toggle.dataset.themeCurrentMode)) {
+    const toggle = document.querySelector("[data-theme-cycle]");
+    if (toggle && isMode(toggle.dataset.themeCurrentMode)) {
       return toggle.dataset.themeCurrentMode;
     }
     const stored = localStorage.getItem(storageKey);
-    return modes.has(stored) ? stored : "system";
+    return isMode(stored) ? stored : "system";
   }
 
-  function updateControls(mode) {
-    document.querySelectorAll("[data-theme-menu-toggle]").forEach((button) => {
+  function nextMode(mode) {
+    const index = modes.indexOf(mode);
+    return modes[(index + 1) % modes.length];
+  }
+
+  function updateControl(mode) {
+    document.querySelectorAll("[data-theme-cycle]").forEach((button) => {
       const label = `Theme: ${mode.charAt(0).toUpperCase()}${mode.slice(1)}`;
+      const icon = button.querySelector("i");
       button.dataset.themeCurrentMode = mode;
       button.setAttribute("aria-label", label);
       button.setAttribute("title", label);
-    });
-    document.querySelectorAll("[data-theme-mode]").forEach((button) => {
-      button.classList.toggle("active", button.dataset.themeMode === mode);
+
+      if (icon) {
+        icon.className = `ti ${modeIcons[mode]}`;
+      }
     });
   }
 
   function applyTheme(mode) {
-    const cleanedMode = modes.has(mode) ? mode : "system";
+    const cleanedMode = isMode(mode) ? mode : "system";
     const theme = resolvedTheme(cleanedMode);
     document.documentElement.setAttribute("data-bs-theme", theme);
     document.body?.setAttribute("data-bs-theme", theme);
     localStorage.setItem(storageKey, cleanedMode);
-    updateControls(cleanedMode);
+    updateControl(cleanedMode);
   }
 
   function saveThemePreference(mode) {
-    const toggle = document.querySelector("[data-theme-menu-toggle]");
+    const toggle = document.querySelector("[data-theme-cycle]");
     const url = toggle?.dataset.themePreferenceUrl;
     const key = toggle?.dataset.themePreferenceKey;
 
@@ -73,11 +85,12 @@
   }
 
   document.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-theme-mode]");
-    if (!button) {
+    const toggle = event.target.closest("[data-theme-cycle]");
+    if (!toggle) {
       return;
     }
-    const mode = button.dataset.themeMode;
+
+    const mode = nextMode(currentMode());
     applyTheme(mode);
     saveThemePreference(mode);
   });
