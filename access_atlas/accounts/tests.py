@@ -3,6 +3,7 @@ from django.urls import reverse
 
 from access_atlas.accounts.models import User, UserPreference
 from access_atlas.accounts.preferences import JOBS_MAP_PREFERENCE_KEY
+from access_atlas.accounts.templatetags.avatar import avatar_color, avatar_initials
 
 
 @pytest.mark.django_db
@@ -16,6 +17,18 @@ def test_passwordless_login_creates_user(client):
     user = User.objects.get(email="user@example.com")
     assert user.display_name == "User Example"
     assert not user.has_usable_password()
+    assert user.avatar_seed
+
+
+@pytest.mark.django_db
+def test_user_avatar_helpers_are_stable():
+    user = User.objects.create_user(
+        email="dave@example.com",
+        display_name="Dave Harris",
+    )
+
+    assert avatar_initials(user) == "DH"
+    assert avatar_color(user) == avatar_color(user)
 
 
 @pytest.mark.django_db

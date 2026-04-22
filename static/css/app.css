@@ -171,6 +171,20 @@ input[type="time"].form-control.is-invalid {
   margin-bottom: .5rem;
 }
 
+.user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  color: #fff;
+  background-color: var(--user-avatar-color);
+  border-radius: var(--tblr-border-radius);
+  font-size: .8125rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .row-actions {
   width: 1%;
   white-space: nowrap;

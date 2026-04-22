@@ -1,0 +1,4 @@
+{% load avatar %}
+{% avatar_color user as color %}
+{% avatar_initials user as initials %}
+<span class="user-avatar" style="--user-avatar-color: {{ color }};" aria-hidden="true">{{ initials }}</span>
