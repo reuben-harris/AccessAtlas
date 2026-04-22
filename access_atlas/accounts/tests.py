@@ -82,6 +82,25 @@ def test_user_avatar_helpers_are_stable():
 
 
 @pytest.mark.django_db
+def test_user_avatar_initials_fall_back_to_email():
+    user = User.objects.create_user(email="dave.smith@example.com")
+
+    assert avatar_initials(user) == "DA"
+    assert str(user) == "dave.smith@example.com"
+
+
+@pytest.mark.django_db
+def test_header_does_not_duplicate_email_when_display_name_is_blank(client):
+    user = User.objects.create_user(email="dave@example.com")
+    client.force_login(user)
+
+    response = client.get(reverse("dashboard"))
+
+    assert response.status_code == 200
+    assert response.content.count(b"dave@example.com") == 1
+
+
+@pytest.mark.django_db
 def test_preference_view_saves_allowed_preference(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
