@@ -9,8 +9,13 @@
     <script>
       (function () {
         try {
-          var theme = localStorage.getItem("access-atlas-theme") || "light";
-          document.documentElement.setAttribute("data-bs-theme", theme);
+          var authenticated = "{{ request.user.is_authenticated|yesno:'true,false' }}" === "true";
+          var mode = "{{ theme_preference.mode|default:'system' }}";
+          if (!authenticated) {
+            mode = localStorage.getItem("access-atlas-theme-mode") || "system";
+          }
+          var theme = mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : mode;
+          document.documentElement.setAttribute("data-bs-theme", theme === "dark" ? "dark" : "light");
         } catch (error) {
           document.documentElement.setAttribute("data-bs-theme", "light");
         }
@@ -23,7 +28,7 @@
     <script src="{% static 'js/theme.js' %}" defer></script>
     {% block head %}{% endblock %}
   </head>
-  <body>
+  <body{% if request.user.is_authenticated %} data-authenticated-user="true"{% endif %}>
     <div class="page">
       <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
         <div class="container-fluid">
@@ -113,9 +118,16 @@
             </div>
           </form>
           <div class="navbar-nav flex-row order-md-last ms-3">
-            <button class="btn btn-icon btn-outline-secondary me-2" type="button" data-theme-toggle aria-label="Switch to dark theme" title="Switch to dark theme">
-              <i class="ti ti-bulb" aria-hidden="true"></i>
-            </button>
+            <div class="dropdown me-2">
+              <button class="btn btn-icon btn-outline-secondary" type="button" data-bs-toggle="dropdown" data-theme-menu-toggle data-theme-current-mode="{{ theme_preference.mode|default:'system' }}" data-theme-preference-key="{{ theme_preference_key }}" data-theme-preference-url="{% url 'account_preference' %}" aria-label="Theme: {{ theme_preference.mode|title }}" title="Theme: {{ theme_preference.mode|title }}">
+                <i class="ti ti-bulb" aria-hidden="true"></i>
+              </button>
+              <div class="dropdown-menu dropdown-menu-end">
+                <button class="dropdown-item" type="button" data-theme-mode="system">System</button>
+                <button class="dropdown-item" type="button" data-theme-mode="light">Light</button>
+                <button class="dropdown-item" type="button" data-theme-mode="dark">Dark</button>
+              </div>
+            </div>
             {% if request.user.is_authenticated %}
               <form action="{% url 'logout' %}" method="post">
                 {% csrf_token %}
