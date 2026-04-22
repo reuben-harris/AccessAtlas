@@ -136,3 +136,5 @@ Regarding adding filters everywhere. The histroy you should be able to filter by
 Team members tick boxes when making a trip def needs a refactor. Good enough for now though. I like the Clickup style for a drop down list but you can select more than one option. They get added as tags when you click them and then there is an x agaisnt there name which removes then and adds them back into the dropdown.
 
 Currently profile takes email for initials. It should only be display name but I need to ebtter understand auth providors and if they offer this or its just email.
+
+Dockerfile looks like it could be simplified a little
