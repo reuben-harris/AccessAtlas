@@ -180,17 +180,46 @@ input[type="time"].form-control.is-invalid {
   color: #fff;
   background-color: var(--user-avatar-color);
   border-radius: var(--tblr-border-radius);
+  box-shadow: 0 0 .4rem color-mix(in srgb, var(--user-avatar-color) 24%, transparent);
   font-size: .8125rem;
   font-weight: 700;
   line-height: 1;
+  transition: box-shadow .28s ease;
+}
+
+.navbar-nav.flex-row {
+  align-items: center;
+}
+
+.header-square-button {
+  width: 2.25rem;
+  height: 2.25rem;
+  min-width: 2.25rem;
+  padding: 0;
+  border-radius: var(--tblr-border-radius);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .user-menu-button {
-  padding: .125rem;
+  border: 0;
+  background: transparent;
 }
 
 .user-menu-button::after {
   display: none;
+}
+
+.user-menu-button .user-avatar {
+  width: 100%;
+  height: 100%;
+}
+
+.user-menu-button:hover .user-avatar,
+.user-menu-button:focus .user-avatar,
+.user-menu-button:focus-visible .user-avatar {
+  box-shadow: 0 0 .78rem color-mix(in srgb, var(--user-avatar-color) 50%, transparent);
 }
 
 .row-actions {
