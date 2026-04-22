@@ -1,12 +1,32 @@
+{% load static %}
 <!doctype html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Access Atlas Login</title>
+    <script>
+      (function () {
+        try {
+          var mode = localStorage.getItem("access-atlas-theme-mode") || "system";
+          var theme = mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : mode;
+          document.documentElement.setAttribute("data-bs-theme", theme === "dark" ? "dark" : "light");
+        } catch (error) {
+          document.documentElement.setAttribute("data-bs-theme", "light");
+        }
+      })();
+    </script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.1/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    <script src="{% static 'js/theme.js' %}" defer></script>
   </head>
   <body class="d-flex flex-column">
+    <div class="login-theme-control">
+      <button class="btn btn-icon btn-outline-secondary header-square-button" type="button" data-theme-cycle data-theme-current-mode="system" aria-label="Theme: System" title="Theme: System">
+        <i class="ti ti-device-desktop" aria-hidden="true"></i>
+      </button>
+    </div>
     <div class="page page-center">
       <div class="container container-tight py-4">
         <div class="card card-md">
