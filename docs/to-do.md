@@ -39,6 +39,7 @@ Loose thoughts:
 - Add richer filtering across the app in a lightweight way.
 - Add bulk actions such as bulk edit and bulk cancel for jobs.
 - Add sortable table columns where it improves grouping and scanning.
+* Job template label needs fixing
 
 Questions:
 
@@ -168,6 +169,7 @@ Loose thoughts:
 # Other
 * History feature, when it says unassinged from X Object you should be able to click on that object no? Or it at least say what the object was
 * Demo dataset flag? as well as demo auth mode? That would be local but it tells you its in demo and put something in random and it will log you in.
+* Bulk edit
 
 # OIDC
 
