@@ -91,6 +91,16 @@ def dummy_site_feed(request):
                     "road_end_longitude": None,
                     "heli_only": True,
                 },
+                {
+                    "external_id": "site-005",
+                    "code": "AA-005",
+                    "name": "Example Pending Coordinates",
+                    "latitude": -40.912200,
+                    "longitude": 175.006700,
+                    "road_end_latitude": None,
+                    "road_end_longitude": None,
+                    "heli_only": False,
+                },
             ],
         }
     )

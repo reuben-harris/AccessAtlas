@@ -73,7 +73,7 @@ def test_sync_sites_rejects_invalid_coordinates():
 
 
 @pytest.mark.django_db
-def test_sync_sites_accepts_missing_coordinates():
+def test_sync_sites_rejects_missing_site_coordinates():
     payload = {
         "schema_version": "1.0",
         "source_name": "dummy",
@@ -89,13 +89,8 @@ def test_sync_sites_accepts_missing_coordinates():
 
     result = sync_sites_from_payload(payload)
 
-    assert result.created == 1
-    site = Site.objects.get()
-    assert site.latitude is None
-    assert site.longitude is None
-    assert site.road_end_latitude is None
-    assert site.road_end_longitude is None
-    assert site.heli_only is False
+    assert result.rejected == 1
+    assert Site.objects.count() == 0
 
 
 @pytest.mark.django_db
@@ -109,6 +104,8 @@ def test_sync_sites_accepts_heli_only_sites():
                 "external_id": "001",
                 "code": "AA-001",
                 "name": "Heli only",
+                "latitude": -44.1,
+                "longitude": 169.3,
                 "heli_only": True,
             }
         ],
@@ -189,6 +186,8 @@ def test_site_road_end_coordinates_are_stored_as_decimals():
                 "external_id": "001",
                 "code": "AA-001",
                 "name": "Site",
+                "latitude": -41.1,
+                "longitude": 174.1,
                 "road_end_latitude": "-41.123456",
                 "road_end_longitude": "174.123456",
             }
@@ -203,7 +202,7 @@ def test_site_road_end_coordinates_are_stored_as_decimals():
 
 
 @pytest.mark.django_db
-def test_site_list_renders_missing_coordinates(client):
+def test_site_list_renders_coordinates(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
     Site.objects.create(
@@ -211,6 +210,8 @@ def test_site_list_renders_missing_coordinates(client):
         external_id="002",
         code="AA-002",
         name="Heli Site",
+        latitude=-44.1,
+        longitude=169.3,
         heli_only=True,
     )
 
@@ -218,7 +219,7 @@ def test_site_list_renders_missing_coordinates(client):
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert "Not provided" in content
+    assert "-44.100000, 169.300000" in content
 
 
 @pytest.mark.django_db
@@ -252,6 +253,8 @@ def test_site_can_have_one_access_record():
         external_id="001",
         code="AA-001",
         name="Site",
+        latitude=-41.1,
+        longitude=174.1,
     )
     AccessRecord.objects.create(site=site)
 
@@ -267,6 +270,8 @@ def test_access_record_current_version_is_highest_version_number():
         external_id="001",
         code="AA-001",
         name="Site",
+        latitude=-41.1,
+        longitude=174.1,
     )
     access_record = AccessRecord.objects.create(site=site)
     first_version = AccessRecordVersion.objects.create(
@@ -296,12 +301,16 @@ def test_access_record_version_numbers_are_unique_per_record():
         external_id="001",
         code="AA-001",
         name="Site",
+        latitude=-41.1,
+        longitude=174.1,
     )
     second_site = Site.objects.create(
         source_name="dummy",
         external_id="002",
         code="AA-002",
         name="Other Site",
+        latitude=-42.1,
+        longitude=175.1,
     )
     first_record = AccessRecord.objects.create(site=first_site)
     second_record = AccessRecord.objects.create(site=second_site)

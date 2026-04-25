@@ -26,13 +26,7 @@
             <td><a href="{% url 'site_detail' site.pk %}">{{ site.code }}</a></td>
             <td>{{ site.name }}</td>
             <td>{{ site.source_name }}</td>
-            <td>
-              {% if site.latitude is not None and site.longitude is not None %}
-                {{ site.latitude }}, {{ site.longitude }}
-              {% else %}
-                <span class="text-secondary">Not provided</span>
-              {% endif %}
-            </td>
+            <td>{{ site.latitude }}, {{ site.longitude }}</td>
             <td>{{ site.last_seen_at|default:"Never" }}</td>
           </tr>
         {% empty %}

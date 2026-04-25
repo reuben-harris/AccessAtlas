@@ -94,16 +94,16 @@ def sync_sites_from_payload(payload: dict[str, Any]) -> SyncResult:
         if not isinstance(record, dict):
             rejected += 1
             continue
-        required = {"external_id", "code", "name"}
+        required = {"external_id", "code", "name", "latitude", "longitude"}
         if required - record.keys():
             rejected += 1
             continue
         try:
-            latitude = validate_optional_coordinate(
-                record.get("latitude"), Decimal("-90"), Decimal("90")
+            latitude = validate_coordinate(
+                record["latitude"], Decimal("-90"), Decimal("90")
             )
-            longitude = validate_optional_coordinate(
-                record.get("longitude"), Decimal("-180"), Decimal("180")
+            longitude = validate_coordinate(
+                record["longitude"], Decimal("-180"), Decimal("180")
             )
             road_end_latitude = validate_optional_coordinate(
                 record.get("road_end_latitude"), Decimal("-90"), Decimal("90")

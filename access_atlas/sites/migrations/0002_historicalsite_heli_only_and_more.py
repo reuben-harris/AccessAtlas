@@ -40,24 +40,4 @@ class Migration(migrations.Migration):
             name='road_end_longitude',
             field=models.DecimalField(blank=True, decimal_places=6, max_digits=9, null=True),
         ),
-        migrations.AlterField(
-            model_name='historicalsite',
-            name='latitude',
-            field=models.DecimalField(blank=True, decimal_places=6, max_digits=9, null=True),
-        ),
-        migrations.AlterField(
-            model_name='historicalsite',
-            name='longitude',
-            field=models.DecimalField(blank=True, decimal_places=6, max_digits=9, null=True),
-        ),
-        migrations.AlterField(
-            model_name='site',
-            name='latitude',
-            field=models.DecimalField(blank=True, decimal_places=6, max_digits=9, null=True),
-        ),
-        migrations.AlterField(
-            model_name='site',
-            name='longitude',
-            field=models.DecimalField(blank=True, decimal_places=6, max_digits=9, null=True),
-        ),
     ]

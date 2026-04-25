@@ -176,8 +176,6 @@ class JobMapView(LoginRequiredMixin, ListView):
         sites = {}
         for job in context["object_list"]:
             site = job.site
-            if site.latitude is None or site.longitude is None:
-                continue
             site_data = sites.setdefault(
                 site.pk,
                 {
