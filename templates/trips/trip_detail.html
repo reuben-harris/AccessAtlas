@@ -25,13 +25,6 @@
           <a class="btn btn-outline-danger" href="{% url 'trip_cancel' object.pk %}">Cancel trip</a>
           <a class="btn btn-outline-success" href="{% url 'trip_close' object.pk %}">Close trip</a>
         {% endif %}
-        {% if object.is_terminal %}
-          <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="Site visits cannot be added to completed or cancelled trips.">
-            <button class="btn btn-outline-secondary disabled" type="button" disabled>Add site visit</button>
-          </span>
-        {% else %}
-          <a class="btn btn-primary" href="{% url 'site_visit_create' object.pk %}">Add site visit</a>
-        {% endif %}
       </div>
     </div>
   </div>
@@ -48,7 +41,16 @@
   </div>
 </div>
 <div class="card mt-3">
-  <div class="card-header"><h3 class="card-title">Site Visits</h3></div>
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title">Site Visits</h3>
+    {% if object.is_terminal %}
+      <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="Site visits cannot be added to completed or cancelled trips.">
+        <button class="btn btn-sm btn-outline-secondary disabled" type="button" disabled>Add site visit</button>
+      </span>
+    {% else %}
+      <a class="btn btn-sm btn-primary" href="{% url 'site_visit_create' object.pk %}">Add site visit</a>
+    {% endif %}
+  </div>
   <div class="table-responsive">
     <table class="table table-vcenter">
       <thead><tr><th>Site Visits</th><th>Planned Time</th><th>Status</th><th>Jobs</th><th class="text-end">Actions</th></tr></thead>
