@@ -220,7 +220,7 @@
           visibleStatuses.add(statusLayer.value);
           updateStatusButton(button, true);
         }
-        drawMarkers();
+        homeMarkers = drawMarkers();
         savePreference();
       });
 
