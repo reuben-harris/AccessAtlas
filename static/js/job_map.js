@@ -42,7 +42,7 @@
   const markerLayer = L.layerGroup().addTo(map);
   let activeTileLayer = null;
   let viewportSaveTimeout = null;
-  let homeMarkers = [];
+  let visibleMarkers = [];
 
   function getCookie(name) {
     const cookie = document.cookie
@@ -220,7 +220,7 @@
           visibleStatuses.add(statusLayer.value);
           updateStatusButton(button, true);
         }
-        homeMarkers = drawMarkers();
+        visibleMarkers = drawMarkers();
         savePreference();
       });
 
@@ -239,7 +239,7 @@
 
       L.DomEvent.disableClickPropagation(container);
       L.DomEvent.on(button, "click", () => {
-        fitMarkers(homeMarkers);
+        fitMarkers(visibleMarkers);
         savePreference();
       });
 
@@ -254,7 +254,7 @@
   buildStatusControls();
   addHomeControl();
   applyTileLayer();
-  homeMarkers = drawMarkers();
+  visibleMarkers = drawMarkers();
   if (
     savedPreference.viewport &&
     Number.isFinite(Number(savedPreference.viewport.lat)) &&
@@ -266,7 +266,7 @@
       savedPreference.viewport.zoom
     );
   } else {
-    fitMarkers(homeMarkers);
+    fitMarkers(visibleMarkers);
   }
 
   map.on("moveend zoomend", queueViewportSave);
