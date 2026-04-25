@@ -50,7 +50,7 @@
               </a>
               <form class="d-inline" method="post" action="{% url 'unassign_job' assignment.pk %}">
                 {% csrf_token %}
-                <button class="btn btn-sm btn-outline-danger" type="submit">Unassign</button>
+                <button class="btn btn-outline-danger row-unassign-button" type="submit">Unassign</button>
               </form>
             </td>
           </tr>
