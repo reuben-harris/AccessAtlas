@@ -58,6 +58,12 @@ Access Atlas owns planning-specific data:
 
 Model and service layers should own business rules and state transitions. Forms should handle input shape and presentation, not duplicate core validation logic that already belongs to models or services.
 
+Site-visit planned time validation is a known exception to revisit carefully.
+The model owns the scheduling rules, but the form currently mirrors some of that
+logic so browser input problems surface as clear field errors instead of silently
+saving an unscheduled visit. If this pattern grows, extract a shared validation
+helper rather than letting model/form rules drift apart.
+
 ## Current Architecture Defaults
 
 - Django server-rendered application
