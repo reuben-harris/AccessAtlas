@@ -6,15 +6,19 @@ from django.db.models import F
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
-from simple_history.utils import update_change_reason
 
 from access_atlas.core.history import HistoryReasonMixin
 from access_atlas.core.mixins import ObjectFormMixin
-from access_atlas.jobs.models import JobStatus
 
 from .forms import AssignJobForm, SiteVisitForm, TripCloseoutForm, TripForm
 from .models import SiteVisit, SiteVisitJob, Trip
-from .services import cancel_trip, close_trip, get_trip_cancel_summary
+from .services import (
+    assign_job_to_site_visit,
+    cancel_trip,
+    close_trip,
+    get_trip_cancel_summary,
+    unassign_site_visit_job,
+)
 
 
 class TripListView(LoginRequiredMixin, ListView):
@@ -141,11 +145,12 @@ def assign_job(request, pk):
     form = AssignJobForm(request.POST, site=site_visit.site)
     if form.is_valid():
         job = form.cleaned_data["job"]
-        assignment = SiteVisitJob(site_visit=site_visit, job=job)
-        assignment._change_reason = "Assigned job to site visit"
-        assignment.save()
-        update_change_reason(job, "Assigned to site visit")
-        messages.success(request, f"Assigned job: {job.title}")
+        try:
+            assign_job_to_site_visit(site_visit, job)
+        except ValidationError as exc:
+            messages.error(request, exc.message)
+        else:
+            messages.success(request, f"Assigned job: {job.title}")
     else:
         messages.error(request, "Select an unassigned job for this site.")
     return redirect(site_visit)
@@ -157,12 +162,7 @@ def unassign_job(request, pk):
     assignment = get_object_or_404(SiteVisitJob, pk=pk)
     site_visit = assignment.site_visit
     job = assignment.job
-    assignment._change_reason = "Unassigned job from site visit"
-    assignment.delete()
-    if job.status == JobStatus.PLANNED:
-        job.status = JobStatus.UNASSIGNED
-        job.save(update_fields=["status", "updated_at"])
-        update_change_reason(job, "Unassigned from site visit")
+    unassign_site_visit_job(assignment)
     messages.success(request, f"Unassigned job: {job.title}")
     return redirect(site_visit)
 

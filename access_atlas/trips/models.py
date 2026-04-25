@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 from simple_history.models import HistoricalRecords
 
-from access_atlas.jobs.models import Job, JobStatus
+from access_atlas.jobs.models import Job
 from access_atlas.sites.models import Site
 
 
@@ -160,9 +160,6 @@ class SiteVisitJob(models.Model):
 
     def save(self, *args, **kwargs) -> None:
         self.full_clean()
-        if self.job.status == JobStatus.UNASSIGNED:
-            self.job.status = JobStatus.PLANNED
-            self.job.save(update_fields=["status", "updated_at"], skip_validation=True)
         super().save(*args, **kwargs)
 
     def clean(self) -> None:

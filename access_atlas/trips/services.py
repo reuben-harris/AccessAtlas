@@ -43,6 +43,33 @@ def get_trip_cancel_summary(trip: Trip) -> TripCancelSummary:
 
 
 @transaction.atomic
+def assign_job_to_site_visit(site_visit, job) -> SiteVisitJob:
+    if job.status != JobStatus.UNASSIGNED:
+        raise ValidationError("Only unassigned jobs can be assigned to a site visit.")
+
+    assignment = SiteVisitJob(site_visit=site_visit, job=job)
+    assignment.full_clean()
+    assignment._change_reason = "Assigned job to site visit"
+    assignment.save()
+
+    job.status = JobStatus.PLANNED
+    job.save(update_fields=["status", "updated_at"])
+    update_change_reason(job, "Assigned to site visit")
+    return assignment
+
+
+@transaction.atomic
+def unassign_site_visit_job(assignment: SiteVisitJob) -> None:
+    job = assignment.job
+    assignment._change_reason = "Unassigned job from site visit"
+    assignment.delete()
+    if job.status == JobStatus.PLANNED:
+        job.status = JobStatus.UNASSIGNED
+        job.save(update_fields=["status", "updated_at"])
+        update_change_reason(job, "Unassigned from site visit")
+
+
+@transaction.atomic
 def cancel_trip(trip: Trip) -> TripCancelSummary:
     summary = get_trip_cancel_summary(trip)
     if not summary.can_cancel:

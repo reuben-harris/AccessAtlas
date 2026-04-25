@@ -16,6 +16,7 @@ from access_atlas.trips.models import (
     Trip,
     TripStatus,
 )
+from access_atlas.trips.services import assign_job_to_site_visit
 
 
 @pytest.mark.django_db
@@ -72,10 +73,72 @@ def test_assigning_job_sets_status_to_planned():
     site_visit = SiteVisit.objects.create(trip=trip, site=site)
     job = Job.objects.create(site=site, title="Site job")
 
-    SiteVisitJob.objects.create(site_visit=site_visit, job=job)
+    assign_job_to_site_visit(site_visit, job)
 
     job.refresh_from_db()
     assert job.status == "planned"
+
+
+@pytest.mark.django_db
+def test_direct_assignment_create_does_not_change_job_status():
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Site job")
+
+    SiteVisitJob.objects.create(site_visit=site_visit, job=job)
+
+    job.refresh_from_db()
+    assert job.status == JobStatus.UNASSIGNED
+
+
+@pytest.mark.django_db
+def test_job_assignment_rolls_back_if_status_update_fails(monkeypatch):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Site job")
+    original_save = Job.save
+
+    def fail_planned_save(self, *args, **kwargs):
+        if self.pk == job.pk and self.status == JobStatus.PLANNED:
+            raise RuntimeError("status update failed")
+        return original_save(self, *args, **kwargs)
+
+    monkeypatch.setattr(Job, "save", fail_planned_save)
+
+    with pytest.raises(RuntimeError):
+        assign_job_to_site_visit(site_visit, job)
+
+    assert not SiteVisitJob.objects.filter(job=job).exists()
+    job.refresh_from_db()
+    assert job.status == JobStatus.UNASSIGNED
 
 
 @pytest.mark.django_db
@@ -97,7 +160,7 @@ def test_unassigning_planned_job_sets_status_to_unassigned(client):
     )
     site_visit = SiteVisit.objects.create(trip=trip, site=site)
     job = Job.objects.create(site=site, title="Site job")
-    assignment = SiteVisitJob.objects.create(site_visit=site_visit, job=job)
+    assignment = assign_job_to_site_visit(site_visit, job)
     client.force_login(user)
 
     response = client.post(reverse("unassign_job", kwargs={"pk": assignment.pk}))
@@ -680,7 +743,7 @@ def test_cancel_trip_returns_planned_jobs_and_skips_site_visits(client):
     )
     site_visit = SiteVisit.objects.create(trip=trip, site=site)
     job = Job.objects.create(site=site, title="Site job")
-    SiteVisitJob.objects.create(site_visit=site_visit, job=job)
+    assign_job_to_site_visit(site_visit, job)
     client.force_login(user)
 
     response = client.post(reverse("trip_cancel", kwargs={"pk": trip.pk}))
@@ -843,7 +906,7 @@ def test_close_trip_requires_reason_for_cancelled_jobs(client):
     )
     site_visit = SiteVisit.objects.create(trip=trip, site=site)
     job = Job.objects.create(site=site, title="Cancel")
-    assignment = SiteVisitJob.objects.create(site_visit=site_visit, job=job)
+    assignment = assign_job_to_site_visit(site_visit, job)
     client.force_login(user)
 
     response = client.post(
