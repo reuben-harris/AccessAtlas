@@ -456,8 +456,10 @@ def test_invalid_site_visit_date_shows_error_summary_and_keeps_values(client):
         reverse("site_visit_create", kwargs={"trip_pk": trip.pk}),
         {
             "site": site.pk,
-            "planned_start": "2026-04-23T09:00",
-            "planned_end": "2026-04-23T10:00",
+            "planned_start_0": "2026-04-23",
+            "planned_start_1": "09:00",
+            "planned_end_0": "2026-04-23",
+            "planned_end_1": "10:00",
             "status": SiteVisitStatus.PLANNED,
             "notes": "",
         },
@@ -473,9 +475,10 @@ def test_invalid_site_visit_date_shows_error_summary_and_keeps_values(client):
         b"Planned end: Must be between 2026-04-21 and 2026-04-22." in response.content
     )
     assert b"Must be between 2026-04-21 and 2026-04-22." in response.content
-    assert b'name="planned_start"' in response.content
-    assert b'value="2026-04-23T09:00"' in response.content
-    assert b'value="2026-04-23T10:00"' in response.content
+    assert b'name="planned_start_0"' in response.content
+    assert b'value="2026-04-23"' in response.content
+    assert b'value="09:00"' in response.content
+    assert b'value="10:00"' in response.content
     assert b"is-invalid" in response.content
     assert not SiteVisit.objects.filter(trip=trip).exists()
 
@@ -503,8 +506,10 @@ def test_invalid_site_visit_time_order_shows_error_summary_and_keeps_values(clie
         reverse("site_visit_create", kwargs={"trip_pk": trip.pk}),
         {
             "site": site.pk,
-            "planned_start": "2026-04-22T11:00",
-            "planned_end": "2026-04-22T09:00",
+            "planned_start_0": "2026-04-22",
+            "planned_start_1": "11:00",
+            "planned_end_0": "2026-04-22",
+            "planned_end_1": "09:00",
             "status": SiteVisitStatus.PLANNED,
             "notes": "",
         },
@@ -513,8 +518,9 @@ def test_invalid_site_visit_time_order_shows_error_summary_and_keeps_values(clie
     assert response.status_code == 200
     assert b"Unable to save changes" in response.content
     assert b"Planned end: Planned end must be after planned start." in response.content
-    assert b'value="2026-04-22T11:00"' in response.content
-    assert b'value="2026-04-22T09:00"' in response.content
+    assert b'value="2026-04-22"' in response.content
+    assert b'value="11:00"' in response.content
+    assert b'value="09:00"' in response.content
     assert not SiteVisit.objects.filter(trip=trip).exists()
 
 
@@ -541,8 +547,10 @@ def test_site_visit_create_allows_blank_planned_start(client):
         reverse("site_visit_create", kwargs={"trip_pk": trip.pk}),
         {
             "site": site.pk,
-            "planned_start": "",
-            "planned_end": "",
+            "planned_start_0": "",
+            "planned_start_1": "",
+            "planned_end_0": "",
+            "planned_end_1": "",
             "status": SiteVisitStatus.PLANNED,
             "notes": "",
         },
@@ -552,6 +560,44 @@ def test_site_visit_create_allows_blank_planned_start(client):
     site_visit = SiteVisit.objects.get(trip=trip)
     assert site_visit.planned_start is None
     assert site_visit.planned_end is None
+
+
+@pytest.mark.django_db
+def test_site_visit_create_saves_planned_times(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    client.force_login(user)
+
+    response = client.post(
+        reverse("site_visit_create", kwargs={"trip_pk": trip.pk}),
+        {
+            "site": site.pk,
+            "planned_start_0": "2026-04-21",
+            "planned_start_1": "09:00",
+            "planned_end_0": "2026-04-21",
+            "planned_end_1": "10:30",
+            "status": SiteVisitStatus.PLANNED,
+            "notes": "",
+        },
+    )
+
+    assert response.status_code == 302
+    site_visit = SiteVisit.objects.get(trip=trip)
+    assert site_visit.planned_start is not None
+    assert site_visit.planned_end is not None
 
 
 @pytest.mark.django_db

@@ -52,22 +52,28 @@ class TripForm(forms.ModelForm):
 
 
 class SiteVisitForm(forms.ModelForm):
-    planned_start = forms.DateTimeField(
+    planned_start = forms.SplitDateTimeField(
         required=False,
         label="Planned start",
-        input_formats=["%Y-%m-%dT%H:%M"],
-        widget=forms.DateTimeInput(
-            attrs={"type": "datetime-local"},
-            format="%Y-%m-%dT%H:%M",
+        input_date_formats=["%Y-%m-%d"],
+        input_time_formats=["%H:%M"],
+        widget=forms.SplitDateTimeWidget(
+            date_attrs={"type": "date"},
+            time_attrs={"type": "time"},
+            date_format="%Y-%m-%d",
+            time_format="%H:%M",
         ),
     )
-    planned_end = forms.DateTimeField(
+    planned_end = forms.SplitDateTimeField(
         required=False,
         label="Planned end",
-        input_formats=["%Y-%m-%dT%H:%M"],
-        widget=forms.DateTimeInput(
-            attrs={"type": "datetime-local"},
-            format="%Y-%m-%dT%H:%M",
+        input_date_formats=["%Y-%m-%d"],
+        input_time_formats=["%H:%M"],
+        widget=forms.SplitDateTimeWidget(
+            date_attrs={"type": "date"},
+            time_attrs={"type": "time"},
+            date_format="%Y-%m-%d",
+            time_format="%H:%M",
         ),
     )
 
