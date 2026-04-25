@@ -42,3 +42,60 @@ class Site(models.Model):
 
     def get_absolute_url(self) -> str:
         return reverse("site_detail", kwargs={"pk": self.pk})
+
+
+class AccessRecord(models.Model):
+    site = models.OneToOneField(
+        Site,
+        related_name="access_record",
+        on_delete=models.CASCADE,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    history = HistoricalRecords()
+
+    class Meta:
+        ordering = ["site__code"]
+
+    def __str__(self) -> str:
+        return f"Access Record for {self.site}"
+
+    @property
+    def current_version(self) -> AccessRecordVersion | None:
+        return self.versions.order_by("-version_number").first()
+
+
+class AccessRecordVersion(models.Model):
+    access_record = models.ForeignKey(
+        AccessRecord,
+        related_name="versions",
+        on_delete=models.CASCADE,
+    )
+    version_number = models.PositiveIntegerField()
+    geojson = models.JSONField()
+    change_note = models.TextField()
+    uploaded_by = models.ForeignKey(
+        "accounts.User",
+        related_name="access_record_versions",
+        on_delete=models.PROTECT,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    history = HistoricalRecords()
+
+    class Meta:
+        ordering = ["-version_number"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["access_record", "version_number"],
+                name="unique_access_record_version_number",
+            )
+        ]
+        indexes = [
+            models.Index(
+                fields=["access_record", "-version_number"],
+                name="access_rec_ver_current_idx",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.access_record} v{self.version_number}"

@@ -1,11 +1,12 @@
 from decimal import Decimal
 
 import pytest
+from django.db import IntegrityError
 from django.urls import reverse
 
 from access_atlas.accounts.models import User
 from access_atlas.sites.feed import SiteFeedError, sync_sites_from_payload
-from access_atlas.sites.models import Site
+from access_atlas.sites.models import AccessRecord, AccessRecordVersion, Site
 
 
 @pytest.mark.django_db
@@ -242,3 +243,89 @@ def test_site_detail_renders_road_end_metadata(client):
     assert "Road End Latitude" in content
     assert "-41.2" in content
     assert "Heli Only" in content
+
+
+@pytest.mark.django_db
+def test_site_can_have_one_access_record():
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+    )
+    AccessRecord.objects.create(site=site)
+
+    with pytest.raises(IntegrityError):
+        AccessRecord.objects.create(site=site)
+
+
+@pytest.mark.django_db
+def test_access_record_current_version_is_highest_version_number():
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+    )
+    access_record = AccessRecord.objects.create(site=site)
+    first_version = AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=1,
+        geojson={"type": "FeatureCollection", "features": []},
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+    second_version = AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=2,
+        geojson={"type": "FeatureCollection", "features": []},
+        change_note="Replace record",
+        uploaded_by=user,
+    )
+
+    assert access_record.current_version == second_version
+    assert access_record.current_version != first_version
+
+
+@pytest.mark.django_db
+def test_access_record_version_numbers_are_unique_per_record():
+    user = User.objects.create_user(email="user@example.com")
+    first_site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+    )
+    second_site = Site.objects.create(
+        source_name="dummy",
+        external_id="002",
+        code="AA-002",
+        name="Other Site",
+    )
+    first_record = AccessRecord.objects.create(site=first_site)
+    second_record = AccessRecord.objects.create(site=second_site)
+    geojson = {"type": "FeatureCollection", "features": []}
+    AccessRecordVersion.objects.create(
+        access_record=first_record,
+        version_number=1,
+        geojson=geojson,
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+    AccessRecordVersion.objects.create(
+        access_record=second_record,
+        version_number=1,
+        geojson=geojson,
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+
+    with pytest.raises(IntegrityError):
+        AccessRecordVersion.objects.create(
+            access_record=first_record,
+            version_number=1,
+            geojson=geojson,
+            change_note="Duplicate version",
+            uploaded_by=user,
+        )
