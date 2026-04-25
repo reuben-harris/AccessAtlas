@@ -5,6 +5,11 @@ from django.urls import reverse
 from simple_history.models import HistoricalRecords
 
 
+class SiteSyncStatus(models.TextChoices):
+    ACTIVE = "active", "Active"
+    STALE = "stale", "Stale"
+
+
 class Site(models.Model):
     source_name = models.CharField(max_length=100)
     external_id = models.CharField(max_length=255)
@@ -17,6 +22,11 @@ class Site(models.Model):
     )
     access_start_longitude = models.DecimalField(
         max_digits=9, decimal_places=6, null=True, blank=True
+    )
+    sync_status = models.CharField(
+        max_length=20,
+        choices=SiteSyncStatus.choices,
+        default=SiteSyncStatus.ACTIVE,
     )
     last_seen_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

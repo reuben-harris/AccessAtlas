@@ -11,9 +11,10 @@ class SiteAdmin(SimpleHistoryAdmin):
         "name",
         "source_name",
         "external_id",
+        "sync_status",
         "last_seen_at",
     ]
-    list_filter = ["source_name"]
+    list_filter = ["sync_status", "source_name"]
     search_fields = ["code", "name", "external_id", "source_name"]
     readonly_fields = [
         "source_name",
@@ -24,6 +25,7 @@ class SiteAdmin(SimpleHistoryAdmin):
         "longitude",
         "access_start_latitude",
         "access_start_longitude",
+        "sync_status",
         "last_seen_at",
         "created_at",
         "updated_at",

@@ -11,7 +11,7 @@ from django.conf import settings
 from django.utils import timezone
 from simple_history.utils import update_change_reason
 
-from .models import Site
+from .models import Site, SiteSyncStatus
 
 SUPPORTED_SCHEMA_VERSION = "1.0"
 
@@ -81,6 +81,9 @@ def sync_sites_from_payload(payload: dict[str, Any]) -> SyncResult:
     created = 0
     updated = 0
     rejected = 0
+    Site.objects.filter(source_name=source_name).update(
+        sync_status=SiteSyncStatus.STALE
+    )
 
     for record in records:
         if not isinstance(record, dict):
@@ -117,6 +120,7 @@ def sync_sites_from_payload(payload: dict[str, Any]) -> SyncResult:
                 "longitude": longitude,
                 "access_start_latitude": access_start_latitude,
                 "access_start_longitude": access_start_longitude,
+                "sync_status": SiteSyncStatus.ACTIVE,
                 "last_seen_at": now,
             },
         )

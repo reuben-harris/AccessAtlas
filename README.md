@@ -34,6 +34,10 @@ Access Atlas does not own canonical site identity, coordinates, or addresses.
 
 It consumes one configured HTTP JSON feed and upserts local site references from that feed. Synced site fields stay read-only in Access Atlas. Access-start coordinates may be missing while the upstream access data is incomplete. If no external feed is configured, the app can use its own dummy feed for local development and evaluation.
 
+Sites present in the latest feed are marked `active`. Previously synced sites
+missing from the latest feed are marked `stale` and remain visible for history
+and planning context.
+
 The feed contract is intentionally narrow:
 
 - one HTTP endpoint

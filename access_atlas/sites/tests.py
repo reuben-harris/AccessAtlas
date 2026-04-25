@@ -6,7 +6,12 @@ from django.urls import reverse
 
 from access_atlas.accounts.models import User
 from access_atlas.sites.feed import SiteFeedError, sync_sites_from_payload
-from access_atlas.sites.models import AccessRecord, AccessRecordVersion, Site
+from access_atlas.sites.models import (
+    AccessRecord,
+    AccessRecordVersion,
+    Site,
+    SiteSyncStatus,
+)
 
 
 @pytest.mark.django_db
@@ -36,6 +41,7 @@ def test_sync_sites_from_payload_creates_and_updates_sites():
     assert site.name == "Original"
     assert site.access_start_latitude == Decimal("-41.2")
     assert site.access_start_longitude == Decimal("174.2")
+    assert site.sync_status == SiteSyncStatus.ACTIVE
     assert site.history.first().history_change_reason == "Created from site feed"
 
     payload["sites"][0]["name"] = "Updated"
@@ -44,7 +50,42 @@ def test_sync_sites_from_payload_creates_and_updates_sites():
     assert result.updated == 1
     site.refresh_from_db()
     assert site.name == "Updated"
+    assert site.sync_status == SiteSyncStatus.ACTIVE
     assert site.history.first().history_change_reason == "Updated from site feed"
+
+
+@pytest.mark.django_db
+def test_sync_sites_marks_missing_sites_stale():
+    payload = {
+        "schema_version": "1.0",
+        "source_name": "dummy",
+        "generated_at": "2026-04-21T00:00:00Z",
+        "sites": [
+            {
+                "external_id": "001",
+                "code": "AA-001",
+                "name": "Active",
+                "latitude": -41.1,
+                "longitude": 174.1,
+            },
+            {
+                "external_id": "002",
+                "code": "AA-002",
+                "name": "Will become stale",
+                "latitude": -42.1,
+                "longitude": 175.1,
+            },
+        ],
+    }
+    sync_sites_from_payload(payload)
+
+    payload["sites"] = [payload["sites"][0]]
+    result = sync_sites_from_payload(payload)
+
+    assert result.updated == 1
+    assert Site.objects.get(external_id="001").sync_status == SiteSyncStatus.ACTIVE
+    stale_site = Site.objects.get(external_id="002")
+    assert stale_site.sync_status == SiteSyncStatus.STALE
 
 
 @pytest.mark.django_db
@@ -165,12 +206,23 @@ def test_site_list_renders_coordinates(client):
         latitude=-44.1,
         longitude=169.3,
     )
+    Site.objects.create(
+        source_name="dummy",
+        external_id="003",
+        code="AA-003",
+        name="Stale Site",
+        latitude=-43.1,
+        longitude=168.3,
+        sync_status=SiteSyncStatus.STALE,
+    )
 
     response = client.get(reverse("site_list"))
 
     assert response.status_code == 200
     content = response.content.decode()
     assert "-44.100000, 169.300000" in content
+    assert "Active" in content
+    assert "Stale" in content
 
 
 @pytest.mark.django_db
