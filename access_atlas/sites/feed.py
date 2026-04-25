@@ -51,6 +51,22 @@ def validate_coordinate(value: object, lower: Decimal, upper: Decimal) -> Decima
     return coordinate
 
 
+def validate_optional_coordinate(
+    value: object, lower: Decimal, upper: Decimal
+) -> Decimal | None:
+    if value is None or value == "":
+        return None
+    return validate_coordinate(value, lower, upper)
+
+
+def validate_optional_boolean(value: object, *, default: bool = False) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    raise ValueError("Value is not a boolean.")
+
+
 def validate_feed(payload: dict[str, Any]) -> tuple[str, list[dict[str, Any]]]:
     required = {"schema_version", "source_name", "generated_at", "sites"}
     missing = required - payload.keys()
@@ -78,17 +94,24 @@ def sync_sites_from_payload(payload: dict[str, Any]) -> SyncResult:
         if not isinstance(record, dict):
             rejected += 1
             continue
-        required = {"external_id", "code", "name", "latitude", "longitude"}
+        required = {"external_id", "code", "name"}
         if required - record.keys():
             rejected += 1
             continue
         try:
-            latitude = validate_coordinate(
-                record["latitude"], Decimal("-90"), Decimal("90")
+            latitude = validate_optional_coordinate(
+                record.get("latitude"), Decimal("-90"), Decimal("90")
             )
-            longitude = validate_coordinate(
-                record["longitude"], Decimal("-180"), Decimal("180")
+            longitude = validate_optional_coordinate(
+                record.get("longitude"), Decimal("-180"), Decimal("180")
             )
+            road_end_latitude = validate_optional_coordinate(
+                record.get("road_end_latitude"), Decimal("-90"), Decimal("90")
+            )
+            road_end_longitude = validate_optional_coordinate(
+                record.get("road_end_longitude"), Decimal("-180"), Decimal("180")
+            )
+            heli_only = validate_optional_boolean(record.get("heli_only"))
         except ValueError:
             rejected += 1
             continue
@@ -101,6 +124,9 @@ def sync_sites_from_payload(payload: dict[str, Any]) -> SyncResult:
                 "name": str(record["name"]),
                 "latitude": latitude,
                 "longitude": longitude,
+                "road_end_latitude": road_end_latitude,
+                "road_end_longitude": road_end_longitude,
+                "heli_only": heli_only,
                 "last_seen_at": now,
             },
         )

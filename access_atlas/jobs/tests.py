@@ -193,6 +193,28 @@ def test_job_map_includes_jobs_and_status_layers(client):
 
 
 @pytest.mark.django_db
+def test_job_map_skips_sites_without_coordinates(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    missing_coordinates = Site.objects.create(
+        source_name="dummy",
+        external_id="missing",
+        code="AA-MISSING",
+        name="Missing coordinates",
+    )
+    Job.objects.create(site=site, title="Mapped job")
+    Job.objects.create(site=missing_coordinates, title="Unmapped job")
+
+    response = client.get(reverse("job_map"))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Mapped job" in content
+    assert "Unmapped job" not in content
+
+
+@pytest.mark.django_db
 def test_job_map_uses_saved_status_preference(client):
     user = User.objects.create_user(email="user@example.com")
     set_user_preference(

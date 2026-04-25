@@ -13,8 +13,11 @@
       <dt class="col-sm-3">Site Code</dt><dd class="col-sm-9">{{ object.code }}</dd>
       <dt class="col-sm-3">Site Name</dt><dd class="col-sm-9">{{ object.name }}</dd>
       <dt class="col-sm-3">External ID</dt><dd class="col-sm-9">{{ object.external_id }}</dd>
-      <dt class="col-sm-3">Latitude</dt><dd class="col-sm-9">{{ object.latitude }}</dd>
-      <dt class="col-sm-3">Longitude</dt><dd class="col-sm-9">{{ object.longitude }}</dd>
+      <dt class="col-sm-3">Latitude</dt><dd class="col-sm-9">{{ object.latitude|default:"Not provided" }}</dd>
+      <dt class="col-sm-3">Longitude</dt><dd class="col-sm-9">{{ object.longitude|default:"Not provided" }}</dd>
+      <dt class="col-sm-3">Road End Latitude</dt><dd class="col-sm-9">{{ object.road_end_latitude|default:"Not provided" }}</dd>
+      <dt class="col-sm-3">Road End Longitude</dt><dd class="col-sm-9">{{ object.road_end_longitude|default:"Not provided" }}</dd>
+      <dt class="col-sm-3">Heli Only</dt><dd class="col-sm-9">{{ object.heli_only|yesno:"Yes,No" }}</dd>
       <dt class="col-sm-3">Last Seen</dt><dd class="col-sm-9">{{ object.last_seen_at|default:"Never" }}</dd>
     </dl>
     <p class="text-secondary mb-0">Site fields are read-only and must be changed in the source of truth.</p>

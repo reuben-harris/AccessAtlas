@@ -10,8 +10,19 @@ class Site(models.Model):
     external_id = models.CharField(max_length=255)
     code = models.CharField(max_length=100)
     name = models.CharField(max_length=255)
-    latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    latitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True
+    )
+    longitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True
+    )
+    road_end_latitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True
+    )
+    road_end_longitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True
+    )
+    heli_only = models.BooleanField(default=False)
     last_seen_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
