@@ -40,6 +40,7 @@ Loose thoughts:
 - Add bulk actions such as bulk edit and bulk cancel for jobs.
 - Add sortable table columns where it improves grouping and scanning.
 * Job template label needs fixing
+* Filters on the map view in jobs do not apply to the list view
 
 Questions:
 
