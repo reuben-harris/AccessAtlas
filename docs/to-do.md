@@ -136,16 +136,40 @@ Loose thoughts:
 - Remembering or surfacing operational prerequisites for certain trip types
 - More holistic consistency work across the whole app
 
+## Site Visit Scheduling
+
+- Improve partial date/time validation.
+  - If a user enters a date without a time, show a clear error: "Enter both date and time, or leave both blank."
+  - If a user enters a time without a date, show the same style of error.
+  - Avoid silently treating partial planned times as unscheduled.
+
+- Consider default planned times for faster entry.
+  - Possible default: start `04:00`, end `20:00`.
+  - This may fit field-day planning where exact times are not always known.
+  - Need to decide whether defaults should apply on new site visits only, or also when a user picks a date.
+
+- Revisit whether site visits can span multiple days.
+  - Current direction: prefer one site visit per site attendance window.
+  - If a site is visited across multiple days, create separate site visits for each day.
+  - This keeps planning, ordering, close-out, and job assignment simpler.
+  - Multi-day site visits may be useful later, but they add edge cases around daily planning and status.
+
 # Reubens thoughts for agent to tidy
 
 ## Pages List
 
-* Tables need to be limited to 25
+* Tables across the website need to be default limited to 25
 * The user should be able to go to the next page
 * The number of pages should be dispalyed at the bottom
 * The number of entries to show should be adjustable (default 25). With bigger options. 
 * The enlarged search should add a ? parameter in the URL bar like netbox (assuming this is the best way to do that)
+* This should resolve the issue with the history page not being complete but get agent to confirm
 
 # Other
+* History feature, when it says unassinged from X Object you should be able to click on that object no? Or it at least say what the object was
+* Demo dataset flag? as well as demo auth mode? That would be local but it tells you its in demo and put something in random and it will log you in.
 
-* Move the add site button to next to the site visit form (on the page when you open a trip http://localhost:8000/trips/1/)
+# OIDC
+
+* Test fully
+* Confirm dispaly name email all working
