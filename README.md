@@ -32,13 +32,13 @@ erDiagram
 
 Access Atlas does not own canonical site identity, coordinates, or addresses.
 
-It consumes one configured HTTP JSON feed and upserts local site references from that feed. Synced site fields stay read-only in Access Atlas. Road-end coordinates may be missing while the upstream access data is incomplete. If no external feed is configured, the app can use its own dummy feed for local development and evaluation.
+It consumes one configured HTTP JSON feed and upserts local site references from that feed. Synced site fields stay read-only in Access Atlas. Access-start coordinates may be missing while the upstream access data is incomplete. If no external feed is configured, the app can use its own dummy feed for local development and evaluation.
 
 The feed contract is intentionally narrow:
 
 - one HTTP endpoint
 - bearer-token authentication
-- required identity and site coordinate fields with optional road-end/access metadata
+- required identity and site coordinate fields with optional access-start metadata
 - local upsert of site references
 
 Example feed:
@@ -55,9 +55,8 @@ Example feed:
       "name": "Site A",
       "latitude": -41.12345,
       "longitude": 174.12345,
-      "road_end_latitude": -41.12001,
-      "road_end_longitude": 174.12001,
-      "heli_only": false
+      "access_start_latitude": -41.12001,
+      "access_start_longitude": 174.12001
     },
     {
       "external_id": "67890",
@@ -65,9 +64,8 @@ Example feed:
       "name": "Site B",
       "latitude": -44.1254,
       "longitude": 169.3521,
-      "road_end_latitude": null,
-      "road_end_longitude": null,
-      "heli_only": true
+      "access_start_latitude": null,
+      "access_start_longitude": null
     }
   ]
 }
