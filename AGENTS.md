@@ -1,136 +1,137 @@
 # Agent Instructions
 
-This project is Access Atlas, a domain-specific field work planning tool.
+This project is Access Atlas, a field work planning application.
 
-## Product Boundary
+## Product Summary
 
-Keep the proof of concept small.
+Access Atlas plans field work around externally managed sites.
 
-The first implementation should focus on the task side of field planning and the external site source-of-truth integration: trips, site visits, jobs, requirements, local site references, and basic visibility. The goal is to make the core workflow usable enough to steer the product before adding travel, access, maps, offline support, or spatial data.
+The application owns:
 
-The public README should stay concise, generic, and presentable. Keep detailed planning rationale, exclusions, and implementation memory in this file or in `docs/`.
+- Trips
+- Site visits
+- Jobs and unassigned jobs
+- Job templates
+- Job requirements
+- Notes
+- Object history
+- User preferences
+
+The application does not own canonical site identity or coordinates. Those come from a configured external site feed and remain read-only inside Access Atlas.
 
 ## Domain Language
 
-Use the proof-of-concept vocabulary consistently:
+Use the product language consistently:
 
-- `Trip`: a planned field deployment.
-- `Site Visit`: a planned visit to one site during a trip.
-- `Job`: a specific unit of work to complete at a site.
-- `Job Template`: a reusable starting point for creating common jobs.
-- `Unassigned Job`: a job that has not yet been assigned to a trip.
-- `Requirement`: something needed to complete a job.
-- `Object History`: records of who changed what and when.
+- `Trip`: a planned field deployment
+- `Site Visit`: a planned attendance at one site during a trip
+- `Job`: a unit of work for a site
+- `Unassigned Job`: a job not yet planned into a site visit
+- `Job Template`: a reusable starting point for a job
+- `Requirement`: something needed to complete a job
+- `Object History`: who changed what and when
 
-Avoid using `task` as a product concept. It is too generic for this application.
+Avoid `task` as a product term unless the user explicitly chooses it for a new feature.
 
-Use `docs/domain-model.md` as the current working definition of the domain model. Update that document when product decisions change the meaning or relationship of core entities.
+## Ownership Boundaries
 
-Use `docs/site-source-integration.md` as the current working definition of the external site source-of-truth feed. Keep the proof-of-concept contract narrow: one HTTP JSON feed, required fields only, bearer-token authentication, and local upsert of site references.
+Access Atlas should stay agnostic about the upstream source of truth.
 
-The domain model has deferred open decisions. When the user next asks to discuss the domain model, resume from the `Open Decisions` and `Current Recommendations` sections in `docs/domain-model.md` rather than starting over.
+External systems own:
 
-## Source Of Truth
+- Site identity
+- Site code
+- Site name
+- Coordinates
+- Address or canonical location details
 
-Access Atlas should not own canonical site identity, coordinates, or addresses.
+Access Atlas owns planning-specific data:
 
-Those should come from an external source-of-truth system such as NetBox or another company system. Access Atlas may store references and small snapshots so historic trips remain understandable if the external source changes.
+- Trips
+- Site visits
+- Jobs
+- Templates
+- Requirements
+- Planning status
+- Notes
+- Audit/history records
 
-The app may integrate with different external systems depending on the organization. Do not hard-code the product story around one company or one source system, even if NetBox is a likely first integration.
+Model and service layers should own business rules and state transitions. Forms should handle input shape and presentation, not duplicate core validation logic that already belongs to models or services.
 
-Access Atlas owns proof-of-concept planning data:
+## Current Architecture Defaults
 
-- Trips.
-- Site visits.
-- Jobs and unassigned jobs.
-- Job templates.
-- Job estimates and requirements.
-- Local site references synced from the configured site feed.
-- Object history for proof-of-concept objects.
-- Planning and completion state.
-- Notes.
+- Django server-rendered application
+- PostgreSQL primary database
+- Tabler for layout and UI foundation
+- Light/dark theme support
+- HTMX where partial updates improve the workflow
+- Minimal custom user model with email as the unique identifier
+- `django-simple-history` for audit/history
+- `django-allauth` wired for OIDC support
+- Local development runs Django directly and PostgreSQL through Docker Compose
 
-## Proof Of Concept Scope
+Prefer the existing Django/template approach unless a new feature clearly needs more client-side structure.
 
-Prioritize the proof-of-concept workflow:
+## Auth Notes
 
-1. Configure one external site feed endpoint.
-2. Sync local site references from that feed.
-3. Create and view trips.
-4. Add site visits to a trip.
-5. Create reusable job templates.
-6. Create and review unassigned jobs, including jobs created from templates.
-7. Assign jobs to site visits.
-8. Record job estimates, notes, and requirements.
-9. Track simple statuses for trips, site visits, and jobs.
-10. Show object history so changes can be attributed to users.
-11. Provide basic visibility for team leaders and managers.
+- Auth modes:
+  - `local`
+  - `oidc`
+  - `local-oidc`
+- Local login is passwordless and email-based.
+- OIDC is configured through environment variables.
+- Email is the stable identity key.
+- Avoid adding custom auth adapters unless real provider testing proves the defaults are insufficient.
+- If display name is absent, the UI should fall back cleanly to email.
 
-## Deliberately Out Of Scope For The Proof Of Concept
+## Site Feed Contract
 
-Do not introduce these unless the user explicitly changes direction:
+Keep the site feed narrow:
 
-- Generic task management.
-- Manual JSON site upload.
-- Optional site feed metadata fields.
-- Multiple site feed endpoints.
-- Incremental site sync.
-- Webhook-based site sync.
-- Plugin-based source-of-truth integrations.
-- Writing data back to the source of truth.
-- Deleting local site references when they disappear from the feed.
-- Custom user-defined views.
-- Advanced filtering systems.
-- Board or Gantt layouts.
-- Automatic nearby job suggestions.
-- Calendar integrations.
-- Native mobile apps.
-- Direct storage of photos or large files.
-- Replacing the external site source of truth.
-- Editing canonical site coordinates or addresses.
-- Editing synced site code, name, latitude, or longitude in Access Atlas.
-- Trip days.
-- Trip locations such as hotels, depots, airports, staging points, and home base.
-- Travel planning.
-- Travel estimates.
-- Access information.
-- Tracks.
-- KML import/export.
-- GeoJSON import/export.
-- PostGIS-backed spatial storage.
-- Map-based planning.
-- Offline trip packets.
+- one configured HTTP JSON endpoint
+- bearer-token authentication
+- required fields only
+- upsert local site references
 
-Also avoid presenting these excluded features prominently in the public README. They are agent memory and product guardrails, not user-facing marketing copy.
+The unique site identity is `source_name + external_id`.
 
-## UX Principles
+Do not add direct write-back to the source system unless the user explicitly changes direction.
 
-The app should feel like a practical planning tool for field technicians and team leaders.
+## UX Conventions
 
-For the proof of concept, prefer boring object pages over rich planning interfaces. The goal is to validate the source-of-truth integration and core workflow before investing in maps, travel planning, or offline features.
+- Keep the NetBox-style layout: left navigation, top search, consistent object pages.
+- Prefer practical object pages over elaborate planning surfaces unless the user explicitly asks to expand them.
+- Preserve a consistent feel across list, detail, and edit views.
+- Status, history, and planning relationships should be visible without requiring deep navigation.
 
-The UI should copy the broad NetBox layout pattern: persistent left navigation, top search, and consistent object list/detail/edit pages. The proof of concept must support light and dark mode, preferably through Tabler's built-in theme support.
+## Active Constraints
 
-When adding UI, keep the first screen useful. Do not build a marketing landing page unless explicitly requested.
+These are current guardrails, not permanent doctrine:
 
-## Engineering Notes
+- Do not turn Access Atlas into generic task management.
+- Do not let synced site fields become editable locally.
+- Keep source-of-truth integration simple and feed-based.
+- Prefer stable, boring implementation choices over speculative abstractions.
+- When the public docs and the app diverge, update the docs to match the current app.
 
-Use `docs/architecture.md` as the current working architecture direction.
+## Deferred Areas
 
-Access Atlas is a Django server-rendered application using PostgreSQL as the primary database, Tabler for layout, and HTMX for focused partial updates.
+These exist as future discussion topics, not active commitments:
 
-The project is licensed under `AGPL-3.0-or-later`. Preserve the license choice unless the user explicitly changes it.
+- Richer trip approval workflow
+- Bulk actions and richer filtering
+- Additional planning views beyond the current object pages and map view
+- Journey and travel planning
+- Reporting/print views
+- External operational integrations
+- More structured frontend tooling if the client-side surface grows significantly
 
-The intended GitHub remote is `git@github.com:reuben-harris/AccessAtlas.git`.
+## Documentation Strategy
 
-When scaffolding the Django app, include `pyproject.toml`, `.python-version`, VS Code debugger support, GitHub Actions CI, and Dependabot from the start. Add the GHCR container image workflow with the rest of the GitHub Actions once the proof-of-concept app and Dockerfile exist; do not add it before then. Use Python 3.14 and Django 6.0 unless the user explicitly changes direction. CI should use current official action majors: `actions/checkout@v6` and `actions/setup-python@v6`.
+The public `README.md` should stay concise and current.
 
-Use a minimal custom user model with email as the unique identifier. For the proof of concept, authentication can be passwordless/internal: users identify by email and then can access the app. Logged-in users can do everything. This broad permission model requires history/audit records for important object changes. Prefer `django-simple-history` for model history unless a concrete incompatibility appears.
+Use `AGENTS.md` as the long-lived internal memory file for product language, architectural defaults, guardrails, and deferred decisions. Avoid scattering that material across user-facing docs unless it helps a real human reader right now.
 
-Configure the site feed URL and token via environment variables. The Django-served dummy feed endpoint should require the bearer token too.
+## Repository Workflow
 
-Do not introduce React by default.
-
-Vite, TypeScript, Stimulus, Biome, Leaflet, and PostGIS are deferred until the project needs them. If map features are introduced, Leaflet is the current preferred first mapping library. If structured browser-side code is introduced, revisit Vite, TypeScript, Stimulus, and Biome rather than drifting into unstructured standalone JavaScript.
-
-Large files and photos should normally live in external storage such as SharePoint or S3-compatible systems. The proof of concept does not need to implement file/photo storage.
+Use conventional commit messages for commits unless the user explicitly asks for something else.

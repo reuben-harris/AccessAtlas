@@ -1,85 +1,83 @@
 # Access Atlas
 
-Access Atlas is a field work planning tool for teams that need to organize site visits and the jobs to complete at each site.
+## What It Is
 
-The first goal is to make the core planning workflow easy to use: create a trip, add site visits, assign jobs, track requirements, and give the team a clear view of planned work.
+Access Atlas is a field work planning application for teams that organise trips, site visits, and jobs against sites managed in an external source of truth.
 
-## Core Concepts
+The application owns planning data such as trips, site visits, jobs, job templates, requirements, notes, and history. Site identity and coordinates stay read-only and are synced from a configured external feed.
 
-### Trip
+## Domain Model
 
-A planned field deployment.
+Core objects:
 
-In the proof of concept, a trip groups the sites to visit, the jobs to complete, the people involved, and the overall planning state.
+- `Site`: a synced reference to a real-world site from an external system
+- `Trip`: a planned field deployment
+- `Site Visit`: a planned attendance at one site during a trip
+- `Job`: a unit of work for a site, either unassigned or assigned to a site visit
+- `Job Template`: a reusable starting point for common jobs
+- `Requirement`: something needed to complete a job
 
-### Site Visit
+```mermaid
+erDiagram
+    SITE ||--o{ JOB : has
+    SITE ||--o{ SITE_VISIT : is_visited_in
+    TRIP ||--o{ SITE_VISIT : contains
+    SITE_VISIT ||--o{ JOB : plans
+    JOB_TEMPLATE ||--o{ JOB : creates
+    JOB_TEMPLATE ||--o{ TEMPLATE_REQUIREMENT : has
+    JOB ||--o{ REQUIREMENT : has
+```
 
-A planned visit to one site during a trip.
+## Site Sync
 
-A site visit represents one planned attendance at one site, with optional planned start and end times. A trip can include multiple site visits for the same site when work is split across different days or times.
+Access Atlas does not own canonical site identity, coordinates, or addresses.
 
-### Job
+It consumes one configured HTTP JSON feed and upserts local site references from that feed. Synced site fields stay read-only in Access Atlas. If no external feed is configured, the app can use its own dummy feed for local development and evaluation.
 
-A specific unit of work to complete at a site.
+The feed contract is intentionally narrow:
 
-Jobs can include a description, status, estimated duration, notes, and requirements.
+- one HTTP endpoint
+- bearer-token authentication
+- required fields only
+- local upsert of site references
 
-### Job Template
+Example feed:
 
-A reusable starting point for creating common jobs.
+```json
+{
+  "schema_version": "1.0",
+  "source_name": "example-source",
+  "generated_at": "2026-04-20T10:30:00Z",
+  "sites": [
+    {
+      "external_id": "12345",
+      "code": "SITE-A",
+      "name": "Site A",
+      "latitude": -41.12345,
+      "longitude": 174.12345
+    }
+  ]
+}
+```
 
-Job templates can include a title, description, estimated duration, notes, and default requirements.
+Configure site sync through `.env`:
 
-### Unassigned Job
-
-A job that exists but has not yet been assigned to a trip.
-
-Unassigned jobs can be reviewed and added to site visits during planning.
-
-### Requirement
-
-Something needed to complete a job.
-
-Requirements may include tools, parts, cables, consumables, permissions, notes, or items already stored at the site.
-
-## Source Of Truth
-
-Access Atlas is designed to reference sites from an external source of truth rather than owning canonical site identity, coordinates, or addresses.
-
-Synced site fields are read-only in Access Atlas. It owns planning-specific information such as trips, site visits, jobs, job templates, requirements, estimates, notes, and completion state.
-
-## Proof Of Concept
-
-The proof of concept is intentionally small so the core workflow can be tested and shaped before adding travel, access, map, or offline complexity.
-
-The proof of concept should let users:
-
-1. Sync read-only site references from one external site feed.
-2. Create and view trips.
-3. Add site visits to a trip.
-4. Create reusable job templates.
-5. Create and review unassigned jobs, including jobs created from templates.
-6. Assign jobs to site visits.
-7. Record job estimates, notes, and requirements.
-8. Track simple statuses for trips, site visits, and jobs.
-9. View object history so changes are attributable to users.
-10. Give team leaders and managers basic visibility of planned field work.
-
-Access Atlas should grow from this core planning workflow. Travel planning, access information, maps, tracks, and offline trip packets are ideas for later once the basics are useful.
+```env
+SITE_FEED_URL=http://127.0.0.1:8000/dummy/site-feed.json
+SITE_FEED_TOKEN=dev-token
+```
 
 ## Development
 
-Access Atlas is a Django application. The proof of concept runs Django locally and PostgreSQL in Docker Compose.
+Access Atlas is a Django application with PostgreSQL. Local development normally runs Django directly and PostgreSQL through Docker Compose.
 
 Prerequisites:
 
-- Python 3.14.
-- `uv`.
-- Docker with Docker Compose.
+- Python 3.14
+- `uv`
+- Docker with Docker Compose
 
-On Fedora, Docker Engine and Docker Compose may be packaged separately. If `docker compose version` fails, install the Compose plugin. If Docker reports permission denied for `/var/run/docker.sock`, add your user to the `docker` group and then fully log out and back in.
-
-Set up the project:
+Typical setup:
 
 ```bash
 cp .env.example .env
@@ -89,58 +87,29 @@ uv run python manage.py migrate
 uv run python manage.py runserver
 ```
 
-The app will be available at:
+The app will be available at `http://127.0.0.1:8000/`.
 
-```text
-http://127.0.0.1:8000/
-```
+Use `.env.example` as the starting point for configuration. Authentication, database, site feed, and deployment settings all live there.
 
-The proof-of-concept login is passwordless and internal. Enter an email address to create/sign in as that user.
-
-Authentication defaults to local email login for development. OIDC single sign-on can be enabled with environment variables:
-
-```text
-AUTH_MODE=oidc
-OIDC_PROVIDER_ID=access-atlas
-OIDC_PROVIDER_NAME=Single Sign-On
-OIDC_SERVER_URL=https://identity.example.com
-OIDC_CLIENT_ID=...
-OIDC_CLIENT_SECRET=...
-```
-
-Use `AUTH_MODE=local-oidc` to show both local email login and OIDC on the login page. The OIDC callback URL is:
-
-```text
-https://<host>/accounts/sso/oidc/<OIDC_PROVIDER_ID>/login/callback/
-```
-
-Sync dummy sites:
+Useful commands:
 
 ```bash
 uv run python manage.py sync_sites
-```
-
-Run the sync command from a second terminal while the development server is running. If no production site feed is configured, Access Atlas defaults to its own dummy feed at `/dummy/site-feed.json` and uses the bearer token from `SITE_FEED_TOKEN`.
-
-Run checks and tests:
-
-```bash
-uv run ruff check .
-uv run ruff format --check .
 uv run python manage.py check
 uv run pytest
+uv run ruff check .
+uv run ruff format --check .
 ```
 
-Reset the local database:
+## Deployment
 
-```bash
-docker compose down -v
-docker compose up -d db
-uv run python manage.py migrate
-```
+Access Atlas is packaged as a containerised Django application backed by PostgreSQL.
 
-VS Code users can start the Django development server with the included `Django: runserver` debug configuration.
+At a high level:
 
-## License
+1. configure environment variables
+2. point the app at PostgreSQL
+3. run migrations
+4. start the web container
 
-Access Atlas is licensed under the GNU Affero General Public License v3.0 or later (`AGPL-3.0-or-later`). See [LICENSE](LICENSE).
+The intended deployment shape is a web service or container platform talking to an external PostgreSQL instance.
