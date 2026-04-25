@@ -18,6 +18,8 @@ from access_atlas.jobs.models import (
 )
 from access_atlas.jobs.services import create_job_from_template
 from access_atlas.sites.models import Site
+from access_atlas.trips.models import SiteVisit, Trip
+from access_atlas.trips.services import assign_job_to_site_visit
 
 
 def create_site(code="AA-001"):
@@ -137,6 +139,30 @@ def test_job_list_links_to_map_view(client):
 
     assert response.status_code == 200
     assert reverse("job_map") in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_job_detail_links_to_assigned_site_visit(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    assign_job_to_site_visit(site_visit, job)
+    client.force_login(user)
+
+    response = client.get(reverse("job_detail", kwargs={"pk": job.pk}))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Site Visit" in content
+    assert site_visit.get_absolute_url() in content
+    assert str(site_visit) in content
 
 
 @pytest.mark.django_db
