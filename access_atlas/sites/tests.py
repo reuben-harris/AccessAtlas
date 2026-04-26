@@ -1,3 +1,5 @@
+import json
+import re
 from decimal import Decimal
 
 import pytest
@@ -29,6 +31,16 @@ from access_atlas.sites.models import (
     Site,
     SiteSyncStatus,
 )
+
+
+def parse_json_script(content: str, script_id: str):
+    match = re.search(
+        rf'<script id="{script_id}" type="application/json">(.*?)</script>',
+        content,
+        re.DOTALL,
+    )
+    assert match is not None, f"Missing json_script payload: {script_id}"
+    return json.loads(match.group(1))
 
 
 @pytest.mark.django_db
@@ -361,11 +373,13 @@ def test_site_detail_includes_access_map_feature_data(client):
     assert 'id="site-access-map"' in content
     assert 'data-map-toggle="access-record"' in content
     assert f'data-record-id="{access_record.pk}"' in content
-    assert '"recordName": "Road access"' in content
-    assert '"typeLabel": "Gate"' in content
-    assert '"label": "North gate"' in content
-    assert '"points":' in content
-    assert '"tracks":' in content
+    payload = parse_json_script(content, "site-access-map-data")
+    assert payload["tracks"] == []
+    assert len(payload["points"]) == 1
+    point = payload["points"][0]
+    assert point["recordName"] == "Road access"
+    assert point["typeLabel"] == "Gate"
+    assert point["label"] == "North gate"
 
 
 @pytest.mark.django_db
@@ -393,13 +407,10 @@ def test_site_detail_skips_invalid_access_map_feature_data(client):
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert 'id="site-access-map-data"' in content
-    assert (
-        '<script id="site-access-map-data" type="application/json">'
-        '{"points": [], "tracks": []}'
-        "</script>"
-        in content
-    )
+    assert parse_json_script(content, "site-access-map-data") == {
+        "points": [],
+        "tracks": [],
+    }
 
 
 @pytest.mark.django_db
@@ -426,9 +437,8 @@ def test_site_detail_uses_saved_access_map_visibility_preference(client):
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert '"visible_record_ids": [' in content
-    assert str(second_record.pk) in content
-    assert 'id="site-access-map-preference"' in content
+    preference_payload = parse_json_script(content, "site-access-map-preference")
+    assert preference_payload["value"]["visible_record_ids"] == [second_record.pk]
     assert get_user_preference(
         user,
         site_access_map_preference_key(site.pk),

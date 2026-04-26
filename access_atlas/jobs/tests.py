@@ -1,3 +1,6 @@
+import json
+import re
+
 import pytest
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -31,6 +34,16 @@ def create_site(code="AA-001"):
         latitude=-41.1,
         longitude=174.1,
     )
+
+
+def parse_json_script(content: str, script_id: str):
+    match = re.search(
+        rf'<script id="{script_id}" type="application/json">(.*?)</script>',
+        content,
+        re.DOTALL,
+    )
+    assert match is not None, f"Missing json_script payload: {script_id}"
+    return json.loads(match.group(1))
 
 
 @pytest.mark.django_db
@@ -187,9 +200,9 @@ def test_job_map_includes_jobs_and_status_layers(client):
     assert "Inspect cabinet" in content
     assert "Closed work" in content
     assert "Cancelled work" in content
-    assert "job-map-status-layers" in content
-    assert '"visible": true' in content
-    assert '"visible": false' in content
+    status_layers = parse_json_script(content, "job-map-status-layers")
+    assert any(layer["visible"] is True for layer in status_layers)
+    assert any(layer["visible"] is False for layer in status_layers)
 
 
 @pytest.mark.django_db
@@ -209,15 +222,21 @@ def test_job_map_uses_saved_status_preference(client):
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert (
-        '"value": "completed", "label": "Completed", "color": "#2fb344", '
-        '"rank": 10, "visible": true'
-    ) in content
-    assert (
-        '"value": "planned", "label": "Planned", "color": "#206bc4", '
-        '"rank": 30, "visible": false'
-    ) in content
-    assert '"viewport": {"lat": -41.2, "lng": 174.7, "zoom": 8}' in content
+    status_layers = parse_json_script(content, "job-map-status-layers")
+    completed_layer = next(
+        layer for layer in status_layers if layer["value"] == JobStatus.COMPLETED
+    )
+    planned_layer = next(
+        layer for layer in status_layers if layer["value"] == JobStatus.PLANNED
+    )
+    assert completed_layer["visible"] is True
+    assert planned_layer["visible"] is False
+    map_preference = parse_json_script(content, "job-map-preference")
+    assert map_preference["value"]["viewport"] == {
+        "lat": -41.2,
+        "lng": 174.7,
+        "zoom": 8,
+    }
 
 
 @pytest.mark.django_db
