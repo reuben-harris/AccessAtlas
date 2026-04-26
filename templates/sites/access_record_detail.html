@@ -59,6 +59,47 @@
 </div>
 <div class="card mt-3">
   <div class="card-header">
+    <h3 class="card-title">Feature Summary</h3>
+    <div class="card-actions text-secondary">{{ access_feature_count }} features</div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-vcenter">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Coordinates</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if access_parse_error %}
+          <tr>
+            <td colspan="4">
+              <div class="text-danger">{{ access_parse_error }}</div>
+            </td>
+          </tr>
+        {% else %}
+          {% for feature in access_feature_rows %}
+            <tr>
+              <td><span class="badge {{ feature.type_badge_class }}">{{ feature.type_display }}</span></td>
+              <td>{{ feature.label }}</td>
+              <td>{{ feature.coordinates }}</td>
+              <td>{{ feature.details }}</td>
+            </tr>
+          {% endfor %}
+          {% if not access_feature_rows %}
+            <tr>
+              <td colspan="4" class="text-secondary">No parsed access features in latest revision.</td>
+            </tr>
+          {% endif %}
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="card mt-3">
+  <div class="card-header">
     <h3 class="card-title">Versions</h3>
   </div>
   <div class="table-responsive">

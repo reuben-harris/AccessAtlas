@@ -8,6 +8,7 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import DetailView, FormView, ListView, UpdateView
 
+from .access_records import AccessRecordGeoJSONError, parse_access_record_geojson
 from .access_warnings import build_access_record_warnings, build_site_warnings
 from .feed import SiteFeedError, sync_configured_site_feed
 from .forms import (
@@ -22,6 +23,26 @@ from .services import (
     create_access_record_upload_draft,
     create_access_record_version_from_upload,
 )
+
+POINT_TYPE_DISPLAY = {
+    "access_start": "Access Start",
+    "site": "Site",
+    "gate": "Gate",
+    "note": "Note",
+}
+
+POINT_TYPE_BADGE_CLASS = {
+    "access_start": "bg-blue-lt",
+    "site": "bg-green-lt",
+    "gate": "bg-yellow-lt",
+    "note": "bg-purple-lt",
+}
+
+TRACK_SUITABILITY_DISPLAY = {
+    "4wd": "4WD",
+    "luv": "LUV",
+    "walking": "Walking",
+}
 
 
 class SiteListView(LoginRequiredMixin, ListView):
@@ -118,6 +139,61 @@ class AccessRecordDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["access_warnings"] = build_access_record_warnings(self.object)
+        context["access_feature_rows"] = []
+        context["access_feature_count"] = 0
+        context["access_parse_error"] = None
+        current_version = self.object.current_version
+        if current_version:
+            try:
+                parsed = parse_access_record_geojson(current_version.geojson)
+            except AccessRecordGeoJSONError:
+                context["access_parse_error"] = (
+                    "Latest revision could not be parsed for feature summary."
+                )
+            else:
+                feature_rows = []
+                for point in parsed.points:
+                    details = "-"
+                    if point.feature_type == "gate" and point.properties.get("code"):
+                        details = f"Code: {point.properties['code']}"
+                    elif point.feature_type == "note" and point.properties.get("notes"):
+                        details = point.properties["notes"]
+                    feature_rows.append(
+                        {
+                            "type_display": POINT_TYPE_DISPLAY.get(
+                                point.feature_type, point.feature_type
+                            ),
+                            "type_badge_class": POINT_TYPE_BADGE_CLASS.get(
+                                point.feature_type, "bg-secondary-lt"
+                            ),
+                            "label": point.label or "-",
+                            "coordinates": (
+                                f"{point.latitude:.6f}, {point.longitude:.6f}"
+                            ),
+                            "details": details,
+                        }
+                    )
+                for track in parsed.tracks:
+                    details = "-"
+                    if track.suitability:
+                        suitability_display = TRACK_SUITABILITY_DISPLAY.get(
+                            track.suitability, track.suitability
+                        )
+                        details = (
+                            "Suitability: "
+                            f"{suitability_display}"
+                        )
+                    feature_rows.append(
+                        {
+                            "type_display": "Track",
+                            "type_badge_class": "bg-red-lt",
+                            "label": track.label or "-",
+                            "coordinates": f"{len(track.coordinates)} points",
+                            "details": details,
+                        }
+                    )
+                context["access_feature_rows"] = feature_rows
+                context["access_feature_count"] = len(feature_rows)
         return context
 
 

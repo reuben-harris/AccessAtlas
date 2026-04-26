@@ -828,6 +828,93 @@ def test_access_record_detail_shows_warning_for_access_start_mismatch(client):
 
 
 @pytest.mark.django_db
+def test_access_record_detail_shows_parsed_feature_summary(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    access_record = AccessRecord.objects.create(site=site, name="Road access")
+    AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=1,
+        geojson={
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [174.7, -41.2]},
+                    "properties": {
+                        "access_atlas:type": "gate",
+                        "label": "North gate",
+                        "code": "#1234",
+                    },
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [[174.7, -41.2], [174.71, -41.21]],
+                    },
+                    "properties": {
+                        "access_atlas:type": "track",
+                        "label": "Main track",
+                        "suitability": "4wd",
+                    },
+                },
+            ],
+        },
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+
+    response = client.get(access_record.get_absolute_url())
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Feature Summary" in content
+    assert "North gate" in content
+    assert "Code: #1234" in content
+    assert "Main track" in content
+    assert "Suitability: 4WD" in content
+
+
+@pytest.mark.django_db
+def test_access_record_detail_shows_parse_error_for_invalid_latest_revision(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    access_record = AccessRecord.objects.create(site=site, name="Road access")
+    AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=1,
+        geojson={"type": "Feature", "features": []},
+        change_note="Broken upload",
+        uploaded_by=user,
+    )
+
+    response = client.get(access_record.get_absolute_url())
+
+    assert response.status_code == 200
+    assert (
+        "Latest revision could not be parsed for feature summary."
+        in response.content.decode()
+    )
+
+
+@pytest.mark.django_db
 def test_access_warning_helpers_include_site_point_mismatch():
     user = User.objects.create_user(email="user@example.com")
     site = Site.objects.create(
