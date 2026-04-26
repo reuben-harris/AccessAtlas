@@ -1,6 +1,3 @@
-import json
-import re
-
 import pytest
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -11,6 +8,7 @@ from access_atlas.accounts.preferences import (
     JOBS_MAP_PREFERENCE_KEY,
     set_user_preference,
 )
+from access_atlas.core.test_utils import parse_json_script
 from access_atlas.jobs.forms import JobForm, JobFromTemplateForm
 from access_atlas.jobs.models import (
     Job,
@@ -34,16 +32,6 @@ def create_site(code="AA-001"):
         latitude=-41.1,
         longitude=174.1,
     )
-
-
-def parse_json_script(content: str, script_id: str):
-    match = re.search(
-        rf'<script id="{script_id}" type="application/json">(.*?)</script>',
-        content,
-        re.DOTALL,
-    )
-    assert match is not None, f"Missing json_script payload: {script_id}"
-    return json.loads(match.group(1))
 
 
 @pytest.mark.django_db

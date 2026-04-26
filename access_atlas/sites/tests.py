@@ -1,5 +1,3 @@
-import json
-import re
 from decimal import Decimal
 
 import pytest
@@ -13,6 +11,7 @@ from access_atlas.accounts.preferences import (
     set_user_preference,
     site_access_map_preference_key,
 )
+from access_atlas.core.test_utils import parse_json_script
 from access_atlas.sites.access_records import (
     AccessRecordGeoJSONError,
     parse_access_record_geojson,
@@ -31,16 +30,6 @@ from access_atlas.sites.models import (
     Site,
     SiteSyncStatus,
 )
-
-
-def parse_json_script(content: str, script_id: str):
-    match = re.search(
-        rf'<script id="{script_id}" type="application/json">(.*?)</script>',
-        content,
-        re.DOTALL,
-    )
-    assert match is not None, f"Missing json_script payload: {script_id}"
-    return json.loads(match.group(1))
 
 
 @pytest.mark.django_db
