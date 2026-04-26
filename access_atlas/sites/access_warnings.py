@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
+from .access_record_snapshots import AccessRecordSnapshot
 from .access_records import AccessRecordGeoJSONError, parse_access_record_geojson
 from .models import AccessRecord, Site
 
@@ -14,7 +15,11 @@ class AccessWarning:
     message: str
 
 
-def build_site_warnings(site: Site) -> list[AccessWarning]:
+def build_site_warnings(
+    site: Site,
+    *,
+    snapshots_by_record_id: dict[int, AccessRecordSnapshot] | None = None,
+) -> list[AccessWarning]:
     warnings: list[AccessWarning] = []
     if _is_missing_coordinate(site.access_start_latitude, site.access_start_longitude):
         warnings.append(
@@ -25,7 +30,15 @@ def build_site_warnings(site: Site) -> list[AccessWarning]:
 
     for access_record in site.access_records.all():
         warnings.extend(
-            build_access_record_warnings(access_record, include_prefix=True)
+            build_access_record_warnings(
+                access_record,
+                include_prefix=True,
+                snapshot=(
+                    snapshots_by_record_id.get(access_record.pk)
+                    if snapshots_by_record_id and access_record.pk is not None
+                    else None
+                ),
+            )
         )
     return warnings
 
@@ -34,17 +47,18 @@ def build_access_record_warnings(
     access_record: AccessRecord,
     *,
     include_prefix: bool = False,
+    snapshot: AccessRecordSnapshot | None = None,
 ) -> list[AccessWarning]:
     warnings: list[AccessWarning] = []
     site = access_record.site
     prefix = f"{access_record.name}: " if include_prefix else ""
-    current_version = access_record.current_version
+    current_version = (
+        snapshot.current_version if snapshot else access_record.current_version
+    )
     if current_version is None:
         return warnings
 
-    try:
-        parsed = parse_access_record_geojson(current_version.geojson)
-    except AccessRecordGeoJSONError:
+    if snapshot and snapshot.parse_error:
         warnings.append(
             AccessWarning(
                 f"{prefix}Latest access record revision is invalid and "
@@ -52,6 +66,19 @@ def build_access_record_warnings(
             )
         )
         return warnings
+    if snapshot and snapshot.parsed is not None:
+        parsed = snapshot.parsed
+    else:
+        try:
+            parsed = parse_access_record_geojson(current_version.geojson)
+        except AccessRecordGeoJSONError:
+            warnings.append(
+                AccessWarning(
+                    f"{prefix}Latest access record revision is invalid and "
+                    "could not be parsed."
+                )
+            )
+            return warnings
 
     access_start_points = [
         point for point in parsed.points if point.feature_type == "access_start"

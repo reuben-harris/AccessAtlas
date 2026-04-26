@@ -62,7 +62,7 @@
     <table class="table table-vcenter">
       <thead><tr><th>Name</th><th>Arrival Method</th><th>Status</th><th>Current Version</th><th class="text-end">Actions</th></tr></thead>
       <tbody>
-        {% for access_record in object.access_records.all %}
+        {% for access_record in site_access_records %}
           <tr>
             <td><a href="{{ access_record.get_absolute_url }}">{{ access_record.name }}</a></td>
             <td>{{ access_record.get_arrival_method_display }}</td>
@@ -74,7 +74,7 @@
               {% endif %}
             </td>
             <td>
-              {% with current_version=access_record.current_version %}
+              {% with current_version=access_record.latest_version %}
                 {% if current_version %}
                   v{{ current_version.version_number }}
                 {% else %}

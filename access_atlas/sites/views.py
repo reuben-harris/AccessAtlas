@@ -13,7 +13,7 @@ from access_atlas.accounts.preferences import (
     site_access_map_preference_key,
 )
 
-from .access_records import AccessRecordGeoJSONError, parse_access_record_geojson
+from .access_record_snapshots import build_access_record_snapshots
 from .access_warnings import build_access_record_warnings, build_site_warnings
 from .feed import SiteFeedError, sync_configured_site_feed
 from .forms import (
@@ -56,18 +56,19 @@ TRACK_SUITABILITY_COLOR = {
 }
 
 
-def build_site_access_map_data(site: Site) -> dict[str, list[dict]]:
+def build_site_access_map_data(
+    access_records: list[AccessRecord],
+    snapshots_by_record_id,
+) -> dict[str, list[dict]]:
     points = []
     tracks = []
-    for access_record in site.access_records.all():
-        current_version = access_record.current_version
-        if current_version is None:
+    for access_record in access_records:
+        snapshot = snapshots_by_record_id.get(access_record.pk)
+        if snapshot is None or snapshot.current_version is None:
             continue
-        try:
-            parsed = parse_access_record_geojson(current_version.geojson)
-        except AccessRecordGeoJSONError:
+        if snapshot.parse_error or snapshot.parsed is None:
             continue
-        for point in parsed.points:
+        for point in snapshot.parsed.points:
             points.append(
                 {
                     "recordId": access_record.pk,
@@ -81,7 +82,7 @@ def build_site_access_map_data(site: Site) -> dict[str, list[dict]]:
                     "label": point.label or POINT_TYPE_DISPLAY.get(point.feature_type),
                 }
             )
-        for track in parsed.tracks:
+        for track in snapshot.parsed.tracks:
             tracks.append(
                 {
                     "recordId": access_record.pk,
@@ -111,11 +112,12 @@ class SiteListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        warning_site_ids = {
-            site.pk
-            for site in context["object_list"]
-            if build_site_warnings(site)
-        }
+        warning_site_ids = set()
+        for site in context["object_list"]:
+            access_records = list(site.access_records.all())
+            snapshots_by_record_id = build_access_record_snapshots(access_records)
+            if build_site_warnings(site, snapshots_by_record_id=snapshots_by_record_id):
+                warning_site_ids.add(site.pk)
         context["warning_site_ids"] = warning_site_ids
         return context
 
@@ -129,10 +131,24 @@ class SiteDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["access_warnings"] = build_site_warnings(self.object)
-        context["site_access_map_data"] = build_site_access_map_data(self.object)
+        access_records = list(self.object.access_records.all())
+        snapshots_by_record_id = build_access_record_snapshots(access_records)
+        for access_record in access_records:
+            snapshot = snapshots_by_record_id.get(access_record.pk)
+            access_record.latest_version = (
+                snapshot.current_version if snapshot is not None else None
+            )
+        context["site_access_records"] = access_records
+        context["access_warnings"] = build_site_warnings(
+            self.object,
+            snapshots_by_record_id=snapshots_by_record_id,
+        )
+        context["site_access_map_data"] = build_site_access_map_data(
+            access_records,
+            snapshots_by_record_id,
+        )
         preference_key = site_access_map_preference_key(self.object.pk)
-        default_record_ids = [record.pk for record in self.object.access_records.all()]
+        default_record_ids = [record.pk for record in access_records]
         map_preference = get_user_preference(
             self.request.user,
             preference_key,
@@ -217,21 +233,23 @@ class AccessRecordDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["access_warnings"] = build_access_record_warnings(self.object)
+        snapshot = build_access_record_snapshots([self.object]).get(self.object.pk)
+        context["access_warnings"] = build_access_record_warnings(
+            self.object,
+            snapshot=snapshot,
+        )
         context["access_feature_rows"] = []
         context["access_feature_count"] = 0
         context["access_parse_error"] = None
-        current_version = self.object.current_version
-        if current_version:
-            try:
-                parsed = parse_access_record_geojson(current_version.geojson)
-            except AccessRecordGeoJSONError:
+        context["current_version"] = snapshot.current_version if snapshot else None
+        if snapshot and snapshot.current_version:
+            if snapshot.parse_error:
                 context["access_parse_error"] = (
                     "Latest revision could not be parsed for feature summary."
                 )
-            else:
+            elif snapshot.parsed is not None:
                 feature_rows = []
-                for point in parsed.points:
+                for point in snapshot.parsed.points:
                     details = "-"
                     if point.feature_type == "gate" and point.properties.get("code"):
                         details = f"Code: {point.properties['code']}"
@@ -252,16 +270,13 @@ class AccessRecordDetailView(LoginRequiredMixin, DetailView):
                             "details": details,
                         }
                     )
-                for track in parsed.tracks:
+                for track in snapshot.parsed.tracks:
                     details = "-"
                     if track.suitability:
                         suitability_display = TRACK_SUITABILITY_DISPLAY.get(
                             track.suitability, track.suitability
                         )
-                        details = (
-                            "Suitability: "
-                            f"{suitability_display}"
-                        )
+                        details = f"Suitability: {suitability_display}"
                     feature_rows.append(
                         {
                             "type_display": "Track",

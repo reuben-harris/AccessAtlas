@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from django.db import transaction
+from django.db.models import Max
 
 from .models import AccessRecord, AccessRecordUploadDraft, AccessRecordVersion
 
@@ -39,10 +40,10 @@ def create_access_record_version_from_upload(
     change_note: str,
 ) -> AccessRecordVersion:
     access_record = AccessRecord.objects.select_for_update().get(pk=access_record.pk)
-    current_version = access_record.current_version
-    next_version_number = (
-        current_version.version_number + 1 if current_version is not None else 1
-    )
+    current_version_number = AccessRecordVersion.objects.filter(
+        access_record=access_record
+    ).aggregate(max_version=Max("version_number"))["max_version"]
+    next_version_number = (current_version_number or 0) + 1
     return AccessRecordVersion.objects.create(
         access_record=access_record,
         version_number=next_version_number,
