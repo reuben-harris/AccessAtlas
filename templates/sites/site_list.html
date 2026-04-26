@@ -24,7 +24,16 @@
         {% for site in object_list %}
           <tr>
             <td><a href="{% url 'site_detail' site.pk %}">{{ site.code }}</a></td>
-            <td>{{ site.name }}</td>
+            <td>
+              <div class="d-inline-flex align-items-center gap-2">
+                <span>{{ site.name }}</span>
+                {% if site.pk in warning_site_ids %}
+                  <span class="site-warning-indicator" title="There are warnings for this site.">
+                    <i class="ti ti-alert-triangle-filled" aria-hidden="true"></i>
+                  </span>
+                {% endif %}
+              </div>
+            </td>
             <td>{{ site.source_name }}</td>
             <td>{{ site.latitude }}, {{ site.longitude }}</td>
             <td>

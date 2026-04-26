@@ -238,6 +238,60 @@ def test_site_list_renders_coordinates(client):
 
 
 @pytest.mark.django_db
+def test_site_list_shows_warning_indicator_for_sites_with_access_warnings(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    warning_site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Warning Site",
+        latitude=-41.1,
+        longitude=174.1,
+        access_start_latitude=-41.2,
+        access_start_longitude=174.2,
+    )
+    ok_site = Site.objects.create(
+        source_name="dummy",
+        external_id="002",
+        code="AA-002",
+        name="OK Site",
+        latitude=-42.1,
+        longitude=175.1,
+        access_start_latitude=-42.2,
+        access_start_longitude=175.2,
+    )
+    warning_record = AccessRecord.objects.create(site=warning_site, name="Road access")
+    AccessRecord.objects.create(site=ok_site, name="Road access")
+    AccessRecordVersion.objects.create(
+        access_record=warning_record,
+        version_number=1,
+        geojson={
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [174.25, -41.25]},
+                    "properties": {
+                        "access_atlas:type": "access_start",
+                        "name": "Access start",
+                    },
+                }
+            ],
+        },
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+
+    response = client.get(reverse("site_list"))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "There are warnings for this site." in content
+    assert "site-warning-indicator" in content
+
+
+@pytest.mark.django_db
 def test_site_detail_renders_access_start_metadata(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)

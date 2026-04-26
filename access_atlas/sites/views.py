@@ -29,6 +29,19 @@ class SiteListView(LoginRequiredMixin, ListView):
     paginate_by = 50
     template_name = "sites/site_list.html"
 
+    def get_queryset(self):
+        return Site.objects.prefetch_related("access_records__versions")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        warning_site_ids = {
+            site.pk
+            for site in context["object_list"]
+            if build_site_warnings(site)
+        }
+        context["warning_site_ids"] = warning_site_ids
+        return context
+
 
 class SiteDetailView(LoginRequiredMixin, DetailView):
     model = Site
