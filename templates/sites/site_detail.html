@@ -65,10 +65,12 @@
                 {% endif %}
               {% endwith %}
             </td>
-            <td class="text-end">
-              <div class="btn-list justify-content-end">
-                <a class="btn btn-sm btn-warning" href="{% url 'access_record_update' access_record.pk %}">Edit</a>
-                <a class="btn btn-sm btn-primary" href="{% url 'access_record_version_create' access_record.pk %}">Upload version</a>
+            <td class="text-end row-actions">
+              <div class="access-record-actions">
+                <a class="btn btn-icon btn-warning row-edit-button" href="{% url 'access_record_update' access_record.pk %}" aria-label="Edit {{ access_record.name }}" title="Edit {{ access_record.name }}">
+                  <i class="ti ti-pencil" aria-hidden="true"></i>
+                </a>
+                <a class="btn btn-primary row-upload-revision-button" href="{% url 'access_record_version_create' access_record.pk %}">Upload revision</a>
               </div>
             </td>
           </tr>

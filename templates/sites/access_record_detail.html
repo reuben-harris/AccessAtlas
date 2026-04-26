@@ -7,14 +7,11 @@
   <div class="row align-items-center">
     <div class="col">
       <h2 class="page-title">{{ object.name }}</h2>
-      <div class="text-secondary">
-        <a href="{{ object.site.get_absolute_url }}">{{ object.site }}</a>
-      </div>
     </div>
     <div class="col-auto ms-auto">
       <div class="btn-list">
         <a class="btn btn-warning" href="{% url 'access_record_update' object.pk %}">Edit</a>
-        <a class="btn btn-primary" href="{% url 'access_record_version_create' object.pk %}">Upload version</a>
+        <a class="btn btn-primary" href="{% url 'access_record_version_create' object.pk %}">Upload revision</a>
       </div>
     </div>
   </div>

@@ -114,14 +114,14 @@ class AccessRecordVersionCreateView(LoginRequiredMixin, FormView):
             geojson=form.cleaned_data["geojson"],
             change_note=form.cleaned_data["change_note"],
         )
-        messages.success(self.request, "Access record version uploaded.")
+        messages.success(self.request, "Access record revision uploaded.")
         return redirect(self.access_record.site.get_absolute_url())
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["site"] = self.access_record.site
         context["access_record"] = self.access_record
-        context["form_title"] = f"Upload {self.access_record.name}"
+        context["form_title"] = f"Upload Revision > {self.access_record.name}"
         context["cancel_url"] = self.access_record.site.get_absolute_url()
         return context
 

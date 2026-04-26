@@ -52,7 +52,7 @@ class Site(models.Model):
 class ArrivalMethod(models.TextChoices):
     ROAD = "road", "Road"
     BOAT = "boat", "Boat"
-    HELI = "heli", "Heli"
+    HELI = "heli", "Helicopter"
     OTHER = "other", "Other"
 
 

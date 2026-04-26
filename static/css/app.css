@@ -316,6 +316,17 @@ input[type="time"].form-control.is-invalid {
   min-height: 2.25rem;
 }
 
+.row-actions .row-upload-revision-button {
+  min-height: 2.25rem;
+}
+
+.access-record-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  white-space: nowrap;
+}
+
 .view-toolbar {
   display: inline-flex;
   align-items: center;

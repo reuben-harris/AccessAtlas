@@ -411,6 +411,8 @@ def test_site_detail_shows_access_record_actions(client):
     assert "Boat" in content
     assert access_record.get_absolute_url() in content
     assert reverse("access_record_update", kwargs={"pk": access_record.pk}) in content
+    assert "ti ti-pencil" in content
+    assert "Upload revision" in content
     assert (
         reverse("access_record_version_create", kwargs={"pk": access_record.pk})
         in content
@@ -521,6 +523,28 @@ def test_access_record_version_upload_creates_next_version(client):
 
 
 @pytest.mark.django_db
+def test_access_record_version_upload_page_uses_revision_language(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    access_record = AccessRecord.objects.create(site=site, name="Boat access")
+
+    response = client.get(
+        reverse("access_record_version_create", kwargs={"pk": access_record.pk})
+    )
+
+    assert response.status_code == 200
+    assert "Upload Revision &gt; Boat access" in response.content.decode()
+
+
+@pytest.mark.django_db
 def test_access_record_detail_shows_metadata_and_versions(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -554,6 +578,7 @@ def test_access_record_detail_shows_metadata_and_versions(client):
     assert "Boat" in content
     assert "v1" in content
     assert "Initial upload" in content
+    assert content.count(site.get_absolute_url()) == 1
 
 
 @pytest.mark.django_db
