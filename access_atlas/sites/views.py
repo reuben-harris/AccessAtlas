@@ -8,6 +8,7 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import DetailView, FormView, ListView, UpdateView
 
+from .access_warnings import build_access_record_warnings, build_site_warnings
 from .feed import SiteFeedError, sync_configured_site_feed
 from .forms import (
     AccessRecordForm,
@@ -35,6 +36,11 @@ class SiteDetailView(LoginRequiredMixin, DetailView):
 
     def get_queryset(self):
         return Site.objects.prefetch_related("access_records")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["access_warnings"] = build_site_warnings(self.object)
+        return context
 
 
 class AccessRecordCreateView(LoginRequiredMixin, FormView):
@@ -95,6 +101,11 @@ class AccessRecordDetailView(LoginRequiredMixin, DetailView):
 
     def get_queryset(self):
         return AccessRecord.objects.select_related("site").prefetch_related("versions")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["access_warnings"] = build_access_record_warnings(self.object)
+        return context
 
 
 class AccessRecordUpdateView(LoginRequiredMixin, UpdateView):

@@ -10,6 +10,10 @@ from access_atlas.sites.access_records import (
     AccessRecordGeoJSONError,
     parse_access_record_geojson,
 )
+from access_atlas.sites.access_warnings import (
+    build_access_record_warnings,
+    build_site_warnings,
+)
 from access_atlas.sites.feed import SiteFeedError, sync_sites_from_payload
 from access_atlas.sites.models import (
     AccessRecord,
@@ -256,6 +260,29 @@ def test_site_detail_renders_access_start_metadata(client):
     assert "-41.2" in content
     assert "Sync Status" in content
     assert "badge bg-green-lt" in content
+
+
+@pytest.mark.django_db
+def test_site_detail_shows_warning_when_source_access_start_missing(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+        access_start_latitude=None,
+        access_start_longitude=None,
+    )
+
+    response = client.get(reverse("site_detail", kwargs={"pk": site.pk}))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Access warnings" in content
+    assert "Source-of-truth access start coordinates are missing" in content
 
 
 @pytest.mark.django_db
@@ -700,6 +727,97 @@ def test_access_record_detail_shows_metadata_and_versions(client):
             kwargs={"record_pk": access_record.pk, "version_pk": version.pk},
         )
         in content
+    )
+
+
+@pytest.mark.django_db
+def test_access_record_detail_shows_warning_for_access_start_mismatch(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+        access_start_latitude=-41.2,
+        access_start_longitude=174.2,
+    )
+    access_record = AccessRecord.objects.create(site=site, name="Boat access")
+    AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=1,
+        geojson={
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [174.25, -41.25]},
+                    "properties": {
+                        "access_atlas:type": "access_start",
+                        "name": "Access start",
+                    },
+                }
+            ],
+        },
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+
+    response = client.get(access_record.get_absolute_url())
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Access warnings" in content
+    assert "Access-start coordinates differ from source-of-truth values." in content
+
+
+@pytest.mark.django_db
+def test_access_warning_helpers_include_site_point_mismatch():
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+        access_start_latitude=-41.2,
+        access_start_longitude=174.2,
+    )
+    access_record = AccessRecord.objects.create(site=site, name="Road access")
+    AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=1,
+        geojson={
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [174.4, -41.4]},
+                    "properties": {
+                        "access_atlas:type": "site",
+                        "name": "Site",
+                    },
+                }
+            ],
+        },
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+
+    record_warnings = build_access_record_warnings(access_record)
+    site_warnings = build_site_warnings(site)
+
+    assert any(
+        warning.message == "Site coordinates differ from source-of-truth values."
+        for warning in record_warnings
+    )
+    assert any(
+        warning.message
+        == "Road access: Site coordinates differ from source-of-truth values."
+        for warning in site_warnings
     )
 
 
