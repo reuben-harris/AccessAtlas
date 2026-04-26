@@ -45,9 +45,17 @@ class AccessRecordVersionInline(admin.TabularInline):
 
 @admin.register(AccessRecord)
 class AccessRecordAdmin(SimpleHistoryAdmin):
-    list_display = ["site", "created_at", "updated_at"]
-    search_fields = ["site__code", "site__name"]
-    readonly_fields = ["site", "created_at", "updated_at"]
+    list_display = [
+        "site",
+        "name",
+        "access_type",
+        "is_active",
+        "created_at",
+        "updated_at",
+    ]
+    list_filter = ["access_type", "is_active"]
+    search_fields = ["site__code", "site__name", "name"]
+    readonly_fields = ["created_at", "updated_at"]
     inlines = [AccessRecordVersionInline]
 
 

@@ -9,6 +9,7 @@ from access_atlas.sites.feed import SiteFeedError, sync_sites_from_payload
 from access_atlas.sites.models import (
     AccessRecord,
     AccessRecordVersion,
+    AccessType,
     Site,
     SiteSyncStatus,
 )
@@ -246,10 +247,12 @@ def test_site_detail_renders_access_start_metadata(client):
     content = response.content.decode()
     assert "Access Start Latitude" in content
     assert "-41.2" in content
+    assert "Sync Status" in content
+    assert "badge bg-green-lt" in content
 
 
 @pytest.mark.django_db
-def test_site_can_have_one_access_record():
+def test_site_can_have_multiple_access_records():
     site = Site.objects.create(
         source_name="dummy",
         external_id="001",
@@ -258,10 +261,43 @@ def test_site_can_have_one_access_record():
         latitude=-41.1,
         longitude=174.1,
     )
-    AccessRecord.objects.create(site=site)
+    AccessRecord.objects.create(
+        site=site,
+        name="Boat access",
+        access_type=AccessType.BOAT,
+    )
+    AccessRecord.objects.create(
+        site=site,
+        name="Heli access",
+        access_type=AccessType.HELI,
+    )
+
+    assert site.access_records.count() == 2
+
+
+@pytest.mark.django_db
+def test_access_record_names_are_unique_per_site():
+    first_site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    second_site = Site.objects.create(
+        source_name="dummy",
+        external_id="002",
+        code="AA-002",
+        name="Other Site",
+        latitude=-42.1,
+        longitude=175.1,
+    )
+    AccessRecord.objects.create(site=first_site, name="Boat access")
+    AccessRecord.objects.create(site=second_site, name="Boat access")
 
     with pytest.raises(IntegrityError):
-        AccessRecord.objects.create(site=site)
+        AccessRecord.objects.create(site=first_site, name="Boat access")
 
 
 @pytest.mark.django_db
@@ -275,7 +311,7 @@ def test_access_record_current_version_is_highest_version_number():
         latitude=-41.1,
         longitude=174.1,
     )
-    access_record = AccessRecord.objects.create(site=site)
+    access_record = AccessRecord.objects.create(site=site, name="Road access")
     first_version = AccessRecordVersion.objects.create(
         access_record=access_record,
         version_number=1,
@@ -314,8 +350,8 @@ def test_access_record_version_numbers_are_unique_per_record():
         latitude=-42.1,
         longitude=175.1,
     )
-    first_record = AccessRecord.objects.create(site=first_site)
-    second_record = AccessRecord.objects.create(site=second_site)
+    first_record = AccessRecord.objects.create(site=first_site, name="Road access")
+    second_record = AccessRecord.objects.create(site=second_site, name="Road access")
     geojson = {"type": "FeatureCollection", "features": []}
     AccessRecordVersion.objects.create(
         access_record=first_record,

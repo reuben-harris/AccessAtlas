@@ -17,7 +17,14 @@
       <dt class="col-sm-3">Longitude</dt><dd class="col-sm-9">{{ object.longitude }}</dd>
       <dt class="col-sm-3">Access Start Latitude</dt><dd class="col-sm-9">{{ object.access_start_latitude|default:"Not provided" }}</dd>
       <dt class="col-sm-3">Access Start Longitude</dt><dd class="col-sm-9">{{ object.access_start_longitude|default:"Not provided" }}</dd>
-      <dt class="col-sm-3">Sync Status</dt><dd class="col-sm-9">{{ object.get_sync_status_display }}</dd>
+      <dt class="col-sm-3">Sync Status</dt>
+      <dd class="col-sm-9">
+        {% if object.sync_status == "active" %}
+          <span class="badge bg-green-lt">Active</span>
+        {% else %}
+          <span class="badge bg-yellow-lt">Stale</span>
+        {% endif %}
+      </dd>
       <dt class="col-sm-3">Last Seen</dt><dd class="col-sm-9">{{ object.last_seen_at|default:"Never" }}</dd>
     </dl>
     <p class="text-secondary mb-0">Site fields are read-only and must be changed in the source of truth.</p>

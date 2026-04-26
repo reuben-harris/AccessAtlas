@@ -49,21 +49,42 @@ class Site(models.Model):
         return reverse("site_detail", kwargs={"pk": self.pk})
 
 
+class AccessType(models.TextChoices):
+    ROAD = "road", "Road"
+    BOAT = "boat", "Boat"
+    HELI = "heli", "Heli"
+    WALKING = "walking", "Walking"
+    OTHER = "other", "Other"
+
+
 class AccessRecord(models.Model):
-    site = models.OneToOneField(
+    site = models.ForeignKey(
         Site,
-        related_name="access_record",
+        related_name="access_records",
         on_delete=models.CASCADE,
     )
+    name = models.CharField(max_length=255)
+    access_type = models.CharField(
+        max_length=20,
+        choices=AccessType.choices,
+        default=AccessType.ROAD,
+    )
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     history = HistoricalRecords()
 
     class Meta:
-        ordering = ["site__code"]
+        ordering = ["site__code", "name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["site", "name"],
+                name="unique_access_record_name_per_site",
+            )
+        ]
 
     def __str__(self) -> str:
-        return f"Access Record for {self.site}"
+        return f"{self.site} - {self.name}"
 
     @property
     def current_version(self) -> AccessRecordVersion | None:
