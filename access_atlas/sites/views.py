@@ -16,6 +16,7 @@ from .forms import (
 from .models import AccessRecord, Site
 from .services import (
     create_access_record_from_upload,
+    create_access_record_upload_draft,
     create_access_record_version_from_upload,
 )
 
@@ -45,6 +46,7 @@ class AccessRecordCreateView(LoginRequiredMixin, FormView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["site"] = self.site
+        kwargs["user"] = self.request.user
         return kwargs
 
     def form_valid(self, form):
@@ -56,8 +58,26 @@ class AccessRecordCreateView(LoginRequiredMixin, FormView):
             geojson=form.cleaned_data["geojson"],
             change_note=form.cleaned_data["change_note"],
         )
+        if form.staged_upload is not None:
+            form.staged_upload.delete()
+        if form.replaced_staged_upload is not None:
+            form.replaced_staged_upload.delete()
         messages.success(self.request, "Access record uploaded.")
         return redirect(self.site.get_absolute_url())
+
+    def form_invalid(self, form):
+        self._stage_uploaded_geojson(form)
+        return super().form_invalid(form)
+
+    def _stage_uploaded_geojson(self, form):
+        if form.staged_upload is not None or "geojson" not in form.cleaned_data:
+            return
+        form.staged_upload = create_access_record_upload_draft(
+            user=self.request.user,
+            site=self.site,
+            geojson=form.cleaned_data["geojson"],
+            file_name=form.cleaned_data["geojson_file_name"],
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -107,6 +127,12 @@ class AccessRecordVersionCreateView(LoginRequiredMixin, FormView):
         )
         return super().dispatch(request, *args, **kwargs)
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["access_record"] = self.access_record
+        kwargs["user"] = self.request.user
+        return kwargs
+
     def form_valid(self, form):
         create_access_record_version_from_upload(
             access_record=self.access_record,
@@ -114,8 +140,26 @@ class AccessRecordVersionCreateView(LoginRequiredMixin, FormView):
             geojson=form.cleaned_data["geojson"],
             change_note=form.cleaned_data["change_note"],
         )
+        if form.staged_upload is not None:
+            form.staged_upload.delete()
+        if form.replaced_staged_upload is not None:
+            form.replaced_staged_upload.delete()
         messages.success(self.request, "Access record revision uploaded.")
         return redirect(self.access_record.site.get_absolute_url())
+
+    def form_invalid(self, form):
+        self._stage_uploaded_geojson(form)
+        return super().form_invalid(form)
+
+    def _stage_uploaded_geojson(self, form):
+        if form.staged_upload is not None or "geojson" not in form.cleaned_data:
+            return
+        form.staged_upload = create_access_record_upload_draft(
+            user=self.request.user,
+            access_record=self.access_record,
+            geojson=form.cleaned_data["geojson"],
+            file_name=form.cleaned_data["geojson_file_name"],
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

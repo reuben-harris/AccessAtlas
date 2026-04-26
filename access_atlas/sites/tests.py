@@ -14,6 +14,7 @@ from access_atlas.sites.feed import SiteFeedError, sync_sites_from_payload
 from access_atlas.sites.models import (
     AccessRecord,
     AccessRecordStatus,
+    AccessRecordUploadDraft,
     AccessRecordVersion,
     ArrivalMethod,
     Site,
@@ -484,6 +485,54 @@ def test_access_record_upload_rejects_invalid_geojson(client):
     assert response.status_code == 200
     assert "GeoJSON must be a FeatureCollection." in response.content.decode()
     assert AccessRecord.objects.count() == 0
+    assert AccessRecordUploadDraft.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_access_record_upload_retains_valid_geojson_when_metadata_is_invalid(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+
+    response = client.post(
+        reverse("access_record_create", kwargs={"site_pk": site.pk}),
+        {
+            "name": "Boat access",
+            "arrival_method": ArrivalMethod.BOAT,
+            "change_note": "",
+            "geojson_file": geojson_file("retained.geojson"),
+        },
+    )
+
+    assert response.status_code == 200
+    draft = AccessRecordUploadDraft.objects.get(site=site, user=user)
+    content = response.content.decode()
+    assert "GeoJSON file retained" in content
+    assert "retained.geojson" in content
+    assert f'name="staged_upload_id" value="{draft.pk}"' in content
+
+    response = client.post(
+        reverse("access_record_create", kwargs={"site_pk": site.pk}),
+        {
+            "name": "Boat access",
+            "arrival_method": ArrivalMethod.BOAT,
+            "change_note": "Initial upload",
+            "staged_upload_id": str(draft.pk),
+        },
+    )
+
+    assert response.status_code == 302
+    access_record = AccessRecord.objects.get(site=site)
+    assert access_record.current_version is not None
+    assert access_record.current_version.change_note == "Initial upload"
+    assert AccessRecordUploadDraft.objects.count() == 0
 
 
 @pytest.mark.django_db
@@ -520,6 +569,48 @@ def test_access_record_version_upload_creates_next_version(client):
     assert version is not None
     assert version.version_number == 2
     assert version.change_note == "Updated gate"
+
+
+@pytest.mark.django_db
+def test_access_record_version_upload_retains_geojson_without_note(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    access_record = AccessRecord.objects.create(site=site, name="Boat access")
+
+    response = client.post(
+        reverse("access_record_version_create", kwargs={"pk": access_record.pk}),
+        {
+            "change_note": "",
+            "geojson_file": geojson_file("revision.geojson"),
+        },
+    )
+
+    assert response.status_code == 200
+    draft = AccessRecordUploadDraft.objects.get(access_record=access_record, user=user)
+    assert "GeoJSON file retained" in response.content.decode()
+
+    response = client.post(
+        reverse("access_record_version_create", kwargs={"pk": access_record.pk}),
+        {
+            "change_note": "Updated gate",
+            "staged_upload_id": str(draft.pk),
+        },
+    )
+
+    assert response.status_code == 302
+    version = access_record.current_version
+    assert version is not None
+    assert version.version_number == 1
+    assert version.change_note == "Updated gate"
+    assert AccessRecordUploadDraft.objects.count() == 0
 
 
 @pytest.mark.django_db
@@ -767,9 +858,9 @@ def test_parse_access_record_geojson_rejects_invalid_data(geojson, message):
         parse_access_record_geojson(geojson)
 
 
-def geojson_file():
+def geojson_file(name="access.geojson"):
     return SimpleUploadedFile(
-        "access.geojson",
+        name,
         b"""
         {
           "type": "FeatureCollection",

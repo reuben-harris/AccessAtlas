@@ -3,6 +3,62 @@
 from django.db import migrations, models
 
 
+def _rename_column_if_needed(schema_editor, table_name, old_name, new_name):
+    connection = schema_editor.connection
+    with connection.cursor() as cursor:
+        columns = {
+            column.name
+            for column in connection.introspection.get_table_description(
+                cursor,
+                table_name,
+            )
+        }
+
+    if old_name in columns and new_name not in columns:
+        qn = connection.ops.quote_name
+        schema_editor.execute(
+            f"ALTER TABLE {qn(table_name)} RENAME COLUMN {qn(old_name)} TO {qn(new_name)}"
+        )
+
+
+def _forwards_rename_columns(apps, schema_editor):
+    _rename_column_if_needed(
+        schema_editor, "sites_accessrecord", "access_type", "arrival_method"
+    )
+    _rename_column_if_needed(
+        schema_editor,
+        "sites_historicalaccessrecord",
+        "access_type",
+        "arrival_method",
+    )
+    _rename_column_if_needed(schema_editor, "sites_accessrecord", "is_active", "status")
+    _rename_column_if_needed(
+        schema_editor,
+        "sites_historicalaccessrecord",
+        "is_active",
+        "status",
+    )
+
+
+def _backwards_rename_columns(apps, schema_editor):
+    _rename_column_if_needed(
+        schema_editor, "sites_accessrecord", "arrival_method", "access_type"
+    )
+    _rename_column_if_needed(
+        schema_editor,
+        "sites_historicalaccessrecord",
+        "arrival_method",
+        "access_type",
+    )
+    _rename_column_if_needed(schema_editor, "sites_accessrecord", "status", "is_active")
+    _rename_column_if_needed(
+        schema_editor,
+        "sites_historicalaccessrecord",
+        "status",
+        "is_active",
+    )
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,25 +66,35 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RenameField(
-            model_name="accessrecord",
-            old_name="access_type",
-            new_name="arrival_method",
-        ),
-        migrations.RenameField(
-            model_name="historicalaccessrecord",
-            old_name="access_type",
-            new_name="arrival_method",
-        ),
-        migrations.RenameField(
-            model_name="accessrecord",
-            old_name="is_active",
-            new_name="status",
-        ),
-        migrations.RenameField(
-            model_name="historicalaccessrecord",
-            old_name="is_active",
-            new_name="status",
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunPython(
+                    _forwards_rename_columns,
+                    _backwards_rename_columns,
+                )
+            ],
+            state_operations=[
+                migrations.RenameField(
+                    model_name="accessrecord",
+                    old_name="access_type",
+                    new_name="arrival_method",
+                ),
+                migrations.RenameField(
+                    model_name="historicalaccessrecord",
+                    old_name="access_type",
+                    new_name="arrival_method",
+                ),
+                migrations.RenameField(
+                    model_name="accessrecord",
+                    old_name="is_active",
+                    new_name="status",
+                ),
+                migrations.RenameField(
+                    model_name="historicalaccessrecord",
+                    old_name="is_active",
+                    new_name="status",
+                ),
+            ],
         ),
         migrations.AlterField(
             model_name="accessrecord",

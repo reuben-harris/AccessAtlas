@@ -15,7 +15,17 @@
   <div class="card-body">
     <form method="post" enctype="multipart/form-data" novalidate>
       {% csrf_token %}
-      {% for field in form %}
+      {% for field in form.hidden_fields %}
+        {{ field }}
+      {% endfor %}
+      {% if form.staged_upload %}
+        <input type="hidden" name="staged_upload_id" value="{{ form.staged_upload.pk }}">
+        <div class="alert alert-info" role="alert">
+          <h4 class="alert-title">GeoJSON file retained</h4>
+          <p class="mb-0">{{ form.staged_upload.file_name }} will be used when you submit again. Choose a new file to replace it.</p>
+        </div>
+      {% endif %}
+      {% for field in form.visible_fields %}
         <div class="mb-3">
           <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
           {{ field|render_form_field }}

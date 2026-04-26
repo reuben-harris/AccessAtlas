@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from django.conf import settings
 from django.db import models
 from django.urls import reverse
 from simple_history.models import HistoricalRecords
@@ -136,3 +137,34 @@ class AccessRecordVersion(models.Model):
 
     def __str__(self) -> str:
         return f"{self.access_record} v{self.version_number}"
+
+
+class AccessRecordUploadDraft(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="access_record_upload_drafts",
+        on_delete=models.CASCADE,
+    )
+    site = models.ForeignKey(
+        Site,
+        related_name="access_record_upload_drafts",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    access_record = models.ForeignKey(
+        AccessRecord,
+        related_name="upload_drafts",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    file_name = models.CharField(max_length=255)
+    geojson = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return self.file_name

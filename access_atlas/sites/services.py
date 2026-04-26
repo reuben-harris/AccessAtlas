@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from django.db import transaction
 
-from .models import AccessRecord, AccessRecordVersion
+from .models import AccessRecord, AccessRecordUploadDraft, AccessRecordVersion
 
 
 @transaction.atomic
@@ -49,4 +49,21 @@ def create_access_record_version_from_upload(
         geojson=geojson,
         change_note=change_note,
         uploaded_by=user,
+    )
+
+
+def create_access_record_upload_draft(
+    *,
+    user,
+    geojson: dict,
+    file_name: str,
+    site=None,
+    access_record: AccessRecord | None = None,
+) -> AccessRecordUploadDraft:
+    return AccessRecordUploadDraft.objects.create(
+        user=user,
+        site=site,
+        access_record=access_record,
+        geojson=geojson,
+        file_name=file_name,
     )
