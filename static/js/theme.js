@@ -8,14 +8,6 @@
   };
   const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
-  function getCookie(name) {
-    const cookie = document.cookie
-      .split(";")
-      .map((item) => item.trim())
-      .find((item) => item.startsWith(`${name}=`));
-    return cookie ? decodeURIComponent(cookie.slice(name.length + 1)) : "";
-  }
-
   function isMode(mode) {
     return modes.includes(mode);
   }
@@ -68,20 +60,13 @@
     const toggle = document.querySelector("[data-theme-cycle]");
     const url = toggle?.dataset.themePreferenceUrl;
     const key = toggle?.dataset.themePreferenceKey;
+    const postJSON = window.AccessAtlas?.postJSON;
 
-    if (!url || !key) {
+    if (!url || !key || typeof postJSON !== "function") {
       return;
     }
 
-    fetch(url, {
-      method: "POST",
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": getCookie("csrftoken"),
-      },
-      body: JSON.stringify({ key, value: { mode } }),
-    }).catch(() => {});
+    postJSON(url, { key, value: { mode } }).catch(() => {});
   }
 
   document.addEventListener("click", (event) => {

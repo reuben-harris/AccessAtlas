@@ -29,6 +29,7 @@
   const preference = JSON.parse(preferenceElement.textContent);
   const tileLayer = JSON.parse(tileLayerElement.textContent);
   const savedPreference = preference.value || {};
+  const postJSON = window.AccessAtlas?.postJSON;
   const statusByValue = new Map(
     statusLayers.map((statusLayer) => [statusLayer.value, statusLayer])
   );
@@ -43,14 +44,6 @@
   let activeTileLayer = null;
   let viewportSaveTimeout = null;
   let visibleMarkers = [];
-
-  function getCookie(name) {
-    const cookie = document.cookie
-      .split(";")
-      .map((item) => item.trim())
-      .find((item) => item.startsWith(`${name}=`));
-    return cookie ? decodeURIComponent(cookie.slice(name.length + 1)) : "";
-  }
 
   function currentViewport() {
     const center = map.getCenter();
@@ -68,20 +61,16 @@
       return;
     }
 
-    fetch(url, {
-      method: "POST",
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": getCookie("csrftoken"),
+    if (typeof postJSON !== "function") {
+      return;
+    }
+
+    postJSON(url, {
+      key: preference.key,
+      value: {
+        visible_statuses: Array.from(visibleStatuses),
+        viewport: currentViewport(),
       },
-      body: JSON.stringify({
-        key: preference.key,
-        value: {
-          visible_statuses: Array.from(visibleStatuses),
-          viewport: currentViewport(),
-        },
-      }),
     }).catch(() => {});
   }
 
