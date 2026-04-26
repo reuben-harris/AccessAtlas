@@ -5,6 +5,10 @@ from django.db import IntegrityError
 from django.urls import reverse
 
 from access_atlas.accounts.models import User
+from access_atlas.sites.access_records import (
+    AccessRecordGeoJSONError,
+    parse_access_record_geojson,
+)
 from access_atlas.sites.feed import SiteFeedError, sync_sites_from_payload
 from access_atlas.sites.models import (
     AccessRecord,
@@ -376,3 +380,155 @@ def test_access_record_version_numbers_are_unique_per_record():
             change_note="Duplicate version",
             uploaded_by=user,
         )
+
+
+def test_parse_access_record_geojson_extracts_points_and_tracks():
+    parsed = parse_access_record_geojson(
+        {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [174.7603, -41.2969],
+                    },
+                    "properties": {
+                        "access_atlas:type": "access_start",
+                        "label": "Access start",
+                    },
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [174.7588, -41.2961],
+                    },
+                    "properties": {
+                        "access_atlas:type": "gate",
+                        "label": "Farm gate",
+                        "code": "#1923",
+                    },
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [
+                            [174.7603, -41.2969],
+                            [174.7588, -41.2961],
+                        ],
+                    },
+                    "properties": {
+                        "access_atlas:type": "track",
+                        "label": "Walking track",
+                        "suitability": "walking",
+                    },
+                },
+            ],
+        }
+    )
+
+    assert len(parsed.points) == 2
+    assert parsed.points[0].feature_type == "access_start"
+    assert parsed.points[0].longitude == 174.7603
+    assert parsed.points[0].latitude == -41.2969
+    assert parsed.points[1].properties["code"] == "#1923"
+    assert len(parsed.tracks) == 1
+    assert parsed.tracks[0].coordinates == [
+        (174.7603, -41.2969),
+        (174.7588, -41.2961),
+    ]
+    assert parsed.tracks[0].suitability == "walking"
+
+
+@pytest.mark.parametrize(
+    ("geojson", "message"),
+    [
+        (
+            {"type": "Feature", "features": []},
+            "GeoJSON must be a FeatureCollection.",
+        ),
+        (
+            {"type": "FeatureCollection", "features": {}},
+            "FeatureCollection features must be a list.",
+        ),
+        (
+            {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "geometry": {"type": "Point", "coordinates": [1, 2]},
+                        "properties": {},
+                    }
+                ],
+            },
+            "Feature 1 must define access_atlas:type.",
+        ),
+        (
+            {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "geometry": {"type": "Point", "coordinates": [1, 2]},
+                        "properties": {"access_atlas:type": "unknown"},
+                    }
+                ],
+            },
+            "Feature 1 has unsupported access_atlas:type 'unknown'.",
+        ),
+        (
+            {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "geometry": {
+                            "type": "LineString",
+                            "coordinates": [[1, 2], [3, 4]],
+                        },
+                        "properties": {"access_atlas:type": "gate"},
+                    }
+                ],
+            },
+            "Feature 1 with type 'gate' must use Point geometry.",
+        ),
+        (
+            {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "geometry": {"type": "Point", "coordinates": [181, 2]},
+                        "properties": {"access_atlas:type": "access_start"},
+                    }
+                ],
+            },
+            "Feature 1 longitude is outside the valid range.",
+        ),
+        (
+            {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "geometry": {
+                            "type": "LineString",
+                            "coordinates": [[1, 2], [3, 4]],
+                        },
+                        "properties": {
+                            "access_atlas:type": "track",
+                            "suitability": "tractor",
+                        },
+                    }
+                ],
+            },
+            "Feature 1 has unsupported suitability 'tractor'.",
+        ),
+    ],
+)
+def test_parse_access_record_geojson_rejects_invalid_data(geojson, message):
+    with pytest.raises(AccessRecordGeoJSONError, match=message):
+        parse_access_record_geojson(geojson)
