@@ -1,6 +1,11 @@
 {% extends "base/base.html" %}
+{% load static %}
 
 {% block title %}{{ object.code }} - Access Atlas{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
 
 {% block content %}
 <div class="page-header d-print-none">
@@ -79,6 +84,16 @@
             </td>
             <td class="text-end row-actions">
               <div class="access-record-actions">
+                <button
+                  class="btn btn-icon btn-secondary"
+                  type="button"
+                  data-map-toggle="access-record"
+                  data-record-id="{{ access_record.pk }}"
+                  aria-label="Hide {{ access_record.name }} on map"
+                  title="Hide on map"
+                >
+                  <i class="ti ti-eye" aria-hidden="true"></i>
+                </button>
                 <a class="btn btn-icon btn-warning row-edit-button" href="{% url 'access_record_update' access_record.pk %}" aria-label="Edit {{ access_record.name }}" title="Edit {{ access_record.name }}">
                   <i class="ti ti-pencil" aria-hidden="true"></i>
                 </a>
@@ -99,5 +114,22 @@
     </table>
   </div>
 </div>
+<div class="card site-access-map-card mt-3">
+  <div class="card-body p-0">
+    <div
+      id="site-access-map"
+      class="site-access-map"
+      data-preference-url="{% url 'account_preference' %}"
+      aria-label="Map of access record features for this site"
+    ></div>
+  </div>
+</div>
+{{ site_access_map_data|json_script:"site-access-map-data" }}
+{{ site_access_map_preference|json_script:"site-access-map-preference" }}
+{{ map_tile_layer|json_script:"site-access-map-tile-layer" }}
+{{ object.latitude|json_script:"site-access-map-site-latitude" }}
+{{ object.longitude|json_script:"site-access-map-site-longitude" }}
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{% static 'js/site_access_map.js' %}"></script>
 {% include "base/history.html" with object=object %}
 {% endblock %}

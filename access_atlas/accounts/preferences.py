@@ -10,6 +10,7 @@ from .models import User, UserPreference
 
 JOBS_MAP_PREFERENCE_KEY = "jobs.map"
 UI_THEME_PREFERENCE_KEY = "ui.theme"
+SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX = "sites.map."
 MAX_PREFERENCE_KEY_LENGTH = 120
 
 ALLOWED_PREFERENCE_KEYS = {JOBS_MAP_PREFERENCE_KEY, UI_THEME_PREFERENCE_KEY}
@@ -25,8 +26,21 @@ def default_theme_preference() -> dict[str, Any]:
     return {"mode": "system"}
 
 
+def site_access_map_preference_key(site_id: int) -> str:
+    return f"{SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX}{site_id}"
+
+
+def is_allowed_preference_key(key: str) -> bool:
+    if key in ALLOWED_PREFERENCE_KEYS:
+        return True
+    if not key.startswith(SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX):
+        return False
+    site_id = key.removeprefix(SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX)
+    return site_id.isdigit()
+
+
 def validate_preference(key: str, value: object) -> dict[str, Any]:
-    if key not in ALLOWED_PREFERENCE_KEYS:
+    if not is_allowed_preference_key(key):
         raise ValidationError("Unknown preference key.")
     if not isinstance(value, dict):
         raise ValidationError("Preference value must be an object.")
@@ -69,6 +83,20 @@ def validate_preference(key: str, value: object) -> dict[str, Any]:
         if not isinstance(mode, str) or mode not in ALLOWED_THEME_MODES:
             raise ValidationError("mode must be system, light, or dark.")
         return {"mode": mode}
+
+    if key.startswith(SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX):
+        visible_record_ids = value.get("visible_record_ids")
+        if not isinstance(visible_record_ids, list):
+            raise ValidationError("visible_record_ids must be a list.")
+        cleaned_ids: list[int] = []
+        for record_id in visible_record_ids:
+            if not isinstance(record_id, int) or record_id <= 0:
+                raise ValidationError(
+                    "visible_record_ids contains an invalid record id."
+                )
+            if record_id not in cleaned_ids:
+                cleaned_ids.append(record_id)
+        return {"visible_record_ids": cleaned_ids}
 
     raise ValidationError("Unknown preference key.")
 

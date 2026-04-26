@@ -8,6 +8,11 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import DetailView, FormView, ListView, UpdateView
 
+from access_atlas.accounts.preferences import (
+    get_user_preference,
+    site_access_map_preference_key,
+)
+
 from .access_records import AccessRecordGeoJSONError, parse_access_record_geojson
 from .access_warnings import build_access_record_warnings, build_site_warnings
 from .feed import SiteFeedError, sync_configured_site_feed
@@ -44,6 +49,57 @@ TRACK_SUITABILITY_DISPLAY = {
     "walking": "Walking",
 }
 
+TRACK_SUITABILITY_COLOR = {
+    "4wd": "#1a5fb4",
+    "luv": "#f59f00",
+    "walking": "#a51d2d",
+}
+
+
+def build_site_access_map_data(site: Site) -> dict[str, list[dict]]:
+    points = []
+    tracks = []
+    for access_record in site.access_records.all():
+        current_version = access_record.current_version
+        if current_version is None:
+            continue
+        try:
+            parsed = parse_access_record_geojson(current_version.geojson)
+        except AccessRecordGeoJSONError:
+            continue
+        for point in parsed.points:
+            points.append(
+                {
+                    "recordId": access_record.pk,
+                    "latitude": point.latitude,
+                    "longitude": point.longitude,
+                    "type": point.feature_type,
+                    "typeLabel": POINT_TYPE_DISPLAY.get(
+                        point.feature_type, point.feature_type
+                    ),
+                    "recordName": access_record.name,
+                    "label": point.label or POINT_TYPE_DISPLAY.get(point.feature_type),
+                }
+            )
+        for track in parsed.tracks:
+            tracks.append(
+                {
+                    "recordId": access_record.pk,
+                    "label": track.label or "Track",
+                    "suitability": TRACK_SUITABILITY_DISPLAY.get(
+                        track.suitability, track.suitability
+                    )
+                    if track.suitability
+                    else None,
+                    "color": TRACK_SUITABILITY_COLOR.get(track.suitability, "#667382"),
+                    "path": [
+                        {"latitude": latitude, "longitude": longitude}
+                        for longitude, latitude in track.coordinates
+                    ],
+                }
+            )
+    return {"points": points, "tracks": tracks}
+
 
 class SiteListView(LoginRequiredMixin, ListView):
     model = Site
@@ -69,11 +125,34 @@ class SiteDetailView(LoginRequiredMixin, DetailView):
     template_name = "sites/site_detail.html"
 
     def get_queryset(self):
-        return Site.objects.prefetch_related("access_records")
+        return Site.objects.prefetch_related("access_records__versions")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["access_warnings"] = build_site_warnings(self.object)
+        context["site_access_map_data"] = build_site_access_map_data(self.object)
+        preference_key = site_access_map_preference_key(self.object.pk)
+        default_record_ids = [record.pk for record in self.object.access_records.all()]
+        map_preference = get_user_preference(
+            self.request.user,
+            preference_key,
+            {"visible_record_ids": default_record_ids},
+        )
+        context["site_access_map_preference"] = {
+            "key": preference_key,
+            "value": map_preference,
+        }
+        context["map_tile_layer"] = {
+            "light": {
+                "url": settings.MAP_TILE_URL,
+                "attribution": settings.MAP_TILE_ATTRIBUTION,
+            },
+            "dark": {
+                "url": settings.MAP_TILE_DARK_URL,
+                "attribution": settings.MAP_TILE_DARK_ATTRIBUTION,
+            },
+            "maxZoom": settings.MAP_TILE_MAX_ZOOM,
+        }
         return context
 
 

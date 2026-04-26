@@ -6,6 +6,11 @@ from django.db import IntegrityError
 from django.urls import reverse
 
 from access_atlas.accounts.models import User
+from access_atlas.accounts.preferences import (
+    get_user_preference,
+    set_user_preference,
+    site_access_map_preference_key,
+)
 from access_atlas.sites.access_records import (
     AccessRecordGeoJSONError,
     parse_access_record_geojson,
@@ -314,6 +319,121 @@ def test_site_detail_renders_access_start_metadata(client):
     assert "-41.2" in content
     assert "Sync Status" in content
     assert "badge bg-green-lt" in content
+
+
+@pytest.mark.django_db
+def test_site_detail_includes_access_map_feature_data(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    access_record = AccessRecord.objects.create(site=site, name="Road access")
+    AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=1,
+        geojson={
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [174.7, -41.2]},
+                    "properties": {
+                        "access_atlas:type": "gate",
+                        "label": "North gate",
+                    },
+                }
+            ],
+        },
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+
+    response = client.get(reverse("site_detail", kwargs={"pk": site.pk}))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert 'id="site-access-map"' in content
+    assert 'data-map-toggle="access-record"' in content
+    assert f'data-record-id="{access_record.pk}"' in content
+    assert '"recordName": "Road access"' in content
+    assert '"typeLabel": "Gate"' in content
+    assert '"label": "North gate"' in content
+    assert '"points":' in content
+    assert '"tracks":' in content
+
+
+@pytest.mark.django_db
+def test_site_detail_skips_invalid_access_map_feature_data(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    access_record = AccessRecord.objects.create(site=site, name="Road access")
+    AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=1,
+        geojson={"type": "Feature", "features": []},
+        change_note="Broken upload",
+        uploaded_by=user,
+    )
+
+    response = client.get(reverse("site_detail", kwargs={"pk": site.pk}))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert 'id="site-access-map-data"' in content
+    assert (
+        '<script id="site-access-map-data" type="application/json">'
+        '{"points": [], "tracks": []}'
+        "</script>"
+        in content
+    )
+
+
+@pytest.mark.django_db
+def test_site_detail_uses_saved_access_map_visibility_preference(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    AccessRecord.objects.create(site=site, name="Road access")
+    second_record = AccessRecord.objects.create(site=site, name="Boat access")
+    set_user_preference(
+        user,
+        site_access_map_preference_key(site.pk),
+        {"visible_record_ids": [second_record.pk]},
+    )
+
+    response = client.get(reverse("site_detail", kwargs={"pk": site.pk}))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert '"visible_record_ids": [' in content
+    assert str(second_record.pk) in content
+    assert 'id="site-access-map-preference"' in content
+    assert get_user_preference(
+        user,
+        site_access_map_preference_key(site.pk),
+        {"visible_record_ids": []},
+    ) == {"visible_record_ids": [second_record.pk]}
 
 
 @pytest.mark.django_db
