@@ -1,10 +1,4 @@
 (function () {
-  function escapeHtml(value) {
-    const span = document.createElement("span");
-    span.textContent = value;
-    return span.innerHTML;
-  }
-
   const mapElement = document.getElementById("site-access-map");
   const dataElement = document.getElementById("site-access-map-data");
   const preferenceElement = document.getElementById("site-access-map-preference");
@@ -14,6 +8,9 @@
   const toggleButtons = Array.from(
     document.querySelectorAll('[data-map-toggle="access-record"]')
   );
+  const escapeHtml = window.AccessAtlas?.escapeHtml;
+  const createThemeTileController = window.AccessAtlas?.createThemeTileController;
+  const fitLayersOrDefault = window.AccessAtlas?.fitLayersOrDefault;
 
   if (
     !mapElement ||
@@ -22,6 +19,9 @@
     !tileLayerElement ||
     !siteLatitudeElement ||
     !siteLongitudeElement ||
+    typeof escapeHtml !== "function" ||
+    typeof createThemeTileController !== "function" ||
+    typeof fitLayersOrDefault !== "function" ||
     typeof L === "undefined"
   ) {
     return;
@@ -58,27 +58,7 @@
 
   const map = L.map(mapElement).setView([siteLatitude, siteLongitude], 12);
   featureLayer.addTo(map);
-
-  let activeTileLayer = null;
-
-  function currentTheme() {
-    return document.documentElement.getAttribute("data-bs-theme") === "dark"
-      ? "dark"
-      : "light";
-  }
-
-  function applyTileLayer() {
-    const themeTileLayer = tileLayer[currentTheme()] || tileLayer.light;
-
-    if (activeTileLayer) {
-      map.removeLayer(activeTileLayer);
-    }
-
-    activeTileLayer = L.tileLayer(themeTileLayer.url, {
-      attribution: themeTileLayer.attribution,
-      maxZoom: tileLayer.maxZoom,
-    }).addTo(map);
-  }
+  const tileController = createThemeTileController(map, tileLayer);
 
   function makeMarkerIcon(featureType) {
     const color = featureColors[featureType] || "#667382";
@@ -172,11 +152,7 @@
   }
 
   function fitFeatures(layers) {
-    if (layers.length > 0) {
-      map.fitBounds(L.featureGroup(layers).getBounds().pad(0.2));
-      return;
-    }
-    map.setView([siteLatitude, siteLongitude], 12);
+    fitLayersOrDefault(map, layers, [siteLatitude, siteLongitude], 12);
   }
 
   function updateToggleButton(button, isVisible) {
@@ -208,7 +184,7 @@
     }).catch(() => {});
   }
 
-  applyTileLayer();
+  tileController.apply();
   let drawnLayers = drawFeatures();
   fitFeatures(drawnLayers);
 
@@ -231,9 +207,4 @@
     });
   });
 
-  new MutationObserver((mutations) => {
-    if (mutations.some((mutation) => mutation.attributeName === "data-bs-theme")) {
-      applyTileLayer();
-    }
-  }).observe(document.documentElement, { attributes: true });
 })();

@@ -1,16 +1,13 @@
 (function () {
-  function escapeHtml(value) {
-    const span = document.createElement("span");
-    span.textContent = value;
-    return span.innerHTML;
-  }
-
   const mapElement = document.getElementById("job-map");
   const dataElement = document.getElementById("job-map-data");
   const statusControlsElement = document.getElementById("job-map-status-controls");
   const statusLayersElement = document.getElementById("job-map-status-layers");
   const preferenceElement = document.getElementById("job-map-preference");
   const tileLayerElement = document.getElementById("job-map-tile-layer");
+  const escapeHtml = window.AccessAtlas?.escapeHtml;
+  const createThemeTileController = window.AccessAtlas?.createThemeTileController;
+  const fitLayersOrDefault = window.AccessAtlas?.fitLayersOrDefault;
 
   if (
     !mapElement ||
@@ -19,6 +16,9 @@
     !statusLayersElement ||
     !preferenceElement ||
     !tileLayerElement ||
+    typeof escapeHtml !== "function" ||
+    typeof createThemeTileController !== "function" ||
+    typeof fitLayersOrDefault !== "function" ||
     typeof L === "undefined"
   ) {
     return;
@@ -41,7 +41,7 @@
 
   const map = L.map(mapElement).setView([-41.2865, 174.7762], 5);
   const markerLayer = L.layerGroup().addTo(map);
-  let activeTileLayer = null;
+  const tileController = createThemeTileController(map, tileLayer);
   let viewportSaveTimeout = null;
   let visibleMarkers = [];
 
@@ -77,25 +77,6 @@
   function queueViewportSave() {
     window.clearTimeout(viewportSaveTimeout);
     viewportSaveTimeout = window.setTimeout(savePreference, 500);
-  }
-
-  function currentTheme() {
-    return document.documentElement.getAttribute("data-bs-theme") === "dark"
-      ? "dark"
-      : "light";
-  }
-
-  function applyTileLayer() {
-    const themeTileLayer = tileLayer[currentTheme()] || tileLayer.light;
-
-    if (activeTileLayer) {
-      map.removeLayer(activeTileLayer);
-    }
-
-    activeTileLayer = L.tileLayer(themeTileLayer.url, {
-      attribution: themeTileLayer.attribution,
-      maxZoom: tileLayer.maxZoom,
-    }).addTo(map);
   }
 
   function makeMarkerIcon(statusLayer, jobCount) {
@@ -177,12 +158,7 @@
   }
 
   function fitMarkers(markers) {
-    if (markers.length > 0) {
-      const group = L.featureGroup(markers);
-      map.fitBounds(group.getBounds().pad(0.2));
-    } else {
-      map.setView([-41.2865, 174.7762], 5);
-    }
+    fitLayersOrDefault(map, markers, [-41.2865, 174.7762], 5);
   }
 
   function updateStatusButton(button, enabled) {
@@ -242,7 +218,7 @@
 
   buildStatusControls();
   addHomeControl();
-  applyTileLayer();
+  tileController.apply();
   visibleMarkers = drawMarkers();
   if (
     savedPreference.viewport &&
@@ -259,10 +235,4 @@
   }
 
   map.on("moveend zoomend", queueViewportSave);
-
-  new MutationObserver((mutations) => {
-    if (mutations.some((mutation) => mutation.attributeName === "data-bs-theme")) {
-      applyTileLayer();
-    }
-  }).observe(document.documentElement, { attributes: true });
 })();
