@@ -1,0 +1,50 @@
+{% extends "base/base.html" %}
+{% load form_extras %}
+
+{% block title %}{{ form_title }} - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">{{ form_title }}</h2>
+      <div class="text-secondary">
+        <a href="{{ site.get_absolute_url }}">{{ site }}</a>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="mb-3">
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field|render_form_field }}
+          {% if field.help_text %}<div class="form-hint">{{ field.help_text }}</div>{% endif %}
+          {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+      {% endfor %}
+
+      {% if form.errors %}
+        <div class="alert alert-danger object-form-errors" role="alert">
+          <h4 class="alert-title">Unable to save changes</h4>
+          <p class="mb-2">Review the highlighted fields and try again.</p>
+          <ul class="mb-0 ps-3">
+            {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+            {% for field in form %}
+              {% for error in field.errors %}<li>{{ field.label }}: {{ error }}</li>{% endfor %}
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <div class="btn-list">
+        <button class="btn btn-primary" type="submit">Upload</button>
+        <a class="btn btn-outline-secondary" href="{{ cancel_url }}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

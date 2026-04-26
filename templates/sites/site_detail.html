@@ -3,8 +3,15 @@
 {% block title %}{{ object.code }} - Access Atlas{% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <h2 class="page-title">{{ object.name }}</h2>
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">{{ object.name }}</h2>
+    </div>
+    <div class="col-auto ms-auto">
+      <a class="btn btn-primary" href="{% url 'access_record_create' object.pk %}">New access record</a>
+    </div>
+  </div>
 </div>
 <div class="card">
   <div class="card-body">
@@ -28,6 +35,45 @@
       <dt class="col-sm-3">Last Seen</dt><dd class="col-sm-9">{{ object.last_seen_at|default:"Never" }}</dd>
     </dl>
     <p class="text-secondary mb-0">Site fields are read-only and must be changed in the source of truth.</p>
+  </div>
+</div>
+<div class="card mt-3">
+  <div class="card-header">
+    <h3 class="card-title">Access Records</h3>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-vcenter">
+      <thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Current Version</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+        {% for access_record in object.access_records.all %}
+          <tr>
+            <td>{{ access_record.name }}</td>
+            <td>{{ access_record.get_access_type_display }}</td>
+            <td>
+              {% if access_record.is_active %}
+                <span class="badge bg-green-lt">Active</span>
+              {% else %}
+                <span class="badge bg-yellow-lt">Inactive</span>
+              {% endif %}
+            </td>
+            <td>
+              {% with current_version=access_record.current_version %}
+                {% if current_version %}
+                  v{{ current_version.version_number }}
+                {% else %}
+                  -
+                {% endif %}
+              {% endwith %}
+            </td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-primary" href="{% url 'access_record_version_create' access_record.pk %}">Upload version</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-secondary">No access records.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 {% include "base/history.html" with object=object %}

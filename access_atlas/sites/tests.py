@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
 from django.urls import reverse
 
@@ -382,6 +383,139 @@ def test_access_record_version_numbers_are_unique_per_record():
         )
 
 
+@pytest.mark.django_db
+def test_site_detail_shows_access_record_actions(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    access_record = AccessRecord.objects.create(
+        site=site,
+        name="Boat access",
+        access_type=AccessType.BOAT,
+    )
+
+    response = client.get(reverse("site_detail", kwargs={"pk": site.pk}))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert reverse("access_record_create", kwargs={"site_pk": site.pk}) in content
+    assert "Boat access" in content
+    assert "Boat" in content
+    assert (
+        reverse("access_record_version_create", kwargs={"pk": access_record.pk})
+        in content
+    )
+
+
+@pytest.mark.django_db
+def test_access_record_upload_creates_record_and_first_version(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+
+    response = client.post(
+        reverse("access_record_create", kwargs={"site_pk": site.pk}),
+        {
+            "name": "Boat access",
+            "access_type": AccessType.BOAT,
+            "change_note": "Initial upload",
+            "geojson_file": geojson_file(),
+        },
+    )
+
+    assert response.status_code == 302
+    access_record = AccessRecord.objects.get(site=site)
+    assert access_record.name == "Boat access"
+    assert access_record.access_type == AccessType.BOAT
+    version = access_record.current_version
+    assert version is not None
+    assert version.version_number == 1
+    assert version.change_note == "Initial upload"
+    assert version.uploaded_by == user
+
+
+@pytest.mark.django_db
+def test_access_record_upload_rejects_invalid_geojson(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+
+    response = client.post(
+        reverse("access_record_create", kwargs={"site_pk": site.pk}),
+        {
+            "name": "Boat access",
+            "access_type": AccessType.BOAT,
+            "change_note": "Initial upload",
+            "geojson_file": SimpleUploadedFile(
+                "access.geojson",
+                b'{"type": "Feature"}',
+                content_type="application/geo+json",
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+    assert "GeoJSON must be a FeatureCollection." in response.content.decode()
+    assert AccessRecord.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_access_record_version_upload_creates_next_version(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    access_record = AccessRecord.objects.create(site=site, name="Boat access")
+    AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=1,
+        geojson={"type": "FeatureCollection", "features": []},
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+
+    response = client.post(
+        reverse("access_record_version_create", kwargs={"pk": access_record.pk}),
+        {
+            "change_note": "Updated gate",
+            "geojson_file": geojson_file(),
+        },
+    )
+
+    assert response.status_code == 302
+    version = access_record.current_version
+    assert version is not None
+    assert version.version_number == 2
+    assert version.change_note == "Updated gate"
+
+
 def test_parse_access_record_geojson_extracts_points_and_tracks():
     parsed = parse_access_record_geojson(
         {
@@ -532,3 +666,28 @@ def test_parse_access_record_geojson_extracts_points_and_tracks():
 def test_parse_access_record_geojson_rejects_invalid_data(geojson, message):
     with pytest.raises(AccessRecordGeoJSONError, match=message):
         parse_access_record_geojson(geojson)
+
+
+def geojson_file():
+    return SimpleUploadedFile(
+        "access.geojson",
+        b"""
+        {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "geometry": {
+                "type": "Point",
+                "coordinates": [174.7603, -41.2969]
+              },
+              "properties": {
+                "access_atlas:type": "access_start",
+                "label": "Access start"
+              }
+            }
+          ]
+        }
+        """,
+        content_type="application/geo+json",
+    )

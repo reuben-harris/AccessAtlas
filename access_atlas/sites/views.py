@@ -3,12 +3,17 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_GET, require_POST
-from django.views.generic import DetailView, ListView
+from django.views.generic import DetailView, FormView, ListView
 
 from .feed import SiteFeedError, sync_configured_site_feed
-from .models import Site
+from .forms import AccessRecordUploadForm, AccessRecordVersionUploadForm
+from .models import AccessRecord, Site
+from .services import (
+    create_access_record_from_upload,
+    create_access_record_version_from_upload,
+)
 
 
 class SiteListView(LoginRequiredMixin, ListView):
@@ -20,6 +25,72 @@ class SiteListView(LoginRequiredMixin, ListView):
 class SiteDetailView(LoginRequiredMixin, DetailView):
     model = Site
     template_name = "sites/site_detail.html"
+
+    def get_queryset(self):
+        return Site.objects.prefetch_related("access_records")
+
+
+class AccessRecordCreateView(LoginRequiredMixin, FormView):
+    form_class = AccessRecordUploadForm
+    template_name = "sites/access_record_upload.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        self.site = get_object_or_404(Site, pk=kwargs["site_pk"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["site"] = self.site
+        return kwargs
+
+    def form_valid(self, form):
+        create_access_record_from_upload(
+            site=self.site,
+            user=self.request.user,
+            name=form.cleaned_data["name"],
+            access_type=form.cleaned_data["access_type"],
+            geojson=form.cleaned_data["geojson"],
+            change_note=form.cleaned_data["change_note"],
+        )
+        messages.success(self.request, "Access record uploaded.")
+        return redirect(self.site.get_absolute_url())
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["site"] = self.site
+        context["form_title"] = "New access record"
+        context["cancel_url"] = self.site.get_absolute_url()
+        return context
+
+
+class AccessRecordVersionCreateView(LoginRequiredMixin, FormView):
+    form_class = AccessRecordVersionUploadForm
+    template_name = "sites/access_record_upload.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        self.access_record = get_object_or_404(
+            AccessRecord.objects.select_related("site"),
+            pk=kwargs["pk"],
+        )
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        create_access_record_version_from_upload(
+            access_record=self.access_record,
+            user=self.request.user,
+            geojson=form.cleaned_data["geojson"],
+            change_note=form.cleaned_data["change_note"],
+        )
+        messages.success(self.request, "Access record version uploaded.")
+        return redirect(self.access_record.site.get_absolute_url())
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["site"] = self.access_record.site
+        context["access_record"] = self.access_record
+        context["form_title"] = f"Upload {self.access_record.name}"
+        context["cancel_url"] = self.access_record.site.get_absolute_url()
+        return context
 
 
 @login_required
