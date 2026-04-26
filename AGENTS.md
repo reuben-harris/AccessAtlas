@@ -141,3 +141,11 @@ Use `AGENTS.md` as the long-lived internal memory file for product language, arc
 ## Repository Workflow
 
 Use conventional commit messages for commits unless the user explicitly asks for something else.
+
+## Planning Workflow
+
+For larger agreed feature sets, keep an active checklist and update it as work
+progresses. If new prerequisite or cleanup items are discovered, add them ahead
+of the remaining checklist items rather than losing the original sequence. This
+helps preserve the agreed feature direction while still adapting to discoveries
+made during implementation.
