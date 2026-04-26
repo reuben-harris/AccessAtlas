@@ -11,14 +11,14 @@ def create_access_record_from_upload(
     site,
     user,
     name: str,
-    access_type: str,
+    arrival_method: str,
     geojson: dict,
     change_note: str,
 ) -> AccessRecord:
     access_record = AccessRecord.objects.create(
         site=site,
         name=name,
-        access_type=access_type,
+        arrival_method=arrival_method,
     )
     AccessRecordVersion.objects.create(
         access_record=access_record,

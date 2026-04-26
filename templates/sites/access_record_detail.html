@@ -1,0 +1,72 @@
+{% extends "base/base.html" %}
+
+{% block title %}{{ object.name }} - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">{{ object.name }}</h2>
+      <div class="text-secondary">
+        <a href="{{ object.site.get_absolute_url }}">{{ object.site }}</a>
+      </div>
+    </div>
+    <div class="col-auto ms-auto">
+      <div class="btn-list">
+        <a class="btn btn-warning" href="{% url 'access_record_update' object.pk %}">Edit</a>
+        <a class="btn btn-primary" href="{% url 'access_record_version_create' object.pk %}">Upload version</a>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-body">
+    <dl class="row">
+      <dt class="col-sm-3">Site</dt><dd class="col-sm-9"><a href="{{ object.site.get_absolute_url }}">{{ object.site }}</a></dd>
+      <dt class="col-sm-3">Name</dt><dd class="col-sm-9">{{ object.name }}</dd>
+      <dt class="col-sm-3">Arrival Method</dt><dd class="col-sm-9">{{ object.get_arrival_method_display }}</dd>
+      <dt class="col-sm-3">Status</dt>
+      <dd class="col-sm-9">
+        {% if object.status == "active" %}
+          <span class="badge bg-green-lt">Active</span>
+        {% else %}
+          <span class="badge bg-yellow-lt">Retired</span>
+        {% endif %}
+      </dd>
+      <dt class="col-sm-3">Current Version</dt>
+      <dd class="col-sm-9">
+        {% with current_version=object.current_version %}
+          {% if current_version %}
+            v{{ current_version.version_number }}
+          {% else %}
+            -
+          {% endif %}
+        {% endwith %}
+      </dd>
+    </dl>
+  </div>
+</div>
+<div class="card mt-3">
+  <div class="card-header">
+    <h3 class="card-title">Versions</h3>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-vcenter">
+      <thead><tr><th>Version</th><th>Uploaded By</th><th>Change Note</th><th>Created</th></tr></thead>
+      <tbody>
+        {% for version in object.versions.all %}
+          <tr>
+            <td>v{{ version.version_number }}</td>
+            <td>{{ version.uploaded_by }}</td>
+            <td>{{ version.change_note }}</td>
+            <td>{{ version.created_at }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="text-secondary">No versions uploaded.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "base/history.html" with object=object %}
+{% endblock %}

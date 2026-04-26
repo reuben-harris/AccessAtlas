@@ -13,8 +13,9 @@ from access_atlas.sites.access_records import (
 from access_atlas.sites.feed import SiteFeedError, sync_sites_from_payload
 from access_atlas.sites.models import (
     AccessRecord,
+    AccessRecordStatus,
     AccessRecordVersion,
-    AccessType,
+    ArrivalMethod,
     Site,
     SiteSyncStatus,
 )
@@ -269,12 +270,12 @@ def test_site_can_have_multiple_access_records():
     AccessRecord.objects.create(
         site=site,
         name="Boat access",
-        access_type=AccessType.BOAT,
+        arrival_method=ArrivalMethod.BOAT,
     )
     AccessRecord.objects.create(
         site=site,
         name="Heli access",
-        access_type=AccessType.HELI,
+        arrival_method=ArrivalMethod.HELI,
     )
 
     assert site.access_records.count() == 2
@@ -398,7 +399,7 @@ def test_site_detail_shows_access_record_actions(client):
     access_record = AccessRecord.objects.create(
         site=site,
         name="Boat access",
-        access_type=AccessType.BOAT,
+        arrival_method=ArrivalMethod.BOAT,
     )
 
     response = client.get(reverse("site_detail", kwargs={"pk": site.pk}))
@@ -408,6 +409,8 @@ def test_site_detail_shows_access_record_actions(client):
     assert reverse("access_record_create", kwargs={"site_pk": site.pk}) in content
     assert "Boat access" in content
     assert "Boat" in content
+    assert access_record.get_absolute_url() in content
+    assert reverse("access_record_update", kwargs={"pk": access_record.pk}) in content
     assert (
         reverse("access_record_version_create", kwargs={"pk": access_record.pk})
         in content
@@ -431,7 +434,7 @@ def test_access_record_upload_creates_record_and_first_version(client):
         reverse("access_record_create", kwargs={"site_pk": site.pk}),
         {
             "name": "Boat access",
-            "access_type": AccessType.BOAT,
+            "arrival_method": ArrivalMethod.BOAT,
             "change_note": "Initial upload",
             "geojson_file": geojson_file(),
         },
@@ -440,7 +443,8 @@ def test_access_record_upload_creates_record_and_first_version(client):
     assert response.status_code == 302
     access_record = AccessRecord.objects.get(site=site)
     assert access_record.name == "Boat access"
-    assert access_record.access_type == AccessType.BOAT
+    assert access_record.arrival_method == ArrivalMethod.BOAT
+    assert access_record.status == AccessRecordStatus.ACTIVE
     version = access_record.current_version
     assert version is not None
     assert version.version_number == 1
@@ -465,7 +469,7 @@ def test_access_record_upload_rejects_invalid_geojson(client):
         reverse("access_record_create", kwargs={"site_pk": site.pk}),
         {
             "name": "Boat access",
-            "access_type": AccessType.BOAT,
+            "arrival_method": ArrivalMethod.BOAT,
             "change_note": "Initial upload",
             "geojson_file": SimpleUploadedFile(
                 "access.geojson",
@@ -514,6 +518,76 @@ def test_access_record_version_upload_creates_next_version(client):
     assert version is not None
     assert version.version_number == 2
     assert version.change_note == "Updated gate"
+
+
+@pytest.mark.django_db
+def test_access_record_detail_shows_metadata_and_versions(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    access_record = AccessRecord.objects.create(
+        site=site,
+        name="Boat access",
+        arrival_method=ArrivalMethod.BOAT,
+    )
+    AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=1,
+        geojson={"type": "FeatureCollection", "features": []},
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+
+    response = client.get(access_record.get_absolute_url())
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Boat access" in content
+    assert "Arrival Method" in content
+    assert "Boat" in content
+    assert "v1" in content
+    assert "Initial upload" in content
+
+
+@pytest.mark.django_db
+def test_access_record_metadata_can_be_updated(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    access_record = AccessRecord.objects.create(
+        site=site,
+        name="Boat access",
+        arrival_method=ArrivalMethod.BOAT,
+    )
+
+    response = client.post(
+        reverse("access_record_update", kwargs={"pk": access_record.pk}),
+        {
+            "name": "Heli access",
+            "arrival_method": ArrivalMethod.HELI,
+            "status": AccessRecordStatus.RETIRED,
+        },
+    )
+
+    assert response.status_code == 302
+    access_record.refresh_from_db()
+    assert access_record.name == "Heli access"
+    assert access_record.arrival_method == ArrivalMethod.HELI
+    assert access_record.status == AccessRecordStatus.RETIRED
 
 
 def test_parse_access_record_geojson_extracts_points_and_tracks():

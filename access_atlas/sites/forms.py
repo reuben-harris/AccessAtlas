@@ -3,12 +3,12 @@ import json
 from django import forms
 
 from .access_records import AccessRecordGeoJSONError, parse_access_record_geojson
-from .models import AccessRecord, AccessType
+from .models import AccessRecord, ArrivalMethod
 
 
 class AccessRecordUploadForm(forms.Form):
     name = forms.CharField(max_length=255)
-    access_type = forms.ChoiceField(choices=AccessType.choices)
+    arrival_method = forms.ChoiceField(choices=ArrivalMethod.choices)
     geojson_file = forms.FileField(label="GeoJSON file")
     change_note = forms.CharField(widget=forms.Textarea(attrs={"rows": 4}))
 
@@ -74,3 +74,9 @@ class AccessRecordVersionUploadForm(forms.Form):
             raise forms.ValidationError(str(exc)) from exc
         self.cleaned_data["geojson"] = geojson
         return geojson_file
+
+
+class AccessRecordForm(forms.ModelForm):
+    class Meta:
+        model = AccessRecord
+        fields = ["name", "arrival_method", "status"]

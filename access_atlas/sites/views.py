@@ -5,10 +5,14 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_GET, require_POST
-from django.views.generic import DetailView, FormView, ListView
+from django.views.generic import DetailView, FormView, ListView, UpdateView
 
 from .feed import SiteFeedError, sync_configured_site_feed
-from .forms import AccessRecordUploadForm, AccessRecordVersionUploadForm
+from .forms import (
+    AccessRecordForm,
+    AccessRecordUploadForm,
+    AccessRecordVersionUploadForm,
+)
 from .models import AccessRecord, Site
 from .services import (
     create_access_record_from_upload,
@@ -48,7 +52,7 @@ class AccessRecordCreateView(LoginRequiredMixin, FormView):
             site=self.site,
             user=self.request.user,
             name=form.cleaned_data["name"],
-            access_type=form.cleaned_data["access_type"],
+            arrival_method=form.cleaned_data["arrival_method"],
             geojson=form.cleaned_data["geojson"],
             change_note=form.cleaned_data["change_note"],
         )
@@ -60,6 +64,35 @@ class AccessRecordCreateView(LoginRequiredMixin, FormView):
         context["site"] = self.site
         context["form_title"] = "New access record"
         context["cancel_url"] = self.site.get_absolute_url()
+        return context
+
+
+class AccessRecordDetailView(LoginRequiredMixin, DetailView):
+    model = AccessRecord
+    template_name = "sites/access_record_detail.html"
+
+    def get_queryset(self):
+        return AccessRecord.objects.select_related("site").prefetch_related("versions")
+
+
+class AccessRecordUpdateView(LoginRequiredMixin, UpdateView):
+    model = AccessRecord
+    form_class = AccessRecordForm
+    template_name = "object_form.html"
+
+    def get_queryset(self):
+        return AccessRecord.objects.select_related("site")
+
+    def get_success_url(self):
+        return self.object.get_absolute_url()
+
+    def get_cancel_url(self):
+        return self.object.get_absolute_url()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = f"Edit {self.object.name}"
+        context["cancel_url"] = self.get_cancel_url()
         return context
 
 

@@ -49,12 +49,16 @@ class Site(models.Model):
         return reverse("site_detail", kwargs={"pk": self.pk})
 
 
-class AccessType(models.TextChoices):
+class ArrivalMethod(models.TextChoices):
     ROAD = "road", "Road"
     BOAT = "boat", "Boat"
     HELI = "heli", "Heli"
-    WALKING = "walking", "Walking"
     OTHER = "other", "Other"
+
+
+class AccessRecordStatus(models.TextChoices):
+    ACTIVE = "active", "Active"
+    RETIRED = "retired", "Retired"
 
 
 class AccessRecord(models.Model):
@@ -64,12 +68,16 @@ class AccessRecord(models.Model):
         on_delete=models.CASCADE,
     )
     name = models.CharField(max_length=255)
-    access_type = models.CharField(
+    arrival_method = models.CharField(
         max_length=20,
-        choices=AccessType.choices,
-        default=AccessType.ROAD,
+        choices=ArrivalMethod.choices,
+        default=ArrivalMethod.ROAD,
     )
-    is_active = models.BooleanField(default=True)
+    status = models.CharField(
+        max_length=20,
+        choices=AccessRecordStatus.choices,
+        default=AccessRecordStatus.ACTIVE,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     history = HistoricalRecords()
@@ -85,6 +93,9 @@ class AccessRecord(models.Model):
 
     def __str__(self) -> str:
         return f"{self.site} - {self.name}"
+
+    def get_absolute_url(self) -> str:
+        return reverse("access_record_detail", kwargs={"pk": self.pk})
 
     @property
     def current_version(self) -> AccessRecordVersion | None:

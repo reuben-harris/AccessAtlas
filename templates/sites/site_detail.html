@@ -43,17 +43,17 @@
   </div>
   <div class="table-responsive">
     <table class="table table-vcenter">
-      <thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Current Version</th><th class="text-end">Actions</th></tr></thead>
+      <thead><tr><th>Name</th><th>Arrival Method</th><th>Status</th><th>Current Version</th><th class="text-end">Actions</th></tr></thead>
       <tbody>
         {% for access_record in object.access_records.all %}
           <tr>
-            <td>{{ access_record.name }}</td>
-            <td>{{ access_record.get_access_type_display }}</td>
+            <td><a href="{{ access_record.get_absolute_url }}">{{ access_record.name }}</a></td>
+            <td>{{ access_record.get_arrival_method_display }}</td>
             <td>
-              {% if access_record.is_active %}
+              {% if access_record.status == "active" %}
                 <span class="badge bg-green-lt">Active</span>
               {% else %}
-                <span class="badge bg-yellow-lt">Inactive</span>
+                <span class="badge bg-yellow-lt">Retired</span>
               {% endif %}
             </td>
             <td>
@@ -66,7 +66,10 @@
               {% endwith %}
             </td>
             <td class="text-end">
-              <a class="btn btn-sm btn-primary" href="{% url 'access_record_version_create' access_record.pk %}">Upload version</a>
+              <div class="btn-list justify-content-end">
+                <a class="btn btn-sm btn-warning" href="{% url 'access_record_update' access_record.pk %}">Edit</a>
+                <a class="btn btn-sm btn-primary" href="{% url 'access_record_version_create' access_record.pk %}">Upload version</a>
+              </div>
             </td>
           </tr>
         {% empty %}
