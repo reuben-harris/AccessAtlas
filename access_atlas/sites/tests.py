@@ -412,6 +412,14 @@ def test_site_detail_shows_access_record_actions(client):
     assert "Boat" in content
     assert access_record.get_absolute_url() in content
     assert reverse("access_record_update", kwargs={"pk": access_record.pk}) in content
+    assert (
+        reverse("access_record_geojson_download", kwargs={"pk": access_record.pk})
+        in content
+    )
+    assert (
+        reverse("access_record_kml_download", kwargs={"pk": access_record.pk})
+        in content
+    )
     assert "ti ti-pencil" in content
     assert "Upload revision" in content
     assert (
@@ -548,7 +556,7 @@ def test_access_record_version_upload_creates_next_version(client):
         longitude=174.1,
     )
     access_record = AccessRecord.objects.create(site=site, name="Boat access")
-    AccessRecordVersion.objects.create(
+    version = AccessRecordVersion.objects.create(
         access_record=access_record,
         version_number=1,
         geojson={"type": "FeatureCollection", "features": []},
@@ -652,7 +660,7 @@ def test_access_record_detail_shows_metadata_and_versions(client):
         name="Boat access",
         arrival_method=ArrivalMethod.BOAT,
     )
-    AccessRecordVersion.objects.create(
+    version = AccessRecordVersion.objects.create(
         access_record=access_record,
         version_number=1,
         geojson={"type": "FeatureCollection", "features": []},
@@ -665,11 +673,187 @@ def test_access_record_detail_shows_metadata_and_versions(client):
     assert response.status_code == 200
     content = response.content.decode()
     assert "Boat access" in content
+    assert "Latest Version" in content
     assert "Arrival Method" in content
     assert "Boat" in content
     assert "v1" in content
     assert "Initial upload" in content
     assert content.count(site.get_absolute_url()) == 1
+    assert (
+        reverse("access_record_geojson_download", kwargs={"pk": access_record.pk})
+        in content
+    )
+    assert (
+        reverse("access_record_kml_download", kwargs={"pk": access_record.pk})
+        in content
+    )
+    assert (
+        reverse(
+            "access_record_version_geojson_download",
+            kwargs={"record_pk": access_record.pk, "version_pk": version.pk},
+        )
+        in content
+    )
+    assert (
+        reverse(
+            "access_record_version_kml_download",
+            kwargs={"record_pk": access_record.pk, "version_pk": version.pk},
+        )
+        in content
+    )
+
+
+@pytest.mark.django_db
+def test_access_record_downloads_return_current_version_data(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    access_record = AccessRecord.objects.create(site=site, name="Boat access")
+    AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=1,
+        geojson={"type": "FeatureCollection", "features": []},
+        change_note="v1",
+        uploaded_by=user,
+    )
+    AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=2,
+        geojson={
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [174.7603, -41.2969]},
+                    "properties": {
+                        "access_atlas:type": "access_start",
+                        "name": "Access start",
+                    },
+                }
+            ],
+        },
+        change_note="v2",
+        uploaded_by=user,
+    )
+
+    geojson_response = client.get(
+        reverse("access_record_geojson_download", kwargs={"pk": access_record.pk})
+    )
+    assert geojson_response.status_code == 200
+    assert (
+        geojson_response.json()["features"][0]["properties"]["name"] == "Access start"
+    )
+    assert "aa-001-boat-access-v2.geojson" in geojson_response["Content-Disposition"]
+
+    kml_response = client.get(
+        reverse("access_record_kml_download", kwargs={"pk": access_record.pk})
+    )
+    assert kml_response.status_code == 200
+    assert (
+        kml_response["Content-Type"] == "application/vnd.google-earth.kml+xml"
+    )
+    assert "aa-001-boat-access-v2.kml" in kml_response["Content-Disposition"]
+    assert b"<kml" in kml_response.content
+
+
+@pytest.mark.django_db
+def test_access_record_version_downloads_return_requested_revision(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    access_record = AccessRecord.objects.create(site=site, name="Road access")
+    version = AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=1,
+        geojson={
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [174.7, -41.2]},
+                    "properties": {
+                        "access_atlas:type": "access_start",
+                        "name": "Start",
+                    },
+                }
+            ],
+        },
+        change_note="Initial",
+        uploaded_by=user,
+    )
+
+    geojson_response = client.get(
+        reverse(
+            "access_record_version_geojson_download",
+            kwargs={"record_pk": access_record.pk, "version_pk": version.pk},
+        )
+    )
+    assert geojson_response.status_code == 200
+    assert geojson_response.json()["features"][0]["properties"]["name"] == "Start"
+    assert "aa-001-road-access-v1.geojson" in geojson_response["Content-Disposition"]
+
+    kml_response = client.get(
+        reverse(
+            "access_record_version_kml_download",
+            kwargs={"record_pk": access_record.pk, "version_pk": version.pk},
+        )
+    )
+    assert kml_response.status_code == 200
+    assert "aa-001-road-access-v1.kml" in kml_response["Content-Disposition"]
+    assert b"<Placemark" in kml_response.content
+
+
+@pytest.mark.django_db
+def test_access_record_version_download_returns_404_for_mismatched_version(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    first_site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    second_site = Site.objects.create(
+        source_name="dummy",
+        external_id="002",
+        code="AA-002",
+        name="Site B",
+        latitude=-42.1,
+        longitude=175.1,
+    )
+    first_record = AccessRecord.objects.create(site=first_site, name="Road access")
+    second_record = AccessRecord.objects.create(site=second_site, name="Boat access")
+    version = AccessRecordVersion.objects.create(
+        access_record=second_record,
+        version_number=1,
+        geojson={"type": "FeatureCollection", "features": []},
+        change_note="Initial",
+        uploaded_by=user,
+    )
+
+    response = client.get(
+        reverse(
+            "access_record_version_geojson_download",
+            kwargs={"record_pk": first_record.pk, "version_pk": version.pk},
+        )
+    )
+    assert response.status_code == 404
 
 
 @pytest.mark.django_db

@@ -70,6 +70,12 @@
                 <a class="btn btn-icon btn-warning row-edit-button" href="{% url 'access_record_update' access_record.pk %}" aria-label="Edit {{ access_record.name }}" title="Edit {{ access_record.name }}">
                   <i class="ti ti-pencil" aria-hidden="true"></i>
                 </a>
+                <a class="btn btn-icon btn-info" href="{% url 'access_record_geojson_download' access_record.pk %}" aria-label="Download {{ access_record.name }} GeoJSON" title="Download GeoJSON">
+                  <i class="ti ti-brackets" aria-hidden="true"></i>
+                </a>
+                <a class="btn btn-icon btn-success" href="{% url 'access_record_kml_download' access_record.pk %}" aria-label="Download {{ access_record.name }} KML" title="Download KML">
+                  <i class="ti ti-map-2" aria-hidden="true"></i>
+                </a>
                 <a class="btn btn-primary row-upload-revision-button" href="{% url 'access_record_version_create' access_record.pk %}">Upload revision</a>
               </div>
             </td>

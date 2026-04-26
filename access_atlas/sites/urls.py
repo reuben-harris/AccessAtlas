@@ -25,5 +25,25 @@ urlpatterns = [
         views.AccessRecordDetailView.as_view(),
         name="access_record_detail",
     ),
+    path(
+        "access-records/<int:pk>/download.geojson",
+        views.access_record_geojson_download,
+        name="access_record_geojson_download",
+    ),
+    path(
+        "access-records/<int:pk>/download.kml",
+        views.access_record_kml_download,
+        name="access_record_kml_download",
+    ),
+    path(
+        "access-records/<int:record_pk>/versions/<int:version_pk>/download.geojson",
+        views.access_record_version_geojson_download,
+        name="access_record_version_geojson_download",
+    ),
+    path(
+        "access-records/<int:record_pk>/versions/<int:version_pk>/download.kml",
+        views.access_record_version_kml_download,
+        name="access_record_version_kml_download",
+    ),
     path("<int:pk>/", views.SiteDetailView.as_view(), name="site_detail"),
 ]

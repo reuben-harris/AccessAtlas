@@ -10,6 +10,8 @@
     </div>
     <div class="col-auto ms-auto">
       <div class="btn-list">
+        <a class="btn btn-outline-secondary" href="{% url 'access_record_geojson_download' object.pk %}">Download GeoJSON</a>
+        <a class="btn btn-outline-secondary" href="{% url 'access_record_kml_download' object.pk %}">Download KML</a>
         <a class="btn btn-warning" href="{% url 'access_record_update' object.pk %}">Edit</a>
         <a class="btn btn-primary" href="{% url 'access_record_version_create' object.pk %}">Upload revision</a>
       </div>
@@ -30,7 +32,7 @@
           <span class="badge bg-yellow-lt">Retired</span>
         {% endif %}
       </dd>
-      <dt class="col-sm-3">Current Version</dt>
+      <dt class="col-sm-3">Latest Version</dt>
       <dd class="col-sm-9">
         {% with current_version=object.current_version %}
           {% if current_version %}
@@ -49,7 +51,7 @@
   </div>
   <div class="table-responsive">
     <table class="table table-vcenter">
-      <thead><tr><th>Version</th><th>Uploaded By</th><th>Change Note</th><th>Created</th></tr></thead>
+      <thead><tr><th>Version</th><th>Uploaded By</th><th>Change Note</th><th>Created</th><th class="text-end">Actions</th></tr></thead>
       <tbody>
         {% for version in object.versions.all %}
           <tr>
@@ -57,9 +59,15 @@
             <td>{{ version.uploaded_by }}</td>
             <td>{{ version.change_note }}</td>
             <td>{{ version.created_at }}</td>
+            <td class="text-end">
+              <div class="btn-list justify-content-end">
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'access_record_version_geojson_download' object.pk version.pk %}">GeoJSON</a>
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'access_record_version_kml_download' object.pk version.pk %}">KML</a>
+              </div>
+            </td>
           </tr>
         {% empty %}
-          <tr><td colspan="4" class="text-secondary">No versions uploaded.</td></tr>
+          <tr><td colspan="5" class="text-secondary">No versions uploaded.</td></tr>
         {% endfor %}
       </tbody>
     </table>
