@@ -21,13 +21,6 @@ def build_site_warnings(
     snapshots_by_record_id: dict[int, AccessRecordSnapshot] | None = None,
 ) -> list[AccessWarning]:
     warnings: list[AccessWarning] = []
-    if _is_missing_coordinate(site.access_start_latitude, site.access_start_longitude):
-        warnings.append(
-            AccessWarning(
-                "Source-of-truth access start coordinates are missing for this site."
-            )
-        )
-
     for access_record in site.access_records.all():
         warnings.extend(
             build_access_record_warnings(
@@ -85,30 +78,13 @@ def build_access_record_warnings(
     ]
     site_points = [point for point in parsed.points if point.feature_type == "site"]
 
-    if access_start_points:
-        access_start_point = access_start_points[0]
-        if _is_missing_coordinate(
-            site.access_start_latitude,
-            site.access_start_longitude,
-        ):
-            warnings.append(
-                AccessWarning(
-                    f"{prefix}Access record contains an access-start point, "
-                    "but source-of-truth access start coordinates are missing."
-                )
+    if len(access_start_points) > 1:
+        warnings.append(
+            AccessWarning(
+                f"{prefix}Multiple access-start points found in the latest revision. "
+                "Navigation uses the first point."
             )
-        elif not _coordinates_match(
-            site.access_start_latitude,
-            site.access_start_longitude,
-            access_start_point.latitude,
-            access_start_point.longitude,
-        ):
-            warnings.append(
-                AccessWarning(
-                    f"{prefix}Access-start coordinates differ from "
-                    "source-of-truth values."
-                )
-            )
+        )
 
     if site_points:
         site_point = site_points[0]

@@ -18,12 +18,6 @@ class Site(models.Model):
     name = models.CharField(max_length=255)
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
-    access_start_latitude = models.DecimalField(
-        max_digits=9, decimal_places=6, null=True, blank=True
-    )
-    access_start_longitude = models.DecimalField(
-        max_digits=9, decimal_places=6, null=True, blank=True
-    )
     sync_status = models.CharField(
         max_length=20,
         choices=SiteSyncStatus.choices,

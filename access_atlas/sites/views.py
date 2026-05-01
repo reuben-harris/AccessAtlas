@@ -151,11 +151,36 @@ class SiteDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         access_records = list(self.object.access_records.all())
         snapshots_by_record_id = build_access_record_snapshots(access_records)
+        site_search_url = _google_maps_search_url(
+            self.object.latitude, self.object.longitude
+        )
         for access_record in access_records:
             snapshot = snapshots_by_record_id.get(access_record.pk)
             access_record.latest_version = (
                 snapshot.current_version if snapshot is not None else None
             )
+            access_start_points = []
+            if snapshot is not None and snapshot.parsed is not None:
+                access_start_points = [
+                    point
+                    for point in snapshot.parsed.points
+                    if point.feature_type == "access_start"
+                ]
+            if access_start_points:
+                primary_point = access_start_points[0]
+                access_record.access_start_search_url = _google_maps_search_url(
+                    primary_point.latitude,
+                    primary_point.longitude,
+                )
+                access_record.access_start_nav_url = _google_maps_nav_url(
+                    primary_point.latitude,
+                    primary_point.longitude,
+                )
+                access_record.access_start_available = True
+            else:
+                access_record.access_start_search_url = None
+                access_record.access_start_nav_url = None
+                access_record.access_start_available = False
         context["site_access_records"] = access_records
         context["access_warnings"] = build_site_warnings(
             self.object,
@@ -176,32 +201,7 @@ class SiteDetailView(LoginRequiredMixin, DetailView):
             "key": preference_key,
             "value": map_preference,
         }
-        access_start_available = (
-            self.object.access_start_latitude is not None
-            and self.object.access_start_longitude is not None
-        )
-        context["google_maps_actions"] = {
-            "site_search_url": _google_maps_search_url(
-                self.object.latitude, self.object.longitude
-            ),
-            "access_start_search_url": (
-                _google_maps_search_url(
-                    self.object.access_start_latitude,
-                    self.object.access_start_longitude,
-                )
-                if access_start_available
-                else None
-            ),
-            "access_start_nav_url": (
-                _google_maps_nav_url(
-                    self.object.access_start_latitude,
-                    self.object.access_start_longitude,
-                )
-                if access_start_available
-                else None
-            ),
-            "access_start_available": access_start_available,
-        }
+        context["site_search_url"] = site_search_url
         context["map_tile_layer"] = {
             "light": {
                 "url": settings.MAP_TILE_URL,
@@ -445,8 +445,6 @@ def dummy_site_feed(request):
                     "name": "Example Ridge Station",
                     "latitude": -41.286500,
                     "longitude": 174.776200,
-                    "access_start_latitude": -41.284900,
-                    "access_start_longitude": 174.771900,
                 },
                 {
                     "external_id": "site-002",
@@ -454,8 +452,6 @@ def dummy_site_feed(request):
                     "name": "Example Valley Repeater",
                     "latitude": -43.532100,
                     "longitude": 172.636200,
-                    "access_start_latitude": None,
-                    "access_start_longitude": None,
                 },
                 {
                     "external_id": "site-003",
@@ -463,8 +459,6 @@ def dummy_site_feed(request):
                     "name": "Example Coastal Sensor",
                     "latitude": -45.878800,
                     "longitude": 170.502800,
-                    "access_start_latitude": -45.881000,
-                    "access_start_longitude": 170.499500,
                 },
                 {
                     "external_id": "site-004",
@@ -472,8 +466,6 @@ def dummy_site_feed(request):
                     "name": "Example Alpine Landing Site",
                     "latitude": -44.125400,
                     "longitude": 169.352100,
-                    "access_start_latitude": -44.127800,
-                    "access_start_longitude": 169.349900,
                 },
             ],
         }

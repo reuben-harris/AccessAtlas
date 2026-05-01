@@ -4,7 +4,7 @@
 
 Access Atlas is a field work planning application for teams that organise trips, site visits, and jobs against sites managed in an external source of truth.
 
-The application owns planning data such as trips, site visits, jobs, job templates, requirements, notes, and history. Site identity and coordinates stay read-only and are synced from a configured external feed.
+The application owns planning data such as trips, site visits, jobs, job templates, requirements, notes, and history. Site identity and site coordinates stay read-only and are synced from a configured external feed.
 
 ## Domain Model
 
@@ -32,7 +32,7 @@ erDiagram
 
 Access Atlas does not own canonical site identity, coordinates, or addresses.
 
-It consumes one configured HTTP JSON feed and upserts local site references from that feed. Synced site fields stay read-only in Access Atlas. Access-start coordinates may be missing while the upstream access data is incomplete. If no external feed is configured, the app can use its own dummy feed for local development and evaluation.
+It consumes one configured HTTP JSON feed and upserts local site references from that feed. Synced site fields stay read-only in Access Atlas. Access-start coordinates are owned per Access Record revision (GeoJSON), not by the site sync feed. If no external feed is configured, the app can use its own dummy feed for local development and evaluation.
 
 Sites present in the latest feed are marked `active`. Previously synced sites
 missing from the latest feed are marked `stale` and remain visible for history
@@ -42,7 +42,7 @@ The feed contract is intentionally narrow:
 
 - one HTTP endpoint
 - bearer-token authentication
-- required identity and site coordinate fields with optional access-start metadata
+- required identity and site coordinate fields
 - local upsert of site references
 
 Example feed:
@@ -58,18 +58,14 @@ Example feed:
       "code": "SITE-A",
       "name": "Site A",
       "latitude": -41.12345,
-      "longitude": 174.12345,
-      "access_start_latitude": -41.12001,
-      "access_start_longitude": 174.12001
+      "longitude": 174.12345
     },
     {
       "external_id": "67890",
       "code": "SITE-B",
       "name": "Site B",
       "latitude": -44.1254,
-      "longitude": 169.3521,
-      "access_start_latitude": null,
-      "access_start_longitude": null
+      "longitude": 169.3521
     }
   ]
 }

@@ -51,14 +51,6 @@ def validate_coordinate(value: object, lower: Decimal, upper: Decimal) -> Decima
     return coordinate
 
 
-def validate_optional_coordinate(
-    value: object, lower: Decimal, upper: Decimal
-) -> Decimal | None:
-    if value is None or value == "":
-        return None
-    return validate_coordinate(value, lower, upper)
-
-
 def validate_feed(payload: dict[str, Any]) -> tuple[str, list[dict[str, Any]]]:
     required = {"schema_version", "source_name", "generated_at", "sites"}
     missing = required - payload.keys()
@@ -100,12 +92,6 @@ def sync_sites_from_payload(payload: dict[str, Any]) -> SyncResult:
             longitude = validate_coordinate(
                 record["longitude"], Decimal("-180"), Decimal("180")
             )
-            access_start_latitude = validate_optional_coordinate(
-                record.get("access_start_latitude"), Decimal("-90"), Decimal("90")
-            )
-            access_start_longitude = validate_optional_coordinate(
-                record.get("access_start_longitude"), Decimal("-180"), Decimal("180")
-            )
         except ValueError:
             rejected += 1
             continue
@@ -118,8 +104,6 @@ def sync_sites_from_payload(payload: dict[str, Any]) -> SyncResult:
                 "name": str(record["name"]),
                 "latitude": latitude,
                 "longitude": longitude,
-                "access_start_latitude": access_start_latitude,
-                "access_start_longitude": access_start_longitude,
                 "sync_status": SiteSyncStatus.ACTIVE,
                 "last_seen_at": now,
             },

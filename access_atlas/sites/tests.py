@@ -45,8 +45,6 @@ def test_sync_sites_from_payload_creates_and_updates_sites():
                 "name": "Original",
                 "latitude": -41.1,
                 "longitude": 174.1,
-                "access_start_latitude": -41.2,
-                "access_start_longitude": 174.2,
             }
         ],
     }
@@ -57,8 +55,6 @@ def test_sync_sites_from_payload_creates_and_updates_sites():
     site = Site.objects.get(source_name="dummy", external_id="001")
     assert site.code == "AA-001"
     assert site.name == "Original"
-    assert site.access_start_latitude == Decimal("-41.2")
-    assert site.access_start_longitude == Decimal("174.2")
     assert site.sync_status == SiteSyncStatus.ACTIVE
     assert site.history.first().history_change_reason == "Created from site feed"
 
@@ -187,32 +183,6 @@ def test_site_coordinates_are_stored_as_decimals():
 
 
 @pytest.mark.django_db
-def test_site_access_start_coordinates_are_stored_as_decimals():
-    payload = {
-        "schema_version": "1.0",
-        "source_name": "dummy",
-        "generated_at": "2026-04-21T00:00:00Z",
-        "sites": [
-            {
-                "external_id": "001",
-                "code": "AA-001",
-                "name": "Site",
-                "latitude": -41.1,
-                "longitude": 174.1,
-                "access_start_latitude": "-41.123456",
-                "access_start_longitude": "174.123456",
-            }
-        ],
-    }
-
-    sync_sites_from_payload(payload)
-
-    site = Site.objects.get()
-    assert site.access_start_latitude == Decimal("-41.123456")
-    assert site.access_start_longitude == Decimal("174.123456")
-
-
-@pytest.mark.django_db
 def test_site_list_renders_coordinates(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -254,8 +224,6 @@ def test_site_list_shows_warning_indicator_for_sites_with_access_warnings(client
         name="Warning Site",
         latitude=-41.1,
         longitude=174.1,
-        access_start_latitude=-41.2,
-        access_start_longitude=174.2,
     )
     ok_site = Site.objects.create(
         source_name="dummy",
@@ -264,8 +232,6 @@ def test_site_list_shows_warning_indicator_for_sites_with_access_warnings(client
         name="OK Site",
         latitude=-42.1,
         longitude=175.1,
-        access_start_latitude=-42.2,
-        access_start_longitude=175.2,
     )
     warning_record = AccessRecord.objects.create(site=warning_site, name="Road access")
     AccessRecord.objects.create(site=ok_site, name="Road access")
@@ -298,7 +264,7 @@ def test_site_list_shows_warning_indicator_for_sites_with_access_warnings(client
 
 
 @pytest.mark.django_db
-def test_site_detail_renders_access_start_metadata(client):
+def test_site_detail_renders_site_google_maps_button(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
     site = Site.objects.create(
@@ -308,26 +274,15 @@ def test_site_detail_renders_access_start_metadata(client):
         name="Site",
         latitude=-41.1,
         longitude=174.1,
-        access_start_latitude=-41.2,
-        access_start_longitude=174.2,
     )
 
     response = client.get(reverse("site_detail", kwargs={"pk": site.pk}))
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert "Access Start Latitude" in content
-    assert "-41.2" in content
+    assert "Site Map" in content
     assert "Sync Status" in content
     assert "badge bg-green-lt" in content
-    assert (
-        "https://www.google.com/maps/dir/?api=1&destination=-41.200000%2C174.200000"
-        in content
-    )
-    assert (
-        "https://www.google.com/maps/search/?api=1&query=-41.200000%2C174.200000"
-        in content
-    )
     assert (
         "https://www.google.com/maps/search/?api=1&query=-41.100000%2C174.100000"
         in content
@@ -445,34 +400,6 @@ def test_site_detail_uses_saved_access_map_visibility_preference(client):
         site_access_map_preference_key(site.pk),
         {"visible_record_ids": []},
     ) == {"visible_record_ids": [second_record.pk]}
-
-
-@pytest.mark.django_db
-def test_site_detail_shows_warning_when_source_access_start_missing(client):
-    user = User.objects.create_user(email="user@example.com")
-    client.force_login(user)
-    site = Site.objects.create(
-        source_name="dummy",
-        external_id="001",
-        code="AA-001",
-        name="Site",
-        latitude=-41.1,
-        longitude=174.1,
-        access_start_latitude=None,
-        access_start_longitude=None,
-    )
-
-    response = client.get(reverse("site_detail", kwargs={"pk": site.pk}))
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "Access warnings" in content
-    assert "Source-of-truth access start coordinates are missing" in content
-    assert (
-        "https://www.google.com/maps/search/?api=1&query=-41.100000%2C174.100000"
-        in content
-    )
-    assert "Access start coordinates are missing in the source of truth." in content
 
 
 @pytest.mark.django_db
@@ -637,10 +564,55 @@ def test_site_detail_shows_access_record_actions(client):
         reverse("access_record_kml_download", kwargs={"pk": access_record.pk})
         in content
     )
+    assert "No access start point in latest revision." in content
     assert "ti ti-pencil" in content
     assert "Upload revision" in content
     assert (
         reverse("access_record_version_create", kwargs={"pk": access_record.pk})
+        in content
+    )
+
+
+@pytest.mark.django_db
+def test_site_detail_shows_access_start_actions_per_access_record(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    access_record = AccessRecord.objects.create(site=site, name="Road access")
+    AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=1,
+        geojson={
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [174.2, -41.2]},
+                    "properties": {"access_atlas:type": "access_start"},
+                }
+            ],
+        },
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+
+    response = client.get(reverse("site_detail", kwargs={"pk": site.pk}))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert (
+        "https://www.google.com/maps/dir/?api=1&destination=-41.200000%2C174.200000"
+        in content
+    )
+    assert (
+        "https://www.google.com/maps/search/?api=1&query=-41.200000%2C174.200000"
         in content
     )
 
@@ -921,7 +893,7 @@ def test_access_record_detail_shows_metadata_and_versions(client):
 
 
 @pytest.mark.django_db
-def test_access_record_detail_shows_warning_for_access_start_mismatch(client):
+def test_access_record_detail_shows_warning_for_multiple_access_start_points(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
     site = Site.objects.create(
@@ -931,8 +903,6 @@ def test_access_record_detail_shows_warning_for_access_start_mismatch(client):
         name="Site",
         latitude=-41.1,
         longitude=174.1,
-        access_start_latitude=-41.2,
-        access_start_longitude=174.2,
     )
     access_record = AccessRecord.objects.create(site=site, name="Boat access")
     AccessRecordVersion.objects.create(
@@ -948,7 +918,15 @@ def test_access_record_detail_shows_warning_for_access_start_mismatch(client):
                         "access_atlas:type": "access_start",
                         "name": "Access start",
                     },
-                }
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [174.26, -41.26]},
+                    "properties": {
+                        "access_atlas:type": "access_start",
+                        "name": "Backup access start",
+                    },
+                },
             ],
         },
         change_note="Initial upload",
@@ -960,7 +938,7 @@ def test_access_record_detail_shows_warning_for_access_start_mismatch(client):
     assert response.status_code == 200
     content = response.content.decode()
     assert "Access warnings" in content
-    assert "Access-start coordinates differ from source-of-truth values." in content
+    assert "Multiple access-start points found in the latest revision." in content
 
 
 @pytest.mark.django_db
@@ -1060,8 +1038,6 @@ def test_access_warning_helpers_include_site_point_mismatch():
         name="Site",
         latitude=-41.1,
         longitude=174.1,
-        access_start_latitude=-41.2,
-        access_start_longitude=174.2,
     )
     access_record = AccessRecord.objects.create(site=site, name="Road access")
     AccessRecordVersion.objects.create(

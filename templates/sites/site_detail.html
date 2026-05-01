@@ -15,29 +15,6 @@
     </div>
     <div class="col-auto ms-auto">
       <div class="btn-list">
-        {% if google_maps_actions.access_start_available %}
-          <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-1" href="{{ google_maps_actions.access_start_nav_url }}" target="_blank" rel="noopener noreferrer" title="Start navigation to access start in Google Maps">
-            <i class="ti ti-route-2" aria-hidden="true"></i>
-            Start nav
-          </a>
-          <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-1" href="{{ google_maps_actions.access_start_search_url }}" target="_blank" rel="noopener noreferrer" title="Open access start in Google Maps">
-            <i class="ti ti-map-pin" aria-hidden="true"></i>
-            Access start
-          </a>
-        {% else %}
-          <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-1" type="button" disabled title="Access start coordinates are missing in the source of truth.">
-            <i class="ti ti-route-2" aria-hidden="true"></i>
-            Start nav
-          </button>
-          <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-1" type="button" disabled title="Access start coordinates are missing in the source of truth.">
-            <i class="ti ti-map-pin" aria-hidden="true"></i>
-            Access start
-          </button>
-        {% endif %}
-        <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-1" href="{{ google_maps_actions.site_search_url }}" target="_blank" rel="noopener noreferrer" title="Open site coordinates in Google Maps">
-          <i class="ti ti-map-search" aria-hidden="true"></i>
-          Site
-        </a>
         <a class="btn btn-primary" href="{% url 'access_record_create' object.pk %}">New access record</a>
       </div>
     </div>
@@ -56,6 +33,13 @@
   </div>
 {% endif %}
 <div class="card">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <h3 class="card-title mb-0">Site Details</h3>
+    <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-1" href="{{ site_search_url }}" target="_blank" rel="noopener noreferrer" title="Open site coordinates in Google Maps">
+      <i class="ti ti-map-search" aria-hidden="true"></i>
+      Site
+    </a>
+  </div>
   <div class="card-body">
     <dl class="row">
       <dt class="col-sm-3">Source</dt><dd class="col-sm-9">{{ object.source_name }}</dd>
@@ -64,8 +48,6 @@
       <dt class="col-sm-3">External ID</dt><dd class="col-sm-9">{{ object.external_id }}</dd>
       <dt class="col-sm-3">Latitude</dt><dd class="col-sm-9">{{ object.latitude }}</dd>
       <dt class="col-sm-3">Longitude</dt><dd class="col-sm-9">{{ object.longitude }}</dd>
-      <dt class="col-sm-3">Access Start Latitude</dt><dd class="col-sm-9">{{ object.access_start_latitude|default:"Not provided" }}</dd>
-      <dt class="col-sm-3">Access Start Longitude</dt><dd class="col-sm-9">{{ object.access_start_longitude|default:"Not provided" }}</dd>
       <dt class="col-sm-3">Sync Status</dt>
       <dd class="col-sm-9">
         {% if object.sync_status == "active" %}
@@ -122,6 +104,21 @@
                 <a class="btn btn-icon btn-warning row-edit-button" href="{% url 'access_record_update' access_record.pk %}" aria-label="Edit {{ access_record.name }}" title="Edit {{ access_record.name }}">
                   <i class="ti ti-pencil" aria-hidden="true"></i>
                 </a>
+                {% if access_record.access_start_available %}
+                  <a class="btn btn-icon btn-secondary" href="{{ access_record.access_start_nav_url }}" target="_blank" rel="noopener noreferrer" aria-label="Start navigation to {{ access_record.name }} access start" title="Start navigation">
+                    <i class="ti ti-route-2" aria-hidden="true"></i>
+                  </a>
+                  <a class="btn btn-icon btn-secondary" href="{{ access_record.access_start_search_url }}" target="_blank" rel="noopener noreferrer" aria-label="Open {{ access_record.name }} access start in Google Maps" title="Open access start in Google Maps">
+                    <i class="ti ti-map-pin" aria-hidden="true"></i>
+                  </a>
+                {% else %}
+                  <button class="btn btn-icon btn-secondary" type="button" disabled aria-label="No access start point in latest revision for {{ access_record.name }}" title="No access start point in latest revision.">
+                    <i class="ti ti-route-2" aria-hidden="true"></i>
+                  </button>
+                  <button class="btn btn-icon btn-secondary" type="button" disabled aria-label="No access start point in latest revision for {{ access_record.name }}" title="No access start point in latest revision.">
+                    <i class="ti ti-map-pin" aria-hidden="true"></i>
+                  </button>
+                {% endif %}
                 <a class="btn btn-icon btn-info" href="{% url 'access_record_geojson_download' access_record.pk %}" aria-label="Download {{ access_record.name }} GeoJSON" title="Download GeoJSON">
                   <i class="ti ti-brackets" aria-hidden="true"></i>
                 </a>

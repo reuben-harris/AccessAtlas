@@ -23,8 +23,6 @@ class SiteAdmin(SimpleHistoryAdmin):
         "name",
         "latitude",
         "longitude",
-        "access_start_latitude",
-        "access_start_longitude",
         "sync_status",
         "last_seen_at",
         "created_at",
