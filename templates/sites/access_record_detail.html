@@ -97,36 +97,4 @@
     </table>
   </div>
 </div>
-<div class="card mt-3">
-  <div class="card-header">
-    <h3 class="card-title">Versions</h3>
-  </div>
-  <div class="table-responsive">
-    <table class="table table-vcenter">
-      <thead><tr><th>Version</th><th>Uploaded By</th><th>Change Note</th><th>Created</th><th class="text-end">Actions</th></tr></thead>
-      <tbody>
-        {% for version in object.versions.all %}
-          <tr>
-            <td>v{{ version.version_number }}</td>
-            <td>{{ version.uploaded_by }}</td>
-            <td>{{ version.change_note }}</td>
-            <td>{{ version.created_at }}</td>
-            <td class="text-end row-actions">
-              <div class="access-record-actions justify-content-end">
-                <a class="btn btn-icon btn-info" href="{% url 'access_record_version_geojson_download' object.pk version.pk %}" aria-label="Download version {{ version.version_number }} GeoJSON" title="Download GeoJSON">
-                  <i class="ti ti-brackets" aria-hidden="true"></i>
-                </a>
-                <a class="btn btn-icon btn-success" href="{% url 'access_record_version_kml_download' object.pk version.pk %}" aria-label="Download version {{ version.version_number }} KML" title="Download KML">
-                  <i class="ti ti-map-2" aria-hidden="true"></i>
-                </a>
-              </div>
-            </td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="5" class="text-secondary">No versions uploaded.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
 {% endblock %}

@@ -291,6 +291,12 @@ def _access_record_detail_sections(
             "is_active": active_section == "overview",
         },
         {
+            "label": "Revisions",
+            "icon": "ti-versions",
+            "url": access_record.get_revisions_url(),
+            "is_active": active_section == "revisions",
+        },
+        {
             "label": "History",
             "icon": "ti-history",
             "url": access_record.get_history_url(),
@@ -432,6 +438,22 @@ class AccessRecordHistoryView(LoginRequiredMixin, DetailView):
         )
         context["detail_navigation_label"] = "Access record sections"
         context["history_records"] = self.object.history.all()
+        return context
+
+
+class AccessRecordRevisionsView(LoginRequiredMixin, DetailView):
+    model = AccessRecord
+    template_name = "sites/access_record_revisions.html"
+
+    def get_queryset(self):
+        return AccessRecord.objects.select_related("site").prefetch_related("versions")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["detail_sections"] = _access_record_detail_sections(
+            self.object, "revisions"
+        )
+        context["detail_navigation_label"] = "Access record sections"
         return context
 
 

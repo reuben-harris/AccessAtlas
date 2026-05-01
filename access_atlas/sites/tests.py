@@ -797,7 +797,7 @@ def test_access_record_version_upload_creates_next_version(client):
         longitude=174.1,
     )
     access_record = AccessRecord.objects.create(site=site, name="Boat access")
-    version = AccessRecordVersion.objects.create(
+    AccessRecordVersion.objects.create(
         access_record=access_record,
         version_number=1,
         geojson={"type": "FeatureCollection", "features": []},
@@ -901,7 +901,7 @@ def test_access_record_detail_shows_metadata_and_versions(client):
         name="Boat access",
         arrival_method=ArrivalMethod.BOAT,
     )
-    version = AccessRecordVersion.objects.create(
+    AccessRecordVersion.objects.create(
         access_record=access_record,
         version_number=1,
         geojson={"type": "FeatureCollection", "features": []},
@@ -918,7 +918,7 @@ def test_access_record_detail_shows_metadata_and_versions(client):
     assert "Arrival Method" in content
     assert "Boat" in content
     assert "v1" in content
-    assert "Initial upload" in content
+    assert "Revisions" in content
     assert content.count(site.get_absolute_url()) == 1
     assert (
         reverse("access_record_geojson_download", kwargs={"pk": access_record.pk})
@@ -928,6 +928,44 @@ def test_access_record_detail_shows_metadata_and_versions(client):
         reverse("access_record_kml_download", kwargs={"pk": access_record.pk})
         in content
     )
+    assert (
+        reverse("access_record_revisions", kwargs={"pk": access_record.pk}) in content
+    )
+
+
+@pytest.mark.django_db
+def test_access_record_revisions_show_version_downloads(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    access_record = AccessRecord.objects.create(
+        site=site,
+        name="Boat access",
+        arrival_method=ArrivalMethod.BOAT,
+    )
+    version = AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=1,
+        geojson={"type": "FeatureCollection", "features": []},
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+
+    response = client.get(
+        reverse("access_record_revisions", kwargs={"pk": access_record.pk})
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Revisions" in content
+    assert "Initial upload" in content
     assert (
         reverse(
             "access_record_version_geojson_download",

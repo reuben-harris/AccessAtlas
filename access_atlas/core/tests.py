@@ -3,7 +3,7 @@ from django.urls import reverse
 
 from access_atlas.accounts.models import User
 from access_atlas.jobs.models import Job, JobTemplate
-from access_atlas.sites.models import Site
+from access_atlas.sites.models import AccessRecord, Site
 from access_atlas.trips.models import SiteVisit, Trip
 
 
@@ -51,11 +51,15 @@ def test_core_object_pages_render(logged_in_client, user, site):
         trip_leader=user,
     )
     visit = SiteVisit.objects.create(trip=trip, site=site)
+    access_record = AccessRecord.objects.create(site=site, name="Road access")
 
     urls = [
         reverse("site_detail", kwargs={"pk": site.pk}),
         reverse("site_access_records", kwargs={"pk": site.pk}),
         reverse("site_history", kwargs={"pk": site.pk}),
+        reverse("access_record_detail", kwargs={"pk": access_record.pk}),
+        reverse("access_record_revisions", kwargs={"pk": access_record.pk}),
+        reverse("access_record_history", kwargs={"pk": access_record.pk}),
         reverse("job_template_detail", kwargs={"pk": template.pk}),
         reverse("job_template_history", kwargs={"pk": template.pk}),
         reverse("job_detail", kwargs={"pk": job.pk}),
