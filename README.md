@@ -105,6 +105,10 @@ The app will be available at `http://127.0.0.1:8000/`.
 
 Use `.env.example` as the starting point for configuration. Authentication, database, site feed, and deployment settings all live there.
 
+Leaflet runtime assets are generated into `static/vendor/` by `pnpm build:vendor`
+or `pnpm build:frontend`. Those files are not tracked in git; the container
+build generates them as part of the frontend stage.
+
 Useful commands:
 
 ```bash

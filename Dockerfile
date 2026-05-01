@@ -1,4 +1,15 @@
 FROM ghcr.io/astral-sh/uv:0.11.7 AS uv
+FROM node:22-slim AS frontend
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml postcss.config.js ./
+COPY scripts ./scripts
+COPY static/css/src ./static/css/src
+
+RUN corepack enable pnpm
+RUN pnpm install --frozen-lockfile
+RUN pnpm build:frontend
 
 FROM python:3.14-slim AS app
 
@@ -14,6 +25,8 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 COPY . .
+COPY --from=frontend /app/static/css/app.css ./static/css/app.css
+COPY --from=frontend /app/static/vendor ./static/vendor
 RUN uv sync --frozen --no-dev
 RUN python manage.py collectstatic --noinput
 

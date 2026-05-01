@@ -11,3 +11,4 @@ media/
 .coverage
 htmlcov/
 node_modules/
+static/vendor/
