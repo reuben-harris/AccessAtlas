@@ -147,6 +147,11 @@ When implementing a feature in incremental passes, keep the initial feature
 changes uncommitted until the small follow-up tweaks/fixes are done, then fold
 those tweaks into the same feature commit instead of creating extra fix commits.
 
+When a follow-up tweak reaches beyond the new feature and adjusts an existing
+shared element in its own right, split it into a separate commit. A good rule
+is: keep required feature-completion fixes with the feature, but separate
+standalone shared polish so history stays easier to review and revert.
+
 ## Planning Workflow
 
 For larger agreed feature sets, keep an active checklist and update it as work
