@@ -38,6 +38,23 @@ jobs:
       - name: Format check
         run: uv run ruff format --check .
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install frontend dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Lint frontend JavaScript
+        run: pnpm lint:js
+
   test:
     name: Test
     runs-on: ubuntu-latest

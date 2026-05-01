@@ -86,6 +86,7 @@ Prerequisites:
 
 - Python 3.14
 - `uv`
+- `pnpm`
 - Docker with Docker Compose
 
 Typical setup:
@@ -110,6 +111,8 @@ uv run python manage.py check
 uv run pytest
 uv run ruff check .
 uv run ruff format --check .
+pnpm install
+pnpm lint:js
 ```
 
 ## Deployment
