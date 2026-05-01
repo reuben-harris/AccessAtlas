@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  lint:
-    name: Lint
+  lint-python:
+    name: Lint Python
     runs-on: ubuntu-latest
 
     steps:
@@ -37,6 +37,14 @@ jobs:
 
       - name: Format check
         run: uv run ruff format --check .
+
+  lint-frontend:
+    name: Lint Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
