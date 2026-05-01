@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -54,6 +56,22 @@ TRACK_SUITABILITY_COLOR = {
     "luv": "#f59f00",
     "walking": "#a51d2d",
 }
+
+
+def _coordinates_value(latitude, longitude) -> str:
+    return f"{float(latitude):.6f},{float(longitude):.6f}"
+
+
+def _google_maps_search_url(latitude, longitude) -> str:
+    query = urlencode({"api": 1, "query": _coordinates_value(latitude, longitude)})
+    return f"https://www.google.com/maps/search/?{query}"
+
+
+def _google_maps_nav_url(latitude, longitude) -> str:
+    query = urlencode(
+        {"api": 1, "destination": _coordinates_value(latitude, longitude)}
+    )
+    return f"https://www.google.com/maps/dir/?{query}"
 
 
 def build_site_access_map_data(
@@ -157,6 +175,32 @@ class SiteDetailView(LoginRequiredMixin, DetailView):
         context["site_access_map_preference"] = {
             "key": preference_key,
             "value": map_preference,
+        }
+        access_start_available = (
+            self.object.access_start_latitude is not None
+            and self.object.access_start_longitude is not None
+        )
+        context["google_maps_actions"] = {
+            "site_search_url": _google_maps_search_url(
+                self.object.latitude, self.object.longitude
+            ),
+            "access_start_search_url": (
+                _google_maps_search_url(
+                    self.object.access_start_latitude,
+                    self.object.access_start_longitude,
+                )
+                if access_start_available
+                else None
+            ),
+            "access_start_nav_url": (
+                _google_maps_nav_url(
+                    self.object.access_start_latitude,
+                    self.object.access_start_longitude,
+                )
+                if access_start_available
+                else None
+            ),
+            "access_start_available": access_start_available,
         }
         context["map_tile_layer"] = {
             "light": {

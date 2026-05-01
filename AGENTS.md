@@ -142,6 +142,10 @@ Use `AGENTS.md` as the long-lived internal memory file for product language, arc
 
 Use conventional commit messages for commits unless the user explicitly asks for something else.
 
+When implementing a feature in incremental passes, keep the initial feature
+changes uncommitted until the small follow-up tweaks/fixes are done, then fold
+those tweaks into the same feature commit instead of creating extra fix commits.
+
 ## Planning Workflow
 
 For larger agreed feature sets, keep an active checklist and update it as work

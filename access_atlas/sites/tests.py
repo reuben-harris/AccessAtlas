@@ -320,6 +320,18 @@ def test_site_detail_renders_access_start_metadata(client):
     assert "-41.2" in content
     assert "Sync Status" in content
     assert "badge bg-green-lt" in content
+    assert (
+        "https://www.google.com/maps/dir/?api=1&destination=-41.200000%2C174.200000"
+        in content
+    )
+    assert (
+        "https://www.google.com/maps/search/?api=1&query=-41.200000%2C174.200000"
+        in content
+    )
+    assert (
+        "https://www.google.com/maps/search/?api=1&query=-41.100000%2C174.100000"
+        in content
+    )
 
 
 @pytest.mark.django_db
@@ -456,6 +468,11 @@ def test_site_detail_shows_warning_when_source_access_start_missing(client):
     content = response.content.decode()
     assert "Access warnings" in content
     assert "Source-of-truth access start coordinates are missing" in content
+    assert (
+        "https://www.google.com/maps/search/?api=1&query=-41.100000%2C174.100000"
+        in content
+    )
+    assert "Access start coordinates are missing in the source of truth." in content
 
 
 @pytest.mark.django_db

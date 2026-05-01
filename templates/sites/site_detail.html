@@ -14,7 +14,32 @@
       <h2 class="page-title">{{ object.name }}</h2>
     </div>
     <div class="col-auto ms-auto">
-      <a class="btn btn-primary" href="{% url 'access_record_create' object.pk %}">New access record</a>
+      <div class="btn-list">
+        {% if google_maps_actions.access_start_available %}
+          <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-1" href="{{ google_maps_actions.access_start_nav_url }}" target="_blank" rel="noopener noreferrer" title="Start navigation to access start in Google Maps">
+            <i class="ti ti-route-2" aria-hidden="true"></i>
+            Start nav
+          </a>
+          <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-1" href="{{ google_maps_actions.access_start_search_url }}" target="_blank" rel="noopener noreferrer" title="Open access start in Google Maps">
+            <i class="ti ti-map-pin" aria-hidden="true"></i>
+            Access start
+          </a>
+        {% else %}
+          <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-1" type="button" disabled title="Access start coordinates are missing in the source of truth.">
+            <i class="ti ti-route-2" aria-hidden="true"></i>
+            Start nav
+          </button>
+          <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-1" type="button" disabled title="Access start coordinates are missing in the source of truth.">
+            <i class="ti ti-map-pin" aria-hidden="true"></i>
+            Access start
+          </button>
+        {% endif %}
+        <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-1" href="{{ google_maps_actions.site_search_url }}" target="_blank" rel="noopener noreferrer" title="Open site coordinates in Google Maps">
+          <i class="ti ti-map-search" aria-hidden="true"></i>
+          Site
+        </a>
+        <a class="btn btn-primary" href="{% url 'access_record_create' object.pk %}">New access record</a>
+      </div>
     </div>
   </div>
 </div>
