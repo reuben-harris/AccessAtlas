@@ -310,6 +310,13 @@ input[type="time"].form-control.is-invalid {
   font-weight: 600;
 }
 
+.site-access-map-popup-details {
+  max-width: 18rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .site-map-animation-control button {
   display: inline-flex;
   align-items: center;

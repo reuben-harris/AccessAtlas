@@ -314,6 +314,7 @@ def test_site_detail_includes_access_map_feature_data(client):
                     "properties": {
                         "access_atlas:type": "gate",
                         "label": "North gate",
+                        "code": "#1234",
                     },
                 }
             ],
@@ -337,6 +338,7 @@ def test_site_detail_includes_access_map_feature_data(client):
     assert point["typeLabel"] == "Gate"
     assert point["label"] == "North gate"
     assert point["arrivalMethod"] == "road"
+    assert point["details"] == "Code: #1234"
 
 
 @pytest.mark.django_db

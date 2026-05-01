@@ -106,6 +106,10 @@
   }
 
   function buildPointPopup(feature) {
+    const details =
+      typeof feature.details === "string" && feature.details.trim().length > 0
+        ? feature.details.trim()
+        : "";
     return `
       <div class="site-access-map-popup-title">${escapeHtml(feature.typeLabel)}</div>
       <div><strong>Access Record:</strong> ${escapeHtml(feature.recordName)}</div>
@@ -113,6 +117,11 @@
       <div><strong>Coordinates:</strong> ${escapeHtml(
         `${Number(feature.latitude).toFixed(6)}, ${Number(feature.longitude).toFixed(6)}`
       )}</div>
+      ${
+        details
+          ? `<div class="site-access-map-popup-details"><strong>Details:</strong> ${escapeHtml(details)}</div>`
+          : ""
+      }
     `;
   }
 

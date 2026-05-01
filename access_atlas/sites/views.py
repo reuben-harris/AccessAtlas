@@ -58,6 +58,15 @@ TRACK_SUITABILITY_COLOR = {
 }
 
 
+def _point_details(point) -> str | None:
+    if point.feature_type == "gate" and point.properties.get("code"):
+        return f"Code: {point.properties['code']}"
+    details = point.properties.get("details") or point.properties.get("notes")
+    if details:
+        return str(details)
+    return None
+
+
 def _coordinates_value(latitude, longitude) -> str:
     return f"{float(latitude):.6f},{float(longitude):.6f}"
 
@@ -99,6 +108,7 @@ def build_site_access_map_data(
                     ),
                     "recordName": access_record.name,
                     "label": point.label or POINT_TYPE_DISPLAY.get(point.feature_type),
+                    "details": _point_details(point),
                 }
             )
         for track in snapshot.parsed.tracks:
