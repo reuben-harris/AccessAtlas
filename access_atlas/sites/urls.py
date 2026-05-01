@@ -6,6 +6,16 @@ urlpatterns = [
     path("", views.SiteListView.as_view(), name="site_list"),
     path("sync/", views.sync_sites_view, name="sync_sites"),
     path(
+        "<int:pk>/access-records/",
+        views.SiteAccessRecordsView.as_view(),
+        name="site_access_records",
+    ),
+    path(
+        "<int:pk>/history/",
+        views.SiteHistoryView.as_view(),
+        name="site_history",
+    ),
+    path(
         "<int:site_pk>/access-records/new/",
         views.AccessRecordCreateView.as_view(),
         name="access_record_create",

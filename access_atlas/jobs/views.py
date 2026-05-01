@@ -46,9 +46,67 @@ class JobTemplateListView(LoginRequiredMixin, ListView):
     template_name = "jobs/job_template_list.html"
 
 
+def _job_template_detail_sections(
+    job_template: JobTemplate, active_section: str
+) -> list[dict[str, str | bool]]:
+    return [
+        {
+            "label": "Overview",
+            "icon": "ti-layout-dashboard",
+            "url": job_template.get_absolute_url(),
+            "is_active": active_section == "overview",
+        },
+        {
+            "label": "History",
+            "icon": "ti-history",
+            "url": job_template.get_history_url(),
+            "is_active": active_section == "history",
+        },
+    ]
+
+
+def _job_detail_sections(job: Job, active_section: str) -> list[dict[str, str | bool]]:
+    return [
+        {
+            "label": "Overview",
+            "icon": "ti-layout-dashboard",
+            "url": job.get_absolute_url(),
+            "is_active": active_section == "overview",
+        },
+        {
+            "label": "History",
+            "icon": "ti-history",
+            "url": job.get_history_url(),
+            "is_active": active_section == "history",
+        },
+    ]
+
+
 class JobTemplateDetailView(LoginRequiredMixin, DetailView):
     model = JobTemplate
     template_name = "jobs/job_template_detail.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["detail_sections"] = _job_template_detail_sections(
+            self.object, "overview"
+        )
+        context["detail_navigation_label"] = "Job template sections"
+        return context
+
+
+class JobTemplateHistoryView(LoginRequiredMixin, DetailView):
+    model = JobTemplate
+    template_name = "jobs/job_template_history.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["detail_sections"] = _job_template_detail_sections(
+            self.object, "history"
+        )
+        context["detail_navigation_label"] = "Job template sections"
+        context["history_records"] = self.object.history.all()
+        return context
 
 
 class JobTemplateCreateView(
@@ -250,6 +308,24 @@ class JobMapView(LoginRequiredMixin, ListView):
 class JobDetailView(LoginRequiredMixin, DetailView):
     model = Job
     template_name = "jobs/job_detail.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["detail_sections"] = _job_detail_sections(self.object, "overview")
+        context["detail_navigation_label"] = "Job sections"
+        return context
+
+
+class JobHistoryView(LoginRequiredMixin, DetailView):
+    model = Job
+    template_name = "jobs/job_history.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["detail_sections"] = _job_detail_sections(self.object, "history")
+        context["detail_navigation_label"] = "Job sections"
+        context["history_records"] = self.object.history.all()
+        return context
 
 
 class JobCreateView(

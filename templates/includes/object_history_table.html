@@ -1,0 +1,29 @@
+{% load history_extras %}
+
+{% if history_records %}
+<div class="card{% if card_class %} {{ card_class }}{% endif %}">
+  <div class="card-header"><h3 class="card-title">{{ history_title|default:"History" }}</h3></div>
+  <div class="table-responsive">
+    <table class="table table-vcenter">
+      <thead>
+        <tr>
+          <th>When</th>
+          <th>Type</th>
+          <th>Reason</th>
+          <th>User</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in history_records %}
+          <tr>
+            <td>{{ record.history_date }}</td>
+            <td>{{ record.get_history_type_display }}</td>
+            <td>{{ record|change_reason }}</td>
+            <td>{{ record.history_user|default:"System" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}

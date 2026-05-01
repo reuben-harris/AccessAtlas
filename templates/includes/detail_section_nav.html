@@ -1,0 +1,10 @@
+<nav class="view-toolbar" aria-label="{{ detail_navigation_label|default:'Detail sections' }}">
+  {% for section in detail_sections %}
+    <a class="view-toolbar-item{% if section.is_active %} is-active{% endif %}" href="{{ section.url }}">
+      {% if section.icon %}
+        <i class="ti {{ section.icon }}" aria-hidden="true"></i>
+      {% endif %}
+      <span>{{ section.label }}</span>
+    </a>
+  {% endfor %}
+</nav>

@@ -124,15 +124,41 @@ class SiteListView(LoginRequiredMixin, ListView):
         return context
 
 
-class SiteDetailView(LoginRequiredMixin, DetailView):
+def _site_detail_sections(
+    site: Site, active_section: str
+) -> list[dict[str, str | bool]]:
+    return [
+        {
+            "label": "Overview",
+            "icon": "ti-layout-dashboard",
+            "url": site.get_absolute_url(),
+            "is_active": active_section == "overview",
+        },
+        {
+            "label": "Access Records",
+            "icon": "ti-route-2",
+            "url": site.get_access_records_url(),
+            "is_active": active_section == "access-records",
+        },
+        {
+            "label": "History",
+            "icon": "ti-history",
+            "url": site.get_history_url(),
+            "is_active": active_section == "history",
+        },
+    ]
+
+
+class SiteDetailContextMixin:
     model = Site
-    template_name = "sites/site_detail.html"
 
     def get_queryset(self):
         return Site.objects.prefetch_related("access_records__versions")
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+    def _site_detail_data(self) -> dict:
+        if hasattr(self, "_cached_site_detail_data"):
+            return self._cached_site_detail_data
+
         access_records = list(self.object.access_records.all())
         snapshots_by_record_id = build_access_record_snapshots(access_records)
         site_search_url = _google_maps_search_url(
@@ -162,15 +188,20 @@ class SiteDetailView(LoginRequiredMixin, DetailView):
                 access_record.access_start_search_url = None
                 access_record.access_start_nav_url = None
                 access_record.access_start_available = False
-        context["site_access_records"] = access_records
-        context["access_warnings"] = build_site_warnings(
-            self.object,
-            snapshots_by_record_id=snapshots_by_record_id,
-        )
-        context["site_access_map_data"] = build_site_access_map_data(
-            access_records,
-            snapshots_by_record_id,
-        )
+        self._cached_site_detail_data = {
+            "site_access_records": access_records,
+            "access_warnings": build_site_warnings(
+                self.object,
+                snapshots_by_record_id=snapshots_by_record_id,
+            ),
+            "site_search_url": site_search_url,
+            "snapshots_by_record_id": snapshots_by_record_id,
+        }
+        return self._cached_site_detail_data
+
+    def _site_access_records_context(self) -> dict:
+        data = self._site_detail_data()
+        access_records = data["site_access_records"]
         preference_key = site_access_map_preference_key(self.object.pk)
         default_record_ids = [record.pk for record in access_records]
         map_preference = get_user_preference(
@@ -180,22 +211,72 @@ class SiteDetailView(LoginRequiredMixin, DetailView):
         )
         if "animate_tracks" not in map_preference:
             map_preference["animate_tracks"] = True
-        context["site_access_map_preference"] = {
-            "key": preference_key,
-            "value": map_preference,
-        }
-        context["site_search_url"] = site_search_url
-        context["map_tile_layer"] = {
-            "light": {
-                "url": settings.MAP_TILE_URL,
-                "attribution": settings.MAP_TILE_ATTRIBUTION,
+        return {
+            "site_access_map_data": build_site_access_map_data(
+                access_records,
+                data["snapshots_by_record_id"],
+            ),
+            "site_access_map_preference": {
+                "key": preference_key,
+                "value": map_preference,
             },
-            "dark": {
-                "url": settings.MAP_TILE_DARK_URL,
-                "attribution": settings.MAP_TILE_DARK_ATTRIBUTION,
+            "map_tile_layer": {
+                "light": {
+                    "url": settings.MAP_TILE_URL,
+                    "attribution": settings.MAP_TILE_ATTRIBUTION,
+                },
+                "dark": {
+                    "url": settings.MAP_TILE_DARK_URL,
+                    "attribution": settings.MAP_TILE_DARK_ATTRIBUTION,
+                },
+                "maxZoom": settings.MAP_TILE_MAX_ZOOM,
             },
-            "maxZoom": settings.MAP_TILE_MAX_ZOOM,
         }
+
+    def get_detail_sections(self) -> list[dict[str, str | bool]]:
+        raise NotImplementedError
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["detail_sections"] = self.get_detail_sections()
+        context["detail_navigation_label"] = "Site sections"
+        return context
+
+
+class SiteDetailView(SiteDetailContextMixin, LoginRequiredMixin, DetailView):
+    template_name = "sites/site_detail.html"
+
+    def get_detail_sections(self) -> list[dict[str, str | bool]]:
+        return _site_detail_sections(self.object, "overview")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(self._site_detail_data())
+        return context
+
+
+class SiteAccessRecordsView(SiteDetailContextMixin, LoginRequiredMixin, DetailView):
+    template_name = "sites/site_access_records.html"
+
+    def get_detail_sections(self) -> list[dict[str, str | bool]]:
+        return _site_detail_sections(self.object, "access-records")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(self._site_detail_data())
+        context.update(self._site_access_records_context())
+        return context
+
+
+class SiteHistoryView(SiteDetailContextMixin, LoginRequiredMixin, DetailView):
+    template_name = "sites/site_history.html"
+
+    def get_detail_sections(self) -> list[dict[str, str | bool]]:
+        return _site_detail_sections(self.object, "history")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["history_records"] = self.object.history.all()
         return context
 
 
@@ -227,7 +308,7 @@ class AccessRecordCreateView(LoginRequiredMixin, FormView):
         if form.replaced_staged_upload is not None:
             form.replaced_staged_upload.delete()
         messages.success(self.request, "Access record uploaded.")
-        return redirect(self.site.get_absolute_url())
+        return redirect(self.site.get_access_records_url())
 
     def form_invalid(self, form):
         self._stage_uploaded_geojson(form)
@@ -247,7 +328,7 @@ class AccessRecordCreateView(LoginRequiredMixin, FormView):
         context = super().get_context_data(**kwargs)
         context["site"] = self.site
         context["form_title"] = "New access record"
-        context["cancel_url"] = self.site.get_absolute_url()
+        context["cancel_url"] = self.site.get_access_records_url()
         return context
 
 

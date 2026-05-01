@@ -323,7 +323,7 @@ def test_site_detail_includes_access_map_feature_data(client):
         uploaded_by=user,
     )
 
-    response = client.get(reverse("site_detail", kwargs={"pk": site.pk}))
+    response = client.get(reverse("site_access_records", kwargs={"pk": site.pk}))
 
     assert response.status_code == 200
     content = response.content.decode()
@@ -362,7 +362,7 @@ def test_site_detail_skips_invalid_access_map_feature_data(client):
         uploaded_by=user,
     )
 
-    response = client.get(reverse("site_detail", kwargs={"pk": site.pk}))
+    response = client.get(reverse("site_access_records", kwargs={"pk": site.pk}))
 
     assert response.status_code == 200
     content = response.content.decode()
@@ -392,7 +392,7 @@ def test_site_detail_uses_saved_access_map_visibility_preference(client):
         {"visible_record_ids": [second_record.pk], "animate_tracks": False},
     )
 
-    response = client.get(reverse("site_detail", kwargs={"pk": site.pk}))
+    response = client.get(reverse("site_access_records", kwargs={"pk": site.pk}))
 
     assert response.status_code == 200
     content = response.content.decode()
@@ -419,7 +419,7 @@ def test_site_detail_defaults_access_map_track_animation_to_enabled(client):
         longitude=174.1,
     )
 
-    response = client.get(reverse("site_detail", kwargs={"pk": site.pk}))
+    response = client.get(reverse("site_access_records", kwargs={"pk": site.pk}))
 
     assert response.status_code == 200
     content = response.content.decode()
@@ -446,7 +446,7 @@ def test_site_detail_defaults_animation_for_visibility_only_preference(client):
         {"visible_record_ids": [record.pk]},
     )
 
-    response = client.get(reverse("site_detail", kwargs={"pk": site.pk}))
+    response = client.get(reverse("site_access_records", kwargs={"pk": site.pk}))
 
     assert response.status_code == 200
     payload = parse_json_script(response.content.decode(), "site-access-map-preference")
@@ -599,7 +599,7 @@ def test_site_detail_shows_access_record_actions(client):
         arrival_method=ArrivalMethod.BOAT,
     )
 
-    response = client.get(reverse("site_detail", kwargs={"pk": site.pk}))
+    response = client.get(reverse("site_access_records", kwargs={"pk": site.pk}))
 
     assert response.status_code == 200
     content = response.content.decode()
@@ -655,7 +655,7 @@ def test_site_detail_shows_access_start_actions_per_access_record(client):
         uploaded_by=user,
     )
 
-    response = client.get(reverse("site_detail", kwargs={"pk": site.pk}))
+    response = client.get(reverse("site_access_records", kwargs={"pk": site.pk}))
 
     assert response.status_code == 200
     content = response.content.decode()

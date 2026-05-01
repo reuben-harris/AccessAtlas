@@ -14,6 +14,7 @@ urlpatterns = [
         name="job_create_from_template",
     ),
     path("<int:pk>/", views.JobDetailView.as_view(), name="job_detail"),
+    path("<int:pk>/history/", views.JobHistoryView.as_view(), name="job_history"),
     path("<int:pk>/edit/", views.JobUpdateView.as_view(), name="job_update"),
     path(
         "<int:job_pk>/requirements/new/",
@@ -40,6 +41,11 @@ urlpatterns = [
         "templates/<int:pk>/",
         views.JobTemplateDetailView.as_view(),
         name="job_template_detail",
+    ),
+    path(
+        "templates/<int:pk>/history/",
+        views.JobTemplateHistoryView.as_view(),
+        name="job_template_history",
     ),
     path(
         "templates/<int:pk>/edit/",

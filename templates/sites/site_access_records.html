@@ -1,0 +1,129 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}{{ object.code }} - Access Atlas{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">{{ object.name }}</h2>
+    </div>
+    <div class="col-auto ms-auto">
+      <div class="btn-list">
+        <a class="btn btn-primary" href="{% url 'access_record_create' object.pk %}">New access record</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% include "includes/detail_section_nav.html" %}
+{% if access_warnings %}
+  <div class="alert alert-warning" role="alert">
+    <div class="d-block w-100">
+      <h4 class="mb-2">Access warnings</h4>
+      <ul class="mb-0 ps-3">
+        {% for warning in access_warnings %}
+          <li>{{ warning.message }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+{% endif %}
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Access Records</h3>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-vcenter">
+      <thead><tr><th>Name</th><th>Arrival Method</th><th>Status</th><th>Latest Version</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+        {% for access_record in site_access_records %}
+          <tr>
+            <td><a href="{{ access_record.get_absolute_url }}">{{ access_record.name }}</a></td>
+            <td>{{ access_record.get_arrival_method_display }}</td>
+            <td>
+              {% if access_record.status == "active" %}
+                <span class="badge bg-green-lt">Active</span>
+              {% else %}
+                <span class="badge bg-yellow-lt">Retired</span>
+              {% endif %}
+            </td>
+            <td>
+              {% with current_version=access_record.latest_version %}
+                {% if current_version %}
+                  v{{ current_version.version_number }}
+                {% else %}
+                  -
+                {% endif %}
+              {% endwith %}
+            </td>
+            <td class="text-end row-actions">
+              <div class="access-record-actions">
+                <button
+                  class="btn btn-icon btn-secondary"
+                  type="button"
+                  data-map-toggle="access-record"
+                  data-record-id="{{ access_record.pk }}"
+                  aria-label="Hide {{ access_record.name }} on map"
+                  title="Hide on map"
+                >
+                  <i class="ti ti-eye" aria-hidden="true"></i>
+                </button>
+                <a class="btn btn-icon btn-warning row-edit-button" href="{% url 'access_record_update' access_record.pk %}" aria-label="Edit {{ access_record.name }}" title="Edit {{ access_record.name }}">
+                  <i class="ti ti-pencil" aria-hidden="true"></i>
+                </a>
+                {% if access_record.access_start_available %}
+                  <a class="btn btn-icon btn-secondary" href="{{ access_record.access_start_nav_url }}" target="_blank" rel="noopener noreferrer" aria-label="Start navigation to {{ access_record.name }} access start" title="Start navigation">
+                    <i class="ti ti-route-2" aria-hidden="true"></i>
+                  </a>
+                  <a class="btn btn-icon btn-secondary" href="{{ access_record.access_start_search_url }}" target="_blank" rel="noopener noreferrer" aria-label="Open {{ access_record.name }} access start in Google Maps" title="Open access start in Google Maps">
+                    <i class="ti ti-map-pin" aria-hidden="true"></i>
+                  </a>
+                {% else %}
+                  <button class="btn btn-icon btn-secondary" type="button" disabled aria-label="No access start point in latest revision for {{ access_record.name }}" title="No access start point in latest revision.">
+                    <i class="ti ti-route-2" aria-hidden="true"></i>
+                  </button>
+                  <button class="btn btn-icon btn-secondary" type="button" disabled aria-label="No access start point in latest revision for {{ access_record.name }}" title="No access start point in latest revision.">
+                    <i class="ti ti-map-pin" aria-hidden="true"></i>
+                  </button>
+                {% endif %}
+                <a class="btn btn-icon btn-info" href="{% url 'access_record_geojson_download' access_record.pk %}" aria-label="Download {{ access_record.name }} GeoJSON" title="Download GeoJSON">
+                  <i class="ti ti-brackets" aria-hidden="true"></i>
+                </a>
+                <a class="btn btn-icon btn-success" href="{% url 'access_record_kml_download' access_record.pk %}" aria-label="Download {{ access_record.name }} KML" title="Download KML">
+                  <i class="ti ti-map-2" aria-hidden="true"></i>
+                </a>
+                <a class="btn btn-primary row-upload-revision-button" href="{% url 'access_record_version_create' access_record.pk %}">Upload revision</a>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-secondary">No access records.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="card site-access-map-card mt-3">
+  <div class="card-body p-0">
+    <div
+      id="site-access-map"
+      class="site-access-map"
+      data-preference-url="{% url 'account_preference' %}"
+      aria-label="Map of access record features for this site"
+    ></div>
+  </div>
+</div>
+{{ site_access_map_data|json_script:"site-access-map-data" }}
+{{ site_access_map_preference|json_script:"site-access-map-preference" }}
+{{ map_tile_layer|json_script:"site-access-map-tile-layer" }}
+{{ object.latitude|json_script:"site-access-map-site-latitude" }}
+{{ object.longitude|json_script:"site-access-map-site-longitude" }}
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet-ant-path@1.3.0/dist/leaflet-ant-path.min.js"></script>
+<script src="{% static 'js/site_access_map.js' %}"></script>
+{% endblock %}

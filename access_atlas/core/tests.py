@@ -54,9 +54,14 @@ def test_core_object_pages_render(logged_in_client, user, site):
 
     urls = [
         reverse("site_detail", kwargs={"pk": site.pk}),
+        reverse("site_access_records", kwargs={"pk": site.pk}),
+        reverse("site_history", kwargs={"pk": site.pk}),
         reverse("job_template_detail", kwargs={"pk": template.pk}),
+        reverse("job_template_history", kwargs={"pk": template.pk}),
         reverse("job_detail", kwargs={"pk": job.pk}),
+        reverse("job_history", kwargs={"pk": job.pk}),
         reverse("trip_detail", kwargs={"pk": trip.pk}),
+        reverse("trip_history", kwargs={"pk": trip.pk}),
         reverse("site_visit_detail", kwargs={"pk": visit.pk}),
     ]
 

@@ -27,6 +27,25 @@ class TripListView(LoginRequiredMixin, ListView):
     template_name = "trips/trip_list.html"
 
 
+def _trip_detail_sections(
+    trip: Trip, active_section: str
+) -> list[dict[str, str | bool]]:
+    return [
+        {
+            "label": "Overview",
+            "icon": "ti-layout-dashboard",
+            "url": trip.get_absolute_url(),
+            "is_active": active_section == "overview",
+        },
+        {
+            "label": "History",
+            "icon": "ti-history",
+            "url": trip.get_history_url(),
+            "is_active": active_section == "history",
+        },
+    ]
+
+
 class TripDetailView(LoginRequiredMixin, DetailView):
     model = Trip
     template_name = "trips/trip_detail.html"
@@ -50,6 +69,20 @@ class TripDetailView(LoginRequiredMixin, DetailView):
                 "job__title",
             )
         )
+        context["detail_sections"] = _trip_detail_sections(self.object, "overview")
+        context["detail_navigation_label"] = "Trip sections"
+        return context
+
+
+class TripHistoryView(LoginRequiredMixin, DetailView):
+    model = Trip
+    template_name = "trips/trip_history.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["detail_sections"] = _trip_detail_sections(self.object, "history")
+        context["detail_navigation_label"] = "Trip sections"
+        context["history_records"] = self.object.history.all()
         return context
 
 

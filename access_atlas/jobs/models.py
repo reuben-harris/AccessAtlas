@@ -56,6 +56,9 @@ class JobTemplate(models.Model):
     def get_absolute_url(self) -> str:
         return reverse("job_template_detail", kwargs={"pk": self.pk})
 
+    def get_history_url(self) -> str:
+        return reverse("job_template_history", kwargs={"pk": self.pk})
+
 
 class TemplateRequirement(models.Model):
     job_template = models.ForeignKey(
@@ -123,6 +126,9 @@ class Job(models.Model):
 
     def get_absolute_url(self) -> str:
         return reverse("job_detail", kwargs={"pk": self.pk})
+
+    def get_history_url(self) -> str:
+        return reverse("job_history", kwargs={"pk": self.pk})
 
     def clean(self) -> None:
         if self.status == JobStatus.PLANNED and (not self.pk or not self.is_assigned):

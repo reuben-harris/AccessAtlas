@@ -43,6 +43,12 @@ class Site(models.Model):
     def get_absolute_url(self) -> str:
         return reverse("site_detail", kwargs={"pk": self.pk})
 
+    def get_access_records_url(self) -> str:
+        return reverse("site_access_records", kwargs={"pk": self.pk})
+
+    def get_history_url(self) -> str:
+        return reverse("site_history", kwargs={"pk": self.pk})
+
 
 class ArrivalMethod(models.TextChoices):
     ROAD = "road", "Road"
