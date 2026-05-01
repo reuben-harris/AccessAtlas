@@ -336,6 +336,7 @@ def test_site_detail_includes_access_map_feature_data(client):
     assert point["recordName"] == "Road access"
     assert point["typeLabel"] == "Gate"
     assert point["label"] == "North gate"
+    assert point["arrivalMethod"] == "road"
 
 
 @pytest.mark.django_db
@@ -386,7 +387,7 @@ def test_site_detail_uses_saved_access_map_visibility_preference(client):
     set_user_preference(
         user,
         site_access_map_preference_key(site.pk),
-        {"visible_record_ids": [second_record.pk]},
+        {"visible_record_ids": [second_record.pk], "animate_tracks": False},
     )
 
     response = client.get(reverse("site_detail", kwargs={"pk": site.pk}))
@@ -395,11 +396,33 @@ def test_site_detail_uses_saved_access_map_visibility_preference(client):
     content = response.content.decode()
     preference_payload = parse_json_script(content, "site-access-map-preference")
     assert preference_payload["value"]["visible_record_ids"] == [second_record.pk]
+    assert preference_payload["value"]["animate_tracks"] is False
     assert get_user_preference(
         user,
         site_access_map_preference_key(site.pk),
         {"visible_record_ids": []},
-    ) == {"visible_record_ids": [second_record.pk]}
+    ) == {"visible_record_ids": [second_record.pk], "animate_tracks": False}
+
+
+@pytest.mark.django_db
+def test_site_detail_defaults_access_map_track_animation_to_enabled(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+
+    response = client.get(reverse("site_detail", kwargs={"pk": site.pk}))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    preference_payload = parse_json_script(content, "site-access-map-preference")
+    assert preference_payload["value"]["animate_tracks"] is True
 
 
 @pytest.mark.django_db

@@ -96,7 +96,13 @@ def validate_preference(key: str, value: object) -> dict[str, Any]:
                 )
             if record_id not in cleaned_ids:
                 cleaned_ids.append(record_id)
-        return {"visible_record_ids": cleaned_ids}
+        cleaned_value = {"visible_record_ids": cleaned_ids}
+        animate_tracks = value.get("animate_tracks")
+        if animate_tracks is not None:
+            if not isinstance(animate_tracks, bool):
+                raise ValidationError("animate_tracks must be a boolean.")
+            cleaned_value["animate_tracks"] = animate_tracks
+        return cleaned_value
 
     raise ValidationError("Unknown preference key.")
 

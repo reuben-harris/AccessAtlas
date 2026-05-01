@@ -93,6 +93,7 @@ def build_site_access_map_data(
                     "latitude": point.latitude,
                     "longitude": point.longitude,
                     "type": point.feature_type,
+                    "arrivalMethod": access_record.arrival_method,
                     "typeLabel": POINT_TYPE_DISPLAY.get(
                         point.feature_type, point.feature_type
                     ),
@@ -195,8 +196,10 @@ class SiteDetailView(LoginRequiredMixin, DetailView):
         map_preference = get_user_preference(
             self.request.user,
             preference_key,
-            {"visible_record_ids": default_record_ids},
+            {"visible_record_ids": default_record_ids, "animate_tracks": True},
         )
+        if "animate_tracks" not in map_preference:
+            map_preference["animate_tracks"] = True
         context["site_access_map_preference"] = {
             "key": preference_key,
             "value": map_preference,

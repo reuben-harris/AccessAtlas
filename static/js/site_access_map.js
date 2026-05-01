@@ -43,6 +43,12 @@
     gate: "#f59f00",
     note: "#9467bd",
   };
+  const arrivalMethodIcons = {
+    road: "ti-car",
+    boat: "ti-ship",
+    heli: "ti-helicopter",
+    other: "ti-map-pin",
+  };
   const allRecordIds = toggleButtons
     .map((button) => Number(button.dataset.recordId))
     .filter((value) => Number.isInteger(value));
@@ -55,6 +61,12 @@
     savedPreference,
     "visible_record_ids"
   );
+  const animateTracksEnabled = {
+    value:
+      typeof savedPreference.animate_tracks === "boolean"
+        ? savedPreference.animate_tracks
+        : true,
+  };
   const visibleRecordIds = new Set(
     hasSavedVisibilityPreference ? savedVisibleRecordIds : allRecordIds
   );
@@ -64,14 +76,32 @@
   featureLayer.addTo(map);
   const tileController = createThemeTileController(map, tileLayer);
 
-  function makeMarkerIcon(featureType) {
+  function markerIconClass(feature) {
+    if (feature.type === "site") {
+      return "ti-home";
+    }
+    if (feature.type === "access_start") {
+      return arrivalMethodIcons[feature.arrivalMethod] || "ti-map-pin";
+    }
+    if (feature.type === "gate") {
+      return "ti-lock";
+    }
+    if (feature.type === "note") {
+      return "ti-note";
+    }
+    return "ti-map-pin";
+  }
+
+  function makeMarkerIcon(feature) {
+    const featureType = feature.type;
     const color = featureColors[featureType] || "#667382";
+    const iconClass = markerIconClass(feature);
     return L.divIcon({
       className: "site-access-map-marker",
-      html: `<span class="site-access-map-marker-pin" style="--site-access-map-marker-color: ${escapeHtml(color)};"></span>`,
-      iconAnchor: [10, 20],
-      iconSize: [20, 20],
-      popupAnchor: [0, -15],
+      html: `<span class="site-access-map-marker-pin" style="--site-access-map-marker-color: ${escapeHtml(color)};"><i class="ti ${escapeHtml(iconClass)}" aria-hidden="true"></i></span>`,
+      iconAnchor: [12, 12],
+      iconSize: [24, 24],
+      popupAnchor: [0, -12],
     });
   }
 
@@ -98,6 +128,29 @@
     `;
   }
 
+  function buildTrackLayer(track, path) {
+    if (
+      animateTracksEnabled.value &&
+      L.polyline &&
+      typeof L.polyline.antPath === "function"
+    ) {
+      return L.polyline.antPath(path, {
+        color: track.color || "#667382",
+        pulseColor: track.color || "#667382",
+        delay: 1800,
+        dashArray: [12, 20],
+        weight: 3,
+        opacity: 0.75,
+      });
+    }
+
+    return L.polyline(path, {
+      color: track.color || "#667382",
+      weight: 3,
+      opacity: 0.9,
+    });
+  }
+
   function drawFeatures() {
     featureLayer.clearLayers();
     const layers = [];
@@ -115,7 +168,7 @@
         return;
       }
       const marker = L.marker([latitude, longitude], {
-        icon: makeMarkerIcon(point.type),
+        icon: makeMarkerIcon(point),
       });
       marker.bindPopup(buildPointPopup(point));
       marker.addTo(featureLayer);
@@ -143,11 +196,7 @@
       if (path.length < 2) {
         return;
       }
-      const polyline = L.polyline(path, {
-        color: track.color || "#667382",
-        weight: 3,
-        opacity: 0.9,
-      });
+      const polyline = buildTrackLayer(track, path);
       polyline.bindPopup(buildTrackPopup(track));
       polyline.addTo(featureLayer);
       layers.push(polyline);
@@ -184,11 +233,54 @@
       key: preference.key,
       value: {
         visible_record_ids: Array.from(visibleRecordIds),
+        animate_tracks: animateTracksEnabled.value,
       },
     }).catch(() => {});
   }
 
+  function updateAnimationButton(button) {
+    const toggle = button.querySelector('[data-role="toggle"]');
+    const enabled = animateTracksEnabled.value;
+    button.classList.toggle("is-on", enabled);
+    button.classList.toggle("is-off", !enabled);
+    button.title = enabled ? "Track animation on" : "Track animation off";
+    button.setAttribute(
+      "aria-label",
+      enabled ? "Disable track animation" : "Enable track animation"
+    );
+    if (toggle) {
+      toggle.checked = enabled;
+    }
+  }
+
+  const TrackAnimationControl = L.Control.extend({
+    onAdd() {
+      const container = L.DomUtil.create(
+        "div",
+        "site-map-animation-control"
+      );
+      const button = L.DomUtil.create("button", "", container);
+      button.type = "button";
+      button.innerHTML =
+        '<span class="form-check form-switch m-0"><input class="form-check-input" data-role="toggle" type="checkbox" tabindex="-1" aria-hidden="true"></span><span class="site-map-animation-label">Animation</span>';
+      updateAnimationButton(button);
+
+      L.DomEvent.disableClickPropagation(container);
+      L.DomEvent.on(button, "click", () => {
+        animateTracksEnabled.value = !animateTracksEnabled.value;
+        updateAnimationButton(button);
+        drawnLayers = drawFeatures();
+        fitFeatures(drawnLayers);
+        savePreference();
+        button.blur();
+      });
+
+      return container;
+    },
+  });
+
   tileController.apply();
+  map.addControl(new TrackAnimationControl({ position: "topright" }));
   let drawnLayers = drawFeatures();
   fitFeatures(drawnLayers);
 

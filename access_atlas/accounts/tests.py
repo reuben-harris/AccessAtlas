@@ -219,13 +219,16 @@ def test_preference_view_saves_site_access_map_preference(client):
 
     response = client.post(
         reverse("account_preference"),
-        {"key": key, "value": {"visible_record_ids": [3, 9, 3]}},
+        {
+            "key": key,
+            "value": {"visible_record_ids": [3, 9, 3], "animate_tracks": False},
+        },
         content_type="application/json",
     )
 
     assert response.status_code == 200
     preference = UserPreference.objects.get(user=user, key=key)
-    assert preference.value == {"visible_record_ids": [3, 9]}
+    assert preference.value == {"visible_record_ids": [3, 9], "animate_tracks": False}
 
 
 @pytest.mark.django_db
@@ -237,6 +240,22 @@ def test_preference_view_rejects_invalid_site_access_map_preference(client):
     response = client.post(
         reverse("account_preference"),
         {"key": key, "value": {"visible_record_ids": ["bad"]}},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert not UserPreference.objects.exists()
+
+
+@pytest.mark.django_db
+def test_preference_view_rejects_invalid_site_access_animation_preference(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    key = f"{SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX}12"
+
+    response = client.post(
+        reverse("account_preference"),
+        {"key": key, "value": {"visible_record_ids": [1], "animate_tracks": "yes"}},
         content_type="application/json",
     )
 

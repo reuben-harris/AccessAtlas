@@ -288,18 +288,93 @@ input[type="time"].form-control.is-invalid {
 
 .site-access-map-marker-pin {
   --site-access-map-marker-color: var(--tblr-primary);
-  display: inline-block;
-  width: 1rem;
-  height: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
   background: var(--site-access-map-marker-color);
   border: 2px solid #fff;
   border-radius: 50%;
   box-shadow: 0 .2rem .5rem rgba(0, 0, 0, .35);
 }
 
+.site-access-map-marker-pin .ti {
+  font-size: .85rem;
+  line-height: 1;
+  color: #fff;
+}
+
 .site-access-map-popup-title {
   margin-bottom: .375rem;
   font-weight: 600;
+}
+
+.site-map-animation-control button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  min-height: 30px;
+  padding: .25rem .6rem;
+  color: #3b4754;
+  background: #fff;
+  border: 1px solid rgba(102, 115, 130, .35);
+  border-radius: .375rem;
+  cursor: pointer;
+  font-size: .75rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.site-map-animation-control button:hover,
+.site-map-animation-control button:focus-visible {
+  background: #f4f4f4;
+}
+
+.site-map-animation-control .form-check-input {
+  cursor: pointer;
+  margin: 0;
+  pointer-events: none;
+}
+
+.site-map-animation-control .form-switch {
+  padding-left: 0;
+}
+
+.site-map-animation-control .form-switch .form-check-input {
+  margin-left: 0;
+}
+
+.site-map-animation-label {
+  white-space: nowrap;
+}
+
+.site-map-animation-control button.is-off {
+  color: #667382;
+}
+
+.site-map-animation-control button.is-on {
+  color: #1a5fb4;
+  border-color: rgba(26, 95, 180, .45);
+  background: rgba(26, 95, 180, .12);
+}
+
+[data-bs-theme="dark"] .site-map-animation-control button {
+  color: var(--tblr-body-color);
+  background: var(--tblr-bg-surface);
+  border-color: var(--tblr-border-color);
+}
+
+[data-bs-theme="dark"] .site-map-animation-control button:hover,
+[data-bs-theme="dark"] .site-map-animation-control button:focus-visible {
+  background: var(--tblr-bg-surface-secondary);
+}
+
+[data-bs-theme="dark"] .site-map-animation-control button.is-on {
+  color: #8cb6ff;
+  border-color: rgba(140, 182, 255, .45);
+  background: rgba(140, 182, 255, .18);
 }
 
 .user-menu-button .user-avatar {
