@@ -7,6 +7,12 @@
     <div class="col">
       <h2 class="page-title">{{ object.name }}</h2>
     </div>
+    <div class="col-auto ms-auto">
+      <a class="btn btn-info d-inline-flex align-items-center gap-1" href="{{ site_search_url }}" target="_blank" rel="noopener noreferrer" title="Open site coordinates in Google Maps">
+        <i class="ti ti-map-search" aria-hidden="true"></i>
+        Site
+      </a>
+    </div>
   </div>
 </div>
 {% include "includes/detail_section_nav.html" %}
@@ -23,13 +29,6 @@
   </div>
 {% endif %}
 <div class="card">
-  <div class="card-header d-flex align-items-center justify-content-between">
-    <h3 class="card-title mb-0">Site Details</h3>
-    <a class="btn btn-outline-secondary d-inline-flex align-items-center gap-1" href="{{ site_search_url }}" target="_blank" rel="noopener noreferrer" title="Open site coordinates in Google Maps">
-      <i class="ti ti-map-search" aria-hidden="true"></i>
-      Site
-    </a>
-  </div>
   <div class="card-body">
     <dl class="row">
       <dt class="col-sm-3">Source</dt><dd class="col-sm-9">{{ object.source_name }}</dd>

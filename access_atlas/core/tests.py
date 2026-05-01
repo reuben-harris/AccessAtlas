@@ -58,6 +58,7 @@ def test_core_object_pages_render(logged_in_client, user, site):
         reverse("site_access_records", kwargs={"pk": site.pk}),
         reverse("site_history", kwargs={"pk": site.pk}),
         reverse("access_record_detail", kwargs={"pk": access_record.pk}),
+        reverse("access_record_map", kwargs={"pk": access_record.pk}),
         reverse("access_record_revisions", kwargs={"pk": access_record.pk}),
         reverse("access_record_history", kwargs={"pk": access_record.pk}),
         reverse("job_template_detail", kwargs={"pk": template.pk}),

@@ -23,18 +23,20 @@
   </div>
 </div>
 
-{% include "jobs/_job_view_toolbar.html" with active_job_view="map" %}
+<div class="access-atlas-map-page">
+  {% include "jobs/_job_view_toolbar.html" with active_job_view="map" %}
 
-<div
-  id="job-map-status-controls"
-  class="job-map-toolbar"
-  data-preference-url="{% url 'account_preference' %}"
-  aria-label="Job status map filters"
-></div>
+  <div
+    id="job-map-status-controls"
+    class="job-map-toolbar"
+    data-preference-url="{% url 'account_preference' %}"
+    aria-label="Job status map filters"
+  ></div>
 
-<div class="card job-map-card">
-  <div class="card-body p-0">
-    <div id="job-map" class="job-map" aria-label="Map of active jobs by site"></div>
+  <div class="card job-map-card access-atlas-map-card--fill">
+    <div class="card-body p-0">
+      <div id="job-map" class="job-map" aria-label="Map of active jobs by site"></div>
+    </div>
   </div>
 </div>
 

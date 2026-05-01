@@ -47,6 +47,10 @@
   word-break: break-word;
 }
 
+.site-map-home-control {
+  margin-top: .5rem;
+}
+
 /* The animation toggle is a map control, so it must visually read like a control
    while still matching the Tabler theme used by the rest of the app. */
 .site-map-animation-control button {

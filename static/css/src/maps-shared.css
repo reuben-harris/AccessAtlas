@@ -1,5 +1,68 @@
 /* Shared Leaflet treatment across maps */
 
+/* Full-page map views share the same flex layout so toolbars, warnings, and
+   maps size consistently without forcing document scroll. */
+.access-atlas-map-page {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  height: calc(100dvh - 16rem);
+}
+
+.access-atlas-map-page > .view-toolbar {
+  align-self: flex-start;
+  margin-bottom: 0;
+}
+
+.access-atlas-map-page > .job-map-toolbar {
+  margin-bottom: 0;
+}
+
+.access-atlas-map-card--fill {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+.access-atlas-map-card--fill .card-body {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.access-atlas-map-card--fill .job-map,
+.access-atlas-map-card--fill .site-access-map {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+/* Home/reset controls should render consistently anywhere we add them. */
+.access-atlas-map-home-control button,
+.job-map-home-control button,
+.site-map-home-control button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: #000;
+  background: #fff;
+  border: 0;
+  cursor: pointer;
+}
+
+.access-atlas-map-home-control button:hover,
+.access-atlas-map-home-control button:focus,
+.job-map-home-control button:hover,
+.job-map-home-control button:focus,
+.site-map-home-control button:hover,
+.site-map-home-control button:focus {
+  background: #f4f4f4;
+}
+
 [data-bs-theme="dark"] .leaflet-bar,
 [data-bs-theme="dark"] .leaflet-control-attribution {
   background: var(--tblr-bg-surface);
@@ -20,6 +83,23 @@
 [data-bs-theme="dark"] .leaflet-bar a.leaflet-disabled {
   color: var(--tblr-muted);
   background: var(--tblr-bg-surface);
+}
+
+[data-bs-theme="dark"] .access-atlas-map-home-control button,
+[data-bs-theme="dark"] .job-map-home-control button,
+[data-bs-theme="dark"] .site-map-home-control button {
+  color: var(--tblr-body-color);
+  background: var(--tblr-bg-surface);
+  border-color: var(--tblr-border-color);
+}
+
+[data-bs-theme="dark"] .access-atlas-map-home-control button:hover,
+[data-bs-theme="dark"] .access-atlas-map-home-control button:focus,
+[data-bs-theme="dark"] .job-map-home-control button:hover,
+[data-bs-theme="dark"] .job-map-home-control button:focus,
+[data-bs-theme="dark"] .site-map-home-control button:hover,
+[data-bs-theme="dark"] .site-map-home-control button:focus {
+  background: var(--tblr-bg-surface-secondary);
 }
 
 [data-bs-theme="dark"] .leaflet-control-attribution,
@@ -44,4 +124,14 @@
 [data-bs-theme="dark"] .leaflet-popup-close-button:hover,
 [data-bs-theme="dark"] .leaflet-popup-close-button:focus {
   color: var(--tblr-body-color) !important;
+}
+
+@media (max-width: 767.98px) {
+  .access-atlas-map-page {
+    height: calc(100dvh - 20rem);
+  }
+
+  .access-atlas-map-card--fill {
+    min-height: 20rem;
+  }
 }

@@ -34,8 +34,8 @@
 }
 
 .user-menu-button:hover .user-avatar,
-.user-menu-button:focus .user-avatar,
-.user-menu-button:focus-visible .user-avatar {
+.user-menu-button:focus-visible .user-avatar,
+.user-menu-button[aria-expanded="true"] .user-avatar {
   box-shadow: 0 0 .78rem color-mix(in srgb, var(--user-avatar-color) 50%, transparent);
 }
 
@@ -97,7 +97,10 @@
 .view-toolbar {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: .25rem;
+  width: fit-content;
+  max-width: 100%;
   margin-bottom: 1rem;
   padding: .25rem;
   background: var(--tblr-bg-surface);

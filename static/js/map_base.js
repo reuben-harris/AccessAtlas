@@ -46,7 +46,59 @@
     map.setView(defaultCenter, defaultZoom);
   }
 
+  function addHomeControl(map, onClick, options = {}) {
+    const controlClassName =
+      options.controlClassName || "access-atlas-map-home-control";
+    const position = options.position || "topleft";
+    const title = options.title || "Reset map view";
+    const ariaLabel = options.ariaLabel || "Reset map view";
+    const iconClass = options.iconClass || "ti-home";
+
+    const HomeControl = L.Control.extend({
+      onAdd() {
+        const container = L.DomUtil.create("div", `leaflet-bar ${controlClassName}`);
+        const button = L.DomUtil.create("button", "", container);
+        button.type = "button";
+        button.title = title;
+        button.setAttribute("aria-label", ariaLabel);
+        button.innerHTML = `<i class="ti ${iconClass}" aria-hidden="true"></i>`;
+
+        L.DomEvent.disableClickPropagation(container);
+        L.DomEvent.on(button, "click", () => {
+          onClick();
+        });
+
+        return container;
+      },
+    });
+
+    map.addControl(new HomeControl({ position }));
+  }
+
+  function settleMapLayout(map, onLayout) {
+    if (!map || typeof map.invalidateSize !== "function") {
+      return;
+    }
+
+    const applyLayout = () => {
+      map.invalidateSize({ pan: false });
+      if (typeof onLayout === "function") {
+        onLayout();
+      }
+    };
+
+    /* Flex-based map layouts can report the wrong size during initial page
+       render. Running after two animation frames waits for layout to settle
+       before Leaflet computes bounds and tiles. */
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(applyLayout);
+    });
+    window.addEventListener("resize", applyLayout);
+  }
+
   accessAtlas.escapeHtml = escapeHtml;
   accessAtlas.createThemeTileController = createThemeTileController;
   accessAtlas.fitLayersOrDefault = fitLayersOrDefault;
+  accessAtlas.addHomeControl = addHomeControl;
+  accessAtlas.settleMapLayout = settleMapLayout;
 })();

@@ -8,6 +8,8 @@
   const escapeHtml = window.AccessAtlas?.escapeHtml;
   const createThemeTileController = window.AccessAtlas?.createThemeTileController;
   const fitLayersOrDefault = window.AccessAtlas?.fitLayersOrDefault;
+  const sharedAddHomeControl = window.AccessAtlas?.addHomeControl;
+  const settleMapLayout = window.AccessAtlas?.settleMapLayout;
 
   if (
     !mapElement ||
@@ -19,6 +21,8 @@
     typeof escapeHtml !== "function" ||
     typeof createThemeTileController !== "function" ||
     typeof fitLayersOrDefault !== "function" ||
+    typeof sharedAddHomeControl !== "function" ||
+    typeof settleMapLayout !== "function" ||
     typeof L === "undefined"
   ) {
     return;
@@ -143,7 +147,7 @@
         !Number.isFinite(latitude) ||
         !Number.isFinite(longitude)
       ) {
-        return;
+        continue;
       }
 
       const marker = L.marker([latitude, longitude], {
@@ -193,46 +197,40 @@
     }
   }
 
-  const HomeControl = L.Control.extend({
-    onAdd() {
-      const container = L.DomUtil.create("div", "leaflet-bar job-map-home-control");
-      const button = L.DomUtil.create("button", "", container);
-      button.type = "button";
-      button.title = "Reset map view";
-      button.setAttribute("aria-label", "Reset map view");
-      button.innerHTML = '<i class="ti ti-home" aria-hidden="true"></i>';
-
-      L.DomEvent.disableClickPropagation(container);
-      L.DomEvent.on(button, "click", () => {
+  function mountHomeControl() {
+    sharedAddHomeControl(
+      map,
+      () => {
         fitMarkers(visibleMarkers);
         savePreference();
-      });
-
-      return container;
-    },
-  });
-
-  function addHomeControl() {
-    map.addControl(new HomeControl({ position: "topleft" }));
+      },
+      { controlClassName: "job-map-home-control" },
+    );
   }
 
   buildStatusControls();
-  addHomeControl();
+  mountHomeControl();
   tileController.apply();
   visibleMarkers = drawMarkers();
-  if (
-    savedPreference.viewport &&
-    Number.isFinite(Number(savedPreference.viewport.lat)) &&
-    Number.isFinite(Number(savedPreference.viewport.lng)) &&
-    Number.isInteger(savedPreference.viewport.zoom)
-  ) {
-    map.setView(
-      [Number(savedPreference.viewport.lat), Number(savedPreference.viewport.lng)],
-      savedPreference.viewport.zoom,
-    );
-  } else {
+
+  function applySavedViewport() {
+    if (
+      savedPreference.viewport &&
+      Number.isFinite(Number(savedPreference.viewport.lat)) &&
+      Number.isFinite(Number(savedPreference.viewport.lng)) &&
+      Number.isInteger(savedPreference.viewport.zoom)
+    ) {
+      map.setView(
+        [Number(savedPreference.viewport.lat), Number(savedPreference.viewport.lng)],
+        savedPreference.viewport.zoom,
+      );
+      return;
+    }
+
     fitMarkers(visibleMarkers);
   }
 
+  applySavedViewport();
+  settleMapLayout(map, applySavedViewport);
   map.on("moveend zoomend", queueViewportSave);
 })();

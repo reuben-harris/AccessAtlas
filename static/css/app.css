@@ -296,8 +296,8 @@ input[type="time"].form-control.is-invalid {
 }
 
 .user-menu-button:hover .user-avatar,
-.user-menu-button:focus .user-avatar,
-.user-menu-button:focus-visible .user-avatar {
+.user-menu-button:focus-visible .user-avatar,
+.user-menu-button[aria-expanded="true"] .user-avatar {
   box-shadow: 0 0 .78rem color-mix(in srgb, var(--user-avatar-color) 50%, transparent);
 }
 
@@ -359,7 +359,10 @@ input[type="time"].form-control.is-invalid {
 .view-toolbar {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: .25rem;
+  width: fit-content;
+  max-width: 100%;
   margin-bottom: 1rem;
   padding: .25rem;
   background: var(--tblr-bg-surface);
@@ -394,6 +397,71 @@ input[type="time"].form-control.is-invalid {
 
 /* Shared Leaflet treatment across maps */
 
+/* Full-page map views share the same flex layout so toolbars, warnings, and
+   maps size consistently without forcing document scroll. */
+
+.access-atlas-map-page {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  height: calc(100dvh - 16rem);
+}
+
+.access-atlas-map-page > .view-toolbar {
+  align-self: flex-start;
+  margin-bottom: 0;
+}
+
+.access-atlas-map-page > .job-map-toolbar {
+  margin-bottom: 0;
+}
+
+.access-atlas-map-card--fill {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+.access-atlas-map-card--fill .card-body {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.access-atlas-map-card--fill .job-map,
+.access-atlas-map-card--fill .site-access-map {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+/* Home/reset controls should render consistently anywhere we add them. */
+
+.access-atlas-map-home-control button,
+.job-map-home-control button,
+.site-map-home-control button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: #000;
+  background: #fff;
+  border: 0;
+  cursor: pointer;
+}
+
+.access-atlas-map-home-control button:hover,
+.access-atlas-map-home-control button:focus,
+.job-map-home-control button:hover,
+.job-map-home-control button:focus,
+.site-map-home-control button:hover,
+.site-map-home-control button:focus {
+  background: #f4f4f4;
+}
+
 [data-bs-theme="dark"] .leaflet-bar,
 [data-bs-theme="dark"] .leaflet-control-attribution {
   background: var(--tblr-bg-surface);
@@ -414,6 +482,23 @@ input[type="time"].form-control.is-invalid {
 [data-bs-theme="dark"] .leaflet-bar a.leaflet-disabled {
   color: var(--tblr-muted);
   background: var(--tblr-bg-surface);
+}
+
+[data-bs-theme="dark"] .access-atlas-map-home-control button,
+[data-bs-theme="dark"] .job-map-home-control button,
+[data-bs-theme="dark"] .site-map-home-control button {
+  color: var(--tblr-body-color);
+  background: var(--tblr-bg-surface);
+  border-color: var(--tblr-border-color);
+}
+
+[data-bs-theme="dark"] .access-atlas-map-home-control button:hover,
+[data-bs-theme="dark"] .access-atlas-map-home-control button:focus,
+[data-bs-theme="dark"] .job-map-home-control button:hover,
+[data-bs-theme="dark"] .job-map-home-control button:focus,
+[data-bs-theme="dark"] .site-map-home-control button:hover,
+[data-bs-theme="dark"] .site-map-home-control button:focus {
+  background: var(--tblr-bg-surface-secondary);
 }
 
 [data-bs-theme="dark"] .leaflet-control-attribution,
@@ -438,6 +523,16 @@ input[type="time"].form-control.is-invalid {
 [data-bs-theme="dark"] .leaflet-popup-close-button:hover,
 [data-bs-theme="dark"] .leaflet-popup-close-button:focus {
   color: var(--tblr-body-color) !important;
+}
+
+@media (max-width: 767.98px) {
+  .access-atlas-map-page {
+    height: calc(100dvh - 20rem);
+  }
+
+  .access-atlas-map-card--fill {
+    min-height: 20rem;
+  }
 }
 
 /* Site access map */
@@ -487,6 +582,10 @@ input[type="time"].form-control.is-invalid {
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.site-map-home-control {
+  margin-top: .5rem;
 }
 
 /* The animation toggle is a map control, so it must visually read like a control
@@ -595,48 +694,12 @@ input[type="time"].form-control.is-invalid {
 }
 
 .job-map-card {
-  height: calc(100dvh - 18rem);
   margin-bottom: 0;
-}
-
-.job-map-card .card-body {
-  height: 100%;
 }
 
 .job-map {
   width: 100%;
-  height: 100%;
-  min-height: 100%;
   border-radius: var(--tblr-card-border-radius);
-}
-
-.job-map-home-control button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  color: #000;
-  background: #fff;
-  border: 0;
-  cursor: pointer;
-}
-
-.job-map-home-control button:hover,
-.job-map-home-control button:focus {
-  background: #f4f4f4;
-}
-
-[data-bs-theme="dark"] .job-map-home-control button {
-  color: var(--tblr-body-color);
-  background: var(--tblr-bg-surface);
-  border-color: var(--tblr-border-color);
-}
-
-[data-bs-theme="dark"] .job-map-home-control button:hover,
-[data-bs-theme="dark"] .job-map-home-control button:focus {
-  background: var(--tblr-bg-surface-secondary);
 }
 
 /* Marker styling stays local to the jobs map because status color and count
@@ -702,10 +765,4 @@ input[type="time"].form-control.is-invalid {
   font-size: .6875rem;
   font-weight: 600;
   line-height: 1.2;
-}
-
-@media (max-width: 767.98px) {
-  .job-map-card {
-    height: calc(100dvh - 22rem);
-  }
 }

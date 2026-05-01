@@ -13,6 +13,8 @@
   const escapeHtml = window.AccessAtlas?.escapeHtml;
   const createThemeTileController = window.AccessAtlas?.createThemeTileController;
   const fitLayersOrDefault = window.AccessAtlas?.fitLayersOrDefault;
+  const sharedAddHomeControl = window.AccessAtlas?.addHomeControl;
+  const settleMapLayout = window.AccessAtlas?.settleMapLayout;
 
   if (
     !mapElement ||
@@ -24,6 +26,8 @@
     typeof escapeHtml !== "function" ||
     typeof createThemeTileController !== "function" ||
     typeof fitLayersOrDefault !== "function" ||
+    typeof sharedAddHomeControl !== "function" ||
+    typeof settleMapLayout !== "function" ||
     typeof L === "undefined"
   ) {
     return;
@@ -171,12 +175,12 @@
         point.recordId &&
         !visibleRecordIds.has(Number(point.recordId))
       ) {
-        return;
+        continue;
       }
       const latitude = Number(point.latitude);
       const longitude = Number(point.longitude);
       if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-        return;
+        continue;
       }
       const marker = L.marker([latitude, longitude], {
         icon: makeMarkerIcon(point),
@@ -191,7 +195,7 @@
         track.recordId &&
         !visibleRecordIds.has(Number(track.recordId))
       ) {
-        return;
+        continue;
       }
       const path = Array.isArray(track.path)
         ? track.path
@@ -202,7 +206,7 @@
             )
         : [];
       if (path.length < 2) {
-        return;
+        continue;
       }
       const polyline = buildTrackLayer(track, path);
       polyline.bindPopup(buildTrackPopup(track));
@@ -285,9 +289,23 @@
   });
 
   tileController.apply();
+  sharedAddHomeControl(
+    map,
+    () => {
+      fitFeatures(drawnLayers);
+    },
+    {
+      controlClassName: "site-map-home-control",
+      title: "Reset map view",
+      ariaLabel: "Reset map view",
+    },
+  );
   map.addControl(new TrackAnimationControl({ position: "topright" }));
   let drawnLayers = drawFeatures();
   fitFeatures(drawnLayers);
+  settleMapLayout(map, () => {
+    fitFeatures(drawnLayers);
+  });
 
   for (const button of toggleButtons) {
     const recordId = Number(button.dataset.recordId);

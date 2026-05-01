@@ -14,9 +14,10 @@
       <h2 class="page-title">{{ object.name }}</h2>
     </div>
     <div class="col-auto ms-auto">
-      <div class="btn-list">
-        <a class="btn btn-primary" href="{% url 'access_record_create' object.pk %}">New access record</a>
-      </div>
+      <a class="btn btn-info d-inline-flex align-items-center gap-1" href="{{ site_search_url }}" target="_blank" rel="noopener noreferrer" title="Open site coordinates in Google Maps">
+        <i class="ti ti-map-search" aria-hidden="true"></i>
+        Site
+      </a>
     </div>
   </div>
 </div>
@@ -34,8 +35,9 @@
   </div>
 {% endif %}
 <div class="card">
-  <div class="card-header">
+  <div class="card-header d-flex justify-content-between align-items-center">
     <h3 class="card-title">Access Records</h3>
+    <a class="btn btn-sm btn-primary" href="{% url 'access_record_create' object.pk %}">Add access record</a>
   </div>
   <div class="table-responsive">
     <table class="table table-vcenter">

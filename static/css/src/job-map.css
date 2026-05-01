@@ -34,48 +34,12 @@
 }
 
 .job-map-card {
-  height: calc(100dvh - 18rem);
   margin-bottom: 0;
-}
-
-.job-map-card .card-body {
-  height: 100%;
 }
 
 .job-map {
   width: 100%;
-  height: 100%;
-  min-height: 100%;
   border-radius: var(--tblr-card-border-radius);
-}
-
-.job-map-home-control button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  color: #000;
-  background: #fff;
-  border: 0;
-  cursor: pointer;
-}
-
-.job-map-home-control button:hover,
-.job-map-home-control button:focus {
-  background: #f4f4f4;
-}
-
-[data-bs-theme="dark"] .job-map-home-control button {
-  color: var(--tblr-body-color);
-  background: var(--tblr-bg-surface);
-  border-color: var(--tblr-border-color);
-}
-
-[data-bs-theme="dark"] .job-map-home-control button:hover,
-[data-bs-theme="dark"] .job-map-home-control button:focus {
-  background: var(--tblr-bg-surface-secondary);
 }
 
 /* Marker styling stays local to the jobs map because status color and count
@@ -140,10 +104,4 @@
   font-size: .6875rem;
   font-weight: 600;
   line-height: 1.2;
-}
-
-@media (max-width: 767.98px) {
-  .job-map-card {
-    height: calc(100dvh - 22rem);
-  }
 }

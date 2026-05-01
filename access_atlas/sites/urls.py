@@ -46,6 +46,11 @@ urlpatterns = [
         name="access_record_revisions",
     ),
     path(
+        "access-records/<int:pk>/map/",
+        views.AccessRecordMapView.as_view(),
+        name="access_record_map",
+    ),
+    path(
         "access-records/<int:pk>/download.geojson",
         views.access_record_geojson_download,
         name="access_record_geojson_download",

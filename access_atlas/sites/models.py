@@ -104,6 +104,9 @@ class AccessRecord(models.Model):
     def get_revisions_url(self) -> str:
         return reverse("access_record_revisions", kwargs={"pk": self.pk})
 
+    def get_map_url(self) -> str:
+        return reverse("access_record_map", kwargs={"pk": self.pk})
+
     @property
     def current_version(self) -> AccessRecordVersion | None:
         return self.versions.order_by("-version_number").first()

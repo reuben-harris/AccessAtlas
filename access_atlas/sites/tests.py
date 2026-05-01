@@ -983,6 +983,57 @@ def test_access_record_revisions_show_version_downloads(client):
 
 
 @pytest.mark.django_db
+def test_access_record_map_shows_single_record_map(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    access_record = AccessRecord.objects.create(site=site, name="Road access")
+    AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=1,
+        geojson={
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [174.7, -41.2]},
+                    "properties": {
+                        "access_atlas:type": "gate",
+                        "label": "North gate",
+                        "code": "#1234",
+                    },
+                }
+            ],
+        },
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+
+    response = client.get(reverse("access_record_map", kwargs={"pk": access_record.pk}))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert 'id="site-access-map"' in content
+    assert reverse("access_record_map", kwargs={"pk": access_record.pk}) in content
+    payload = parse_json_script(content, "site-access-map-data")
+    assert payload["tracks"] == []
+    assert len(payload["points"]) == 1
+    point = payload["points"][0]
+    assert point["recordId"] == access_record.pk
+    assert point["recordName"] == "Road access"
+    preference_payload = parse_json_script(content, "site-access-map-preference")
+    assert preference_payload["value"]["visible_record_ids"] == [access_record.pk]
+    assert preference_payload["value"]["animate_tracks"] is True
+
+
+@pytest.mark.django_db
 def test_access_record_detail_shows_warning_for_multiple_access_start_points(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)

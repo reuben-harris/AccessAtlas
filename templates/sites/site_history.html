@@ -8,6 +8,12 @@
     <div class="col">
       <h2 class="page-title">{{ object.name }}</h2>
     </div>
+    <div class="col-auto ms-auto">
+      <a class="btn btn-info d-inline-flex align-items-center gap-1" href="{{ site_search_url }}" target="_blank" rel="noopener noreferrer" title="Open site coordinates in Google Maps">
+        <i class="ti ti-map-search" aria-hidden="true"></i>
+        Site
+      </a>
+    </div>
   </div>
 </div>
 {% include "includes/detail_section_nav.html" %}

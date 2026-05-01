@@ -291,6 +291,12 @@ def _access_record_detail_sections(
             "is_active": active_section == "overview",
         },
         {
+            "label": "Map",
+            "icon": "ti-map",
+            "url": access_record.get_map_url(),
+            "is_active": active_section == "map",
+        },
+        {
             "label": "Revisions",
             "icon": "ti-versions",
             "url": access_record.get_revisions_url(),
@@ -420,6 +426,48 @@ class AccessRecordDetailView(LoginRequiredMixin, DetailView):
         context["detail_sections"] = _access_record_detail_sections(
             self.object, "overview"
         )
+        context["detail_navigation_label"] = "Access record sections"
+        return context
+
+
+class AccessRecordMapView(LoginRequiredMixin, DetailView):
+    model = AccessRecord
+    template_name = "sites/access_record_map.html"
+
+    def get_queryset(self):
+        return AccessRecord.objects.select_related("site").prefetch_related("versions")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        snapshot = build_access_record_snapshots([self.object]).get(self.object.pk)
+        snapshots_by_record_id = {self.object.pk: snapshot} if snapshot else {}
+        context["access_warnings"] = build_access_record_warnings(
+            self.object,
+            snapshot=snapshot,
+        )
+        context["site_access_map_data"] = build_site_access_map_data(
+            [self.object],
+            snapshots_by_record_id,
+        )
+        context["site_access_map_preference"] = {
+            "key": "",
+            "value": {
+                "visible_record_ids": [self.object.pk],
+                "animate_tracks": True,
+            },
+        }
+        context["map_tile_layer"] = {
+            "light": {
+                "url": settings.MAP_TILE_URL,
+                "attribution": settings.MAP_TILE_ATTRIBUTION,
+            },
+            "dark": {
+                "url": settings.MAP_TILE_DARK_URL,
+                "attribution": settings.MAP_TILE_DARK_ATTRIBUTION,
+            },
+            "maxZoom": settings.MAP_TILE_MAX_ZOOM,
+        }
+        context["detail_sections"] = _access_record_detail_sections(self.object, "map")
         context["detail_navigation_label"] = "Access record sections"
         return context
 
