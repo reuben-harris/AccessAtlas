@@ -280,6 +280,25 @@ class SiteHistoryView(SiteDetailContextMixin, LoginRequiredMixin, DetailView):
         return context
 
 
+def _access_record_detail_sections(
+    access_record: AccessRecord, active_section: str
+) -> list[dict[str, str | bool]]:
+    return [
+        {
+            "label": "Overview",
+            "icon": "ti-layout-dashboard",
+            "url": access_record.get_absolute_url(),
+            "is_active": active_section == "overview",
+        },
+        {
+            "label": "History",
+            "icon": "ti-history",
+            "url": access_record.get_history_url(),
+            "is_active": active_section == "history",
+        },
+    ]
+
+
 class AccessRecordCreateView(LoginRequiredMixin, FormView):
     form_class = AccessRecordUploadForm
     template_name = "sites/access_record_upload.html"
@@ -392,6 +411,27 @@ class AccessRecordDetailView(LoginRequiredMixin, DetailView):
                     )
                 context["access_feature_rows"] = feature_rows
                 context["access_feature_count"] = len(feature_rows)
+        context["detail_sections"] = _access_record_detail_sections(
+            self.object, "overview"
+        )
+        context["detail_navigation_label"] = "Access record sections"
+        return context
+
+
+class AccessRecordHistoryView(LoginRequiredMixin, DetailView):
+    model = AccessRecord
+    template_name = "sites/access_record_history.html"
+
+    def get_queryset(self):
+        return AccessRecord.objects.select_related("site").prefetch_related("versions")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["detail_sections"] = _access_record_detail_sections(
+            self.object, "history"
+        )
+        context["detail_navigation_label"] = "Access record sections"
+        context["history_records"] = self.object.history.all()
         return context
 
 

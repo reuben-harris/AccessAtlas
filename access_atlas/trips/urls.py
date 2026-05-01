@@ -21,6 +21,11 @@ urlpatterns = [
         name="site_visit_detail",
     ),
     path(
+        "site-visits/<int:pk>/history/",
+        views.SiteVisitHistoryView.as_view(),
+        name="site_visit_history",
+    ),
+    path(
         "site-visits/<int:pk>/edit/",
         views.SiteVisitUpdateView.as_view(),
         name="site_visit_update",

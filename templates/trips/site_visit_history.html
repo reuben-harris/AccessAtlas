@@ -1,0 +1,27 @@
+{% extends "base/base.html" %}
+{% load status_badges %}
+
+{% block title %}{{ object.site.code }} Visit - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title d-flex align-items-center flex-wrap gap-2">
+        <span>{{ object.site }}</span>
+        <span class="text-secondary d-inline-flex align-items-center">
+          <i class="ti ti-chevron-right" aria-hidden="true"></i>
+        </span>
+        <span class="text-secondary">{{ object.trip }}</span>
+      </h2>
+    </div>
+    <div class="col-auto ms-auto">
+      <a class="btn btn-warning" href="{% url 'site_visit_update' object.pk %}">
+        Edit
+      </a>
+    </div>
+  </div>
+</div>
+{% include "includes/detail_section_nav.html" %}
+{% include "includes/object_history_table.html" with history_records=history_records %}
+{% endblock %}

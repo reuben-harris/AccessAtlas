@@ -109,6 +109,9 @@ class SiteVisit(models.Model):
     def get_absolute_url(self) -> str:
         return reverse("site_visit_detail", kwargs={"pk": self.pk})
 
+    def get_history_url(self) -> str:
+        return reverse("site_visit_history", kwargs={"pk": self.pk})
+
     @staticmethod
     def planned_date(value):
         if timezone.is_aware(value):

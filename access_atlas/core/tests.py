@@ -63,6 +63,7 @@ def test_core_object_pages_render(logged_in_client, user, site):
         reverse("trip_detail", kwargs={"pk": trip.pk}),
         reverse("trip_history", kwargs={"pk": trip.pk}),
         reverse("site_visit_detail", kwargs={"pk": visit.pk}),
+        reverse("site_visit_history", kwargs={"pk": visit.pk}),
     ]
 
     for url in urls:

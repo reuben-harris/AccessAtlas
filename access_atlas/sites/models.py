@@ -98,6 +98,9 @@ class AccessRecord(models.Model):
     def get_absolute_url(self) -> str:
         return reverse("access_record_detail", kwargs={"pk": self.pk})
 
+    def get_history_url(self) -> str:
+        return reverse("access_record_history", kwargs={"pk": self.pk})
+
     @property
     def current_version(self) -> AccessRecordVersion | None:
         return self.versions.order_by("-version_number").first()

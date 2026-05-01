@@ -18,6 +18,7 @@
     </div>
   </div>
 </div>
+{% include "includes/detail_section_nav.html" %}
 {% if access_warnings %}
   <div class="alert alert-warning" role="alert">
     <div class="d-block w-100">
@@ -128,5 +129,4 @@
     </table>
   </div>
 </div>
-{% include "base/history.html" with object=object %}
 {% endblock %}

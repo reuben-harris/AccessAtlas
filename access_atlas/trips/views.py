@@ -46,6 +46,25 @@ def _trip_detail_sections(
     ]
 
 
+def _site_visit_detail_sections(
+    site_visit: SiteVisit, active_section: str
+) -> list[dict[str, str | bool]]:
+    return [
+        {
+            "label": "Overview",
+            "icon": "ti-layout-dashboard",
+            "url": site_visit.get_absolute_url(),
+            "is_active": active_section == "overview",
+        },
+        {
+            "label": "History",
+            "icon": "ti-history",
+            "url": site_visit.get_history_url(),
+            "is_active": active_section == "history",
+        },
+    ]
+
+
 class TripDetailView(LoginRequiredMixin, DetailView):
     model = Trip
     template_name = "trips/trip_detail.html"
@@ -115,6 +134,22 @@ class SiteVisitDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["assign_form"] = AssignJobForm(site=self.object.site)
+        context["detail_sections"] = _site_visit_detail_sections(
+            self.object, "overview"
+        )
+        context["detail_navigation_label"] = "Site visit sections"
+        return context
+
+
+class SiteVisitHistoryView(LoginRequiredMixin, DetailView):
+    model = SiteVisit
+    template_name = "trips/site_visit_history.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["detail_sections"] = _site_visit_detail_sections(self.object, "history")
+        context["detail_navigation_label"] = "Site visit sections"
+        context["history_records"] = self.object.history.all()
         return context
 
 
