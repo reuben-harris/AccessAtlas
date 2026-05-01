@@ -27,6 +27,9 @@ Loose thoughts:
 - "Default Requirements" may not be the right term.
 - Action-style requirements such as "call Gerhard" feel awkward in the current model.
 
+* add a tab to the Trip page with a table with all the requirements
+* Add a tab to the trip page for requirements. ALlow clickup style checklist (currently is checked is represented as a status so consider changing this)
+
 ## Synced Site Lifecycle
 
 - Decide how stale synced sites should appear across the website.
@@ -113,11 +116,15 @@ Loose thoughts:
 * Consider putting a direct link on the left nav to Site Visit and Access Records (maybe requirements?)
 * rename .js files that relate to map to be consistent (currenlty job_map.js and site_access_map.js). Create subfolder and move three files.
 * consider adding a small Procfile.dev or justfile so one command starts Django and the CSS watcher together (simplify local dev)
+* Should you have the ability to delete a site visit from a trip while it is still planned (yes IMO)
+* Need to work on site navigation. On the headers in the main content you should always be able to go up one in the directory (In a site visit the Site is the back bit "Site > Site Visit" should show up the top). THis should make navigation a lot easier. They should also be clickable links. NEeds to be very consistent across the website.
+* Should the left hand nav highlight the page you are on? FOr example, when on sites list page, the site box is perm outlined
+* The priority field on the job template is a little confusing. Either it should be removed or be renamed to "Default Priority" for clarity.
 
 ## Access Record Improvements
 * Generate starter geojson when not access record is uploaded. It will put the points for access start and the site. [It would be on this page](http://localhost:8000/sites/1/access-records/new/). Maybe instead of specifying a file you can check a box. Automatically generate a v1 or something. Then you are just specifying the arrival method, name and changelog.
 * View toggle for map visability is only avaliable on the sites page and not the access record page for that specific record. Although that button is for that map on the sites page. The button may just be need to be moved so it is less confusing
-* **Feature Idea: Add a view for elevation of a track. https://github.com/Raruto/leaflet-elevation**
+* **Feature Idea: Add a view for elevation of a track. https://github.com/Raruto/leaflet-elevation** Add its own elevation tab
 * **There should be thought and maybe intergration about getting the KMLs on the devices. Can we auto sync to Garmin? Can we auto sync to phone app?**
 * **The map size on the sites page is weird. The page is also overall very long now. I like the jobs map view were it takes up the full page and scales based on window size. Maybe the sites view should move to view style tabs to breakup the content.**
 * Update the readme with specs for the Geojson. Add a whole new section just for that.
@@ -126,8 +133,12 @@ Loose thoughts:
 * Export ALL access records (for loading to a device) OR investigate ways we can sync to our phones etc. Needs more investigation into full pipline (from access atlas to using on phone). Also, how does this look once we have a phone app. No more export pipeline as the app could be a free topo offline map too?
 * **Make the access record map bigger somehow. Access record table could collapse?** This page is a bit of an odd one UI wise compared to the rest of the site. It mixes document content (table) and workspace content (map). The visability toggles defintely require them to be on the same page. It would actually help if these could be pulled out. That way the features could be put on different tabs. This also solves the problem of the lack of visiability toggle when you go into a specific access record. It makes the user no longer thing that they feature belongs in there and is rather just a visiability toggle on the sites page.
 * You can actually click the track for a popup. Consider if this is needed. Currently it is hard to click because it scales down as you zoom in. Maybe make the line a little thicker (not scale linearally down).
-* Move access recrod feature summary into its own tab. Allow editing of the features in the website (without having to download and edit the map)
+* **Move access record feature summary into its own tab. Allow editing of the features in the website (without having to download and edit the map)**
 * Consider if the svg for fullscreen is done the best way. Or move to a file based asset?
+* **Update readme domain model to include access record**
+* **Update readme what is it section. It now extends site data by storing access records**
+* Consider adding a menu to show all access records in a table. Have a map view too so you can see all access records on the map.
+* **UI FIX: the animation toggle isn't quite the same height and corner roundness as the other buttons. It also sits a little high**
 
 ### Complex Access Record Feature
 
@@ -220,7 +231,7 @@ GeoJSON download normalization of styles
 
 * Hook into an s3 backend for storage of files (when in a deployment scenario)
 * Display site photos at a site
-* Add a new tabe for photos. Investigate if there are any out of the box django or good js viewers like. https://github.com/codingjoe/django-pictures
+* Add a new tab for photos. Investigate if there are any out of the box django or good js viewers like. https://github.com/codingjoe/django-pictures
 * Allow filtering by date. Organsie photos by date uploaded (we can assume same date same site visit)
 * Build in functionaltiy were users can tag photos and associated them with a site visit
 * Photos without a tagged site visit just display the date and unknown site visit were as photos with an assocaited site visit display the site visit and the date.
@@ -229,3 +240,27 @@ GeoJSON download normalization of styles
 * How does dev work with s3 backend? I assume I can add to docker compose file?
 * Use django storages and update default backend with an env
 * env for file path (s3 or local)
+
+### Calandar Intergration
+
+* I want to look at Mircosoft calandar integration 
+* I also want to consider CalDav so I can support I range of calandar systems (most notiably is google support)
+* I want to investigate how I can abstract this out of the core app and maybe develop some sort of plugin framework. This might be extra overhead. I am not sure why but I think it would be nice to break the app into microservices a little bit. Maybe just hook into the django api (maybe create webhooks so it can be a pushed based app) and make an api based app. Similar to how the actually sync service is just a seperate app. I could make an example app that hooks directly into Microsoft Graph API and uses the microsoft python sdk. Some naming schema for the repo would be good to, like aai-mcalandar and aai-gcalandar (access atlas intagration). And then for the sync apps (I could opensource a netbox one for an example) aas-netbox (access atlas sync). 
+
+## UX UI
+* Feature that enables tracking how often a button is pressed
+* Expose a dashboard so this data is trackable
+* THis is more for dev (have an option for people to contriube this to a public dataset)
+* Good insight on how people  are using things and what features they dont know exist
+* Add a bug report button that opens a github issue
+
+## Weather intergration
+* Add a weather tab to both sites and trip page
+* The weather tab on sites can use the sites GPS
+* We will have to create some logic for picking the region of weather on a trip page as it could be over a big area
+* Have a warning on the trip page if the weather is bad? Will have to look into the api and see what it offers
+* Leaning towards metservice api, windy or yr.no
+* For the trip visit the weather report can be over the dates of the trip (if too far out it can just say this)
+* For the site page a 2 week forcast is good
+* Both places should have some quick links to open extended weather info on weather apps
+* THis should be a toggalble feature in a settings menu (need to create) OR in the env (maybe env is better beacuse it might need an api key to work). I want to start thinking about breaking these features down into micro services so that the main code base doesnt get so big. Since this feature offers a new tab maybe we can create a plugin system were you can add new tabs to pages. It could also stay apart of the main code base but a folder for optional features could be created so the code is isolated in its own area. 
