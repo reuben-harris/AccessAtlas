@@ -9,6 +9,7 @@
   const createThemeTileController = window.AccessAtlas?.createThemeTileController;
   const fitLayersOrDefault = window.AccessAtlas?.fitLayersOrDefault;
   const sharedAddHomeControl = window.AccessAtlas?.addHomeControl;
+  const addFullscreenControl = window.AccessAtlas?.addFullscreenControl;
   const settleMapLayout = window.AccessAtlas?.settleMapLayout;
 
   if (
@@ -22,6 +23,7 @@
     typeof createThemeTileController !== "function" ||
     typeof fitLayersOrDefault !== "function" ||
     typeof sharedAddHomeControl !== "function" ||
+    typeof addFullscreenControl !== "function" ||
     typeof settleMapLayout !== "function" ||
     typeof L === "undefined"
   ) {
@@ -210,6 +212,7 @@
 
   buildStatusControls();
   mountHomeControl();
+  addFullscreenControl(map);
   tileController.apply();
   visibleMarkers = drawMarkers();
 

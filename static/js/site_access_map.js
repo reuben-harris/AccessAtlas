@@ -14,6 +14,7 @@
   const createThemeTileController = window.AccessAtlas?.createThemeTileController;
   const fitLayersOrDefault = window.AccessAtlas?.fitLayersOrDefault;
   const sharedAddHomeControl = window.AccessAtlas?.addHomeControl;
+  const addFullscreenControl = window.AccessAtlas?.addFullscreenControl;
   const settleMapLayout = window.AccessAtlas?.settleMapLayout;
 
   if (
@@ -27,6 +28,7 @@
     typeof createThemeTileController !== "function" ||
     typeof fitLayersOrDefault !== "function" ||
     typeof sharedAddHomeControl !== "function" ||
+    typeof addFullscreenControl !== "function" ||
     typeof settleMapLayout !== "function" ||
     typeof L === "undefined"
   ) {
@@ -300,6 +302,7 @@
       ariaLabel: "Reset map view",
     },
   );
+  addFullscreenControl(map);
   map.addControl(new TrackAnimationControl({ position: "topright" }));
   let drawnLayers = drawFeatures();
   fitFeatures(drawnLayers);

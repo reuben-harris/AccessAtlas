@@ -5,6 +5,7 @@
 
 {% block head %}
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.fullscreen@5.3.1/dist/Control.FullScreen.css">
 {% endblock %}
 
 {% block content %}
@@ -45,5 +46,6 @@
 {{ map_preference|json_script:"job-map-preference" }}
 {{ map_tile_layer|json_script:"job-map-tile-layer" }}
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet.fullscreen@5.3.1/dist/Control.FullScreen.umd.js"></script>
 <script src="{% static 'js/job_map.js' %}"></script>
 {% endblock %}

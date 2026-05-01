@@ -75,6 +75,70 @@
     map.addControl(new HomeControl({ position }));
   }
 
+  function addFullscreenControl(map, options = {}) {
+    if (typeof L === "undefined") {
+      return null;
+    }
+
+    const position = options.position || "topright";
+    const enterTitle = options.title?.false || "Enter fullscreen";
+    const exitTitle = options.title?.true || "Exit fullscreen";
+    const enterAriaLabel = options.ariaLabel?.false || "Enter fullscreen";
+    const exitAriaLabel = options.ariaLabel?.true || "Exit fullscreen";
+    const controlOptions = {
+      position,
+      title: enterTitle,
+      titleCancel: exitTitle,
+      forceSeparateButton: true,
+    };
+
+    let control = null;
+    if (typeof L.control?.fullscreen === "function") {
+      control = L.control.fullscreen(controlOptions);
+    } else if (typeof L.Control?.FullScreen === "function") {
+      control = new L.Control.FullScreen(controlOptions);
+    } else {
+      return null;
+    }
+
+    control.addTo(map);
+
+    function buttonElement() {
+      return control.getContainer()?.querySelector("a") || null;
+    }
+
+    function isFullscreenActive() {
+      if (typeof map.isFullscreen === "function") {
+        return map.isFullscreen();
+      }
+      return document.fullscreenElement != null;
+    }
+
+    function updateButtonState() {
+      const button = buttonElement();
+      if (!button) {
+        return;
+      }
+      const active = isFullscreenActive();
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-label", active ? exitAriaLabel : enterAriaLabel);
+      button.setAttribute("title", active ? exitTitle : enterTitle);
+    }
+
+    updateButtonState();
+    const button = buttonElement();
+    if (button) {
+      button.addEventListener("click", () => {
+        window.setTimeout(() => {
+          button.blur();
+        }, 0);
+      });
+    }
+    map.on("fullscreenchange", updateButtonState);
+    document.addEventListener("fullscreenchange", updateButtonState);
+    return control;
+  }
+
   function settleMapLayout(map, onLayout) {
     if (!map || typeof map.invalidateSize !== "function") {
       return;
@@ -100,5 +164,6 @@
   accessAtlas.createThemeTileController = createThemeTileController;
   accessAtlas.fitLayersOrDefault = fitLayersOrDefault;
   accessAtlas.addHomeControl = addHomeControl;
+  accessAtlas.addFullscreenControl = addFullscreenControl;
   accessAtlas.settleMapLayout = settleMapLayout;
 })();

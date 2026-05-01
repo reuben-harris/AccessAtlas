@@ -397,6 +397,11 @@ input[type="time"].form-control.is-invalid {
 
 /* Shared Leaflet treatment across maps */
 
+:root {
+  --fullscreen-icon-enter: url("data:image/svg+xml,%3Csvg viewBox='0 0 26 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 10.3V5.9c0-.5.4-.9.9-.9h4.4c.2 0 .4.2.4.4V7c0 .2-.2.4-.4.4h-3v3c0 .2-.2.4-.4.4H5.4a.4.4 0 0 1-.4-.4zm10.3-4.9V7c0 .2.2.4.4.4h3v3c0 .2.2.4.4.4h1.5c.2 0 .4-.2.4-.4V5.9c0-.5-.4-.9-.9-.9h-4.4c-.2 0-.4.2-.4.4zm5.3 9.9H19c-.2 0-.4.2-.4.4v3h-3c-.2 0-.4.2-.4.4v1.5c0 .2.2.4.4.4h4.4c.5 0 .9-.4.9-.9v-4.4c0-.2-.2-.4-.4-.4zm-9.9 5.3V19c0-.2-.2-.4-.4-.4h-3v-3c0-.2-.2-.4-.4-.4H5.4c-.2 0-.4.2-.4.4v4.4c0 .5.4.9.9.9h4.4c.2 0 .4-.2.4-.4z' fill='%23333'/%3E%3C/svg%3E");
+  --fullscreen-icon-exit: url("data:image/svg+xml,%3Csvg viewBox='0 0 26 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20.6 10.7H16a.9.9 0 0 1-.8-.8V5.4c0-.2.2-.4.4-.4h1.4c.3 0 .5.2.5.4v3h3c.2 0 .4.2.4.5v1.4c0 .2-.2.4-.4.4zm-9.9-.8V5.4c0-.2-.2-.4-.4-.4H8.9c-.3 0-.5.2-.5.4v3h-3c-.2 0-.4.2-.4.5v1.4c0 .2.2.4.4.4H9.9c.4 0 .8-.4.8-.8zm0 10.7V16c0-.4-.4-.8-.8-.8H5.4c-.2 0-.4.2-.4.4v1.4c0 .3.2.5.4.5h3v3c0 .2.2.4.5.4h1.4c.2 0 .4-.2.4-.4zm6.9 0v-3h3c.2 0 .4-.2.4-.5v-1.4c0-.2-.2-.4-.4-.4H16c-.4 0-.8.4-.8.8v4.5c0 .2.2.4.4.4h1.5c.3 0 .5-.2.5-.4z' fill='%23333'/%3E%3C/svg%3E");
+}
+
 /* Full-page map views share the same flex layout so toolbars, warnings, and
    maps size consistently without forcing document scroll. */
 
@@ -440,7 +445,8 @@ input[type="time"].form-control.is-invalid {
 
 .access-atlas-map-home-control button,
 .job-map-home-control button,
-.site-map-home-control button {
+.site-map-home-control button,
+.leaflet-control-fullscreen a {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -453,13 +459,25 @@ input[type="time"].form-control.is-invalid {
   cursor: pointer;
 }
 
+.leaflet-control-fullscreen a {
+  font-size: 1rem;
+  line-height: 1;
+  text-decoration: none;
+}
+
 .access-atlas-map-home-control button:hover,
-.access-atlas-map-home-control button:focus,
+.access-atlas-map-home-control button:focus-visible,
 .job-map-home-control button:hover,
-.job-map-home-control button:focus,
+.job-map-home-control button:focus-visible,
 .site-map-home-control button:hover,
-.site-map-home-control button:focus {
+.site-map-home-control button:focus-visible,
+.leaflet-control-fullscreen a:hover,
+.leaflet-control-fullscreen a:focus-visible {
   background: #f4f4f4;
+}
+
+.leaflet-control-fullscreen a.is-active {
+  color: var(--tblr-primary);
 }
 
 [data-bs-theme="dark"] .leaflet-bar,
@@ -471,34 +489,46 @@ input[type="time"].form-control.is-invalid {
 [data-bs-theme="dark"] .leaflet-bar a,
 [data-bs-theme="dark"] .leaflet-bar a:hover {
   color: var(--tblr-body-color);
-  background: var(--tblr-bg-surface);
+  background-color: var(--tblr-bg-surface);
   border-bottom-color: var(--tblr-border-color);
 }
 
 [data-bs-theme="dark"] .leaflet-bar a:hover {
-  background: var(--tblr-bg-surface-secondary);
+  background-color: var(--tblr-bg-surface-secondary);
 }
 
 [data-bs-theme="dark"] .leaflet-bar a.leaflet-disabled {
   color: var(--tblr-muted);
-  background: var(--tblr-bg-surface);
+  background-color: var(--tblr-bg-surface);
 }
 
 [data-bs-theme="dark"] .access-atlas-map-home-control button,
 [data-bs-theme="dark"] .job-map-home-control button,
-[data-bs-theme="dark"] .site-map-home-control button {
+[data-bs-theme="dark"] .site-map-home-control button,
+[data-bs-theme="dark"] .leaflet-control-fullscreen a {
   color: var(--tblr-body-color);
-  background: var(--tblr-bg-surface);
+  background-color: var(--tblr-bg-surface);
   border-color: var(--tblr-border-color);
 }
 
 [data-bs-theme="dark"] .access-atlas-map-home-control button:hover,
-[data-bs-theme="dark"] .access-atlas-map-home-control button:focus,
+[data-bs-theme="dark"] .access-atlas-map-home-control button:focus-visible,
 [data-bs-theme="dark"] .job-map-home-control button:hover,
-[data-bs-theme="dark"] .job-map-home-control button:focus,
+[data-bs-theme="dark"] .job-map-home-control button:focus-visible,
 [data-bs-theme="dark"] .site-map-home-control button:hover,
-[data-bs-theme="dark"] .site-map-home-control button:focus {
-  background: var(--tblr-bg-surface-secondary);
+[data-bs-theme="dark"] .site-map-home-control button:focus-visible,
+[data-bs-theme="dark"] .leaflet-control-fullscreen a:hover,
+[data-bs-theme="dark"] .leaflet-control-fullscreen a:focus-visible {
+  background-color: var(--tblr-bg-surface-secondary);
+}
+
+[data-bs-theme="dark"] {
+  --fullscreen-icon-enter: url("data:image/svg+xml,%3Csvg viewBox='0 0 26 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 10.3V5.9c0-.5.4-.9.9-.9h4.4c.2 0 .4.2.4.4V7c0 .2-.2.4-.4.4h-3v3c0 .2-.2.4-.4.4H5.4a.4.4 0 0 1-.4-.4zm10.3-4.9V7c0 .2.2.4.4.4h3v3c0 .2.2.4.4.4h1.5c.2 0 .4-.2.4-.4V5.9c0-.5-.4-.9-.9-.9h-4.4c-.2 0-.4.2-.4.4zm5.3 9.9H19c-.2 0-.4.2-.4.4v3h-3c-.2 0-.4.2-.4.4v1.5c0 .2.2.4.4.4h4.4c.5 0 .9-.4.9-.9v-4.4c0-.2-.2-.4-.4-.4zm-9.9 5.3V19c0-.2-.2-.4-.4-.4h-3v-3c0-.2-.2-.4-.4-.4H5.4c-.2 0-.4.2-.4.4v4.4c0 .5.4.9.9.9h4.4c.2 0 .4-.2.4-.4z' fill='%23fff'/%3E%3C/svg%3E");
+  --fullscreen-icon-exit: url("data:image/svg+xml,%3Csvg viewBox='0 0 26 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20.6 10.7H16a.9.9 0 0 1-.8-.8V5.4c0-.2.2-.4.4-.4h1.4c.3 0 .5.2.5.4v3h3c.2 0 .4.2.4.5v1.4c0 .2-.2.4-.4.4zm-9.9-.8V5.4c0-.2-.2-.4-.4-.4H8.9c-.3 0-.5.2-.5.4v3h-3c-.2 0-.4.2-.4.5v1.4c0 .2.2.4.4.4H9.9c.4 0 .8-.4.8-.8zm0 10.7V16c0-.4-.4-.8-.8-.8H5.4c-.2 0-.4.2-.4.4v1.4c0 .3.2.5.4.5h3v3c0 .2.2.4.5.4h1.4c.2 0 .4-.2.4-.4zm6.9 0v-3h3c.2 0 .4-.2.4-.5v-1.4c0-.2-.2-.4-.4-.4H16c-.4 0-.8.4-.8.8v4.5c0 .2.2.4.4.4h1.5c.3 0 .5-.2.5-.4z' fill='%23fff'/%3E%3C/svg%3E");
+}
+
+[data-bs-theme="dark"] .leaflet-control-fullscreen a.is-active {
+  color: #8cb6ff;
 }
 
 [data-bs-theme="dark"] .leaflet-control-attribution,
@@ -533,6 +563,18 @@ input[type="time"].form-control.is-invalid {
   .access-atlas-map-card--fill {
     min-height: 20rem;
   }
+}
+
+/* Site access maps have two top-right controls that should read as one control
+   row instead of a vertical stack. */
+
+.leaflet-top.leaflet-right .site-map-animation-control,
+.leaflet-top.leaflet-right .leaflet-control-fullscreen {
+  clear: none;
+}
+
+.leaflet-top.leaflet-right .site-map-animation-control {
+  margin-right: .5rem;
 }
 
 /* Site access map */
