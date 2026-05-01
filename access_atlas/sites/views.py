@@ -25,46 +25,19 @@ from .forms import (
 )
 from .kml import convert_geojson_to_kml_bytes
 from .models import AccessRecord, AccessRecordVersion, Site
+from .presentation import (
+    POINT_TYPE_BADGE_CLASS,
+    POINT_TYPE_DISPLAY,
+    TRACK_SUITABILITY_COLOR,
+    TRACK_SUITABILITY_DISPLAY,
+    point_details,
+    select_primary_access_start,
+)
 from .services import (
     create_access_record_from_upload,
     create_access_record_upload_draft,
     create_access_record_version_from_upload,
 )
-
-POINT_TYPE_DISPLAY = {
-    "access_start": "Access Start",
-    "site": "Site",
-    "gate": "Gate",
-    "note": "Note",
-}
-
-POINT_TYPE_BADGE_CLASS = {
-    "access_start": "bg-blue-lt",
-    "site": "bg-green-lt",
-    "gate": "bg-yellow-lt",
-    "note": "bg-purple-lt",
-}
-
-TRACK_SUITABILITY_DISPLAY = {
-    "4wd": "4WD",
-    "luv": "LUV",
-    "walking": "Walking",
-}
-
-TRACK_SUITABILITY_COLOR = {
-    "4wd": "#1a5fb4",
-    "luv": "#f59f00",
-    "walking": "#a51d2d",
-}
-
-
-def _point_details(point) -> str | None:
-    if point.feature_type == "gate" and point.properties.get("code"):
-        return f"Code: {point.properties['code']}"
-    details = point.properties.get("details") or point.properties.get("notes")
-    if details:
-        return str(details)
-    return None
 
 
 def _coordinates_value(latitude, longitude) -> str:
@@ -108,7 +81,7 @@ def build_site_access_map_data(
                     ),
                     "recordName": access_record.name,
                     "label": point.label or POINT_TYPE_DISPLAY.get(point.feature_type),
-                    "details": _point_details(point),
+                    "details": point_details(point),
                 }
             )
         for track in snapshot.parsed.tracks:
@@ -170,15 +143,12 @@ class SiteDetailView(LoginRequiredMixin, DetailView):
             access_record.latest_version = (
                 snapshot.current_version if snapshot is not None else None
             )
-            access_start_points = []
             if snapshot is not None and snapshot.parsed is not None:
-                access_start_points = [
-                    point
-                    for point in snapshot.parsed.points
-                    if point.feature_type == "access_start"
-                ]
-            if access_start_points:
-                primary_point = access_start_points[0]
+                access_start = select_primary_access_start(snapshot.parsed.points)
+            else:
+                access_start = select_primary_access_start([])
+            if access_start.primary is not None:
+                primary_point = access_start.primary
                 access_record.access_start_search_url = _google_maps_search_url(
                     primary_point.latitude,
                     primary_point.longitude,
@@ -307,7 +277,7 @@ class AccessRecordDetailView(LoginRequiredMixin, DetailView):
             elif snapshot.parsed is not None:
                 feature_rows = []
                 for point in snapshot.parsed.points:
-                    details = _point_details(point) or "-"
+                    details = point_details(point) or "-"
                     feature_rows.append(
                         {
                             "type_display": POINT_TYPE_DISPLAY.get(

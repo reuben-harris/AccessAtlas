@@ -261,3 +261,20 @@ def test_preference_view_rejects_invalid_site_access_animation_preference(client
 
     assert response.status_code == 400
     assert not UserPreference.objects.exists()
+
+
+@pytest.mark.django_db
+def test_preference_view_allows_site_access_map_preference_without_animation(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    key = f"{SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX}12"
+
+    response = client.post(
+        reverse("account_preference"),
+        {"key": key, "value": {"visible_record_ids": []}},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    preference = UserPreference.objects.get(user=user, key=key)
+    assert preference.value == {"visible_record_ids": []}

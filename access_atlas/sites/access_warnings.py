@@ -6,6 +6,7 @@ from decimal import Decimal
 from .access_record_snapshots import AccessRecordSnapshot
 from .access_records import AccessRecordGeoJSONError, parse_access_record_geojson
 from .models import AccessRecord, Site
+from .presentation import select_primary_access_start
 
 COORDINATE_TOLERANCE = 1e-5
 
@@ -73,12 +74,10 @@ def build_access_record_warnings(
             )
             return warnings
 
-    access_start_points = [
-        point for point in parsed.points if point.feature_type == "access_start"
-    ]
+    access_start = select_primary_access_start(parsed.points)
     site_points = [point for point in parsed.points if point.feature_type == "site"]
 
-    if len(access_start_points) > 1:
+    if access_start.has_multiple:
         warnings.append(
             AccessWarning(
                 f"{prefix}Multiple access-start points found in the latest revision. "

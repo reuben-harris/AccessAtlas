@@ -428,6 +428,33 @@ def test_site_detail_defaults_access_map_track_animation_to_enabled(client):
 
 
 @pytest.mark.django_db
+def test_site_detail_defaults_animation_for_visibility_only_preference(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    record = AccessRecord.objects.create(site=site, name="Road access")
+    set_user_preference(
+        user,
+        site_access_map_preference_key(site.pk),
+        {"visible_record_ids": [record.pk]},
+    )
+
+    response = client.get(reverse("site_detail", kwargs={"pk": site.pk}))
+
+    assert response.status_code == 200
+    payload = parse_json_script(response.content.decode(), "site-access-map-preference")
+    assert payload["value"]["visible_record_ids"] == [record.pk]
+    assert payload["value"]["animate_tracks"] is True
+
+
+@pytest.mark.django_db
 def test_site_can_have_multiple_access_records():
     site = Site.objects.create(
         source_name="dummy",
