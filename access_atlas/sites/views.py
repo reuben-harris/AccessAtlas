@@ -307,11 +307,7 @@ class AccessRecordDetailView(LoginRequiredMixin, DetailView):
             elif snapshot.parsed is not None:
                 feature_rows = []
                 for point in snapshot.parsed.points:
-                    details = "-"
-                    if point.feature_type == "gate" and point.properties.get("code"):
-                        details = f"Code: {point.properties['code']}"
-                    elif point.feature_type == "note" and point.properties.get("notes"):
-                        details = point.properties["notes"]
+                    details = _point_details(point) or "-"
                     feature_rows.append(
                         {
                             "type_display": POINT_TYPE_DISPLAY.get(
