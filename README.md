@@ -109,6 +109,10 @@ Leaflet runtime assets are generated into `static/vendor/` by `pnpm build:vendor
 or `pnpm build:frontend`. Those files are not tracked in git; the container
 build generates them as part of the frontend stage.
 
+The compiled stylesheet `static/css/app.css` is also generated and not tracked
+in git. During normal frontend work, run `pnpm watch:css` in a second terminal
+so changes under `static/css/src/` rebuild automatically while Django runs.
+
 Useful commands:
 
 ```bash

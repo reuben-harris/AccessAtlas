@@ -12,3 +12,4 @@ media/
 htmlcov/
 node_modules/
 static/vendor/
+static/css/app.css
