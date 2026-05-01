@@ -114,17 +114,20 @@ Loose thoughts:
 * rename .js files that relate to map to be consistent (currenlty job_map.js and site_access_map.js). Create subfolder and move three files.
 
 ## Access Record Improvements
-* The access record should have the same navigation buttons as the site page
 * Generate starter geojson when not access record is uploaded. It will put the points for access start and the site. [It would be on this page](http://localhost:8000/sites/1/access-records/new/). Maybe instead of specifying a file you can check a box. Automatically generate a v1 or something. Then you are just specifying the arrival method, name and changelog.
-* Inconsitency between the geojson and kml download buttons on the site page vs the access record page. Color and name and size. Also, view toggle for map visability is only avaliable on the sites page and not the access record page for that specific record.
-* Feature Idea: Add a view for elevation of a track. https://github.com/Raruto/leaflet-elevation
-* There should be thought and maybe intergration about getting the KMLs on the devices. Can we auto sync to Garmin? Can we auto sync to phone app?
-* The map size on the sites page is weird. The page is also overall very long now. I like the jobs map view were it takes up the full page and scales based on window size. Maybe the sites view should move to view style tabs to breakup the content.
-* Add fullscreen options to access record map (and all maps?)?
+* View toggle for map visability is only avaliable on the sites page and not the access record page for that specific record.
+* **Feature Idea: Add a view for elevation of a track. https://github.com/Raruto/leaflet-elevation**
+* **There should be thought and maybe intergration about getting the KMLs on the devices. Can we auto sync to Garmin? Can we auto sync to phone app?**
+* **The map size on the sites page is weird. The page is also overall very long now. I like the jobs map view were it takes up the full page and scales based on window size. Maybe the sites view should move to view style tabs to breakup the content.**
+* **Add fullscreen options to access record map (and all maps)**
 * Update the readme with specs for the Geojson. Add a whole new section just for that.
 * I need to produce an example geojson with all the features in it. This will make testing easier and UI improvements easier to see.
-* Download GPX (instead of KML or keep KML?)
-* Export ALL access records (for loading to a device) OR investigate ways we can sync to our phones etc
+* **Download GPX (instead of KML or keep KML?)** https://www.npmjs.com/package/@dwayneparton/geojson-to-gpx?activeTab=readme or https://github.com/nicholas-fong/GeoJSON-to-gpx or agent finds something better. Not a fan of how small and inactive those repos look. However, maybe its not that complicated. Can always role my own convertor in a serparte repo and swap that out for these opensource ones if they become a liability.
+* Export ALL access records (for loading to a device) OR investigate ways we can sync to our phones etc. Needs more investigation into full pipline (from access atlas to using on phone). Also, how does this look once we have a phone app. No more export pipeline as the app could be a free topo offline map too?
+* **Add home button to the access records map the centers the map around the access records**
+* **Make the access record map bigger somehow. Access record table could collapse?**
+* **Open site in google maps could be moved back to normal button spot for consistency**
+* **New access record button should persist across menus. Those main buttons should always persist across menus (I think the new access records button is the only one that doesnt in the whole site. Might be to do with were the button is in the code so verify and make sure its consistent with the rest of the codebase)**
 
 ### Complex Access Record Feature
 
