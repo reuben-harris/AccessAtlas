@@ -111,6 +111,7 @@ Loose thoughts:
 * general agents file, comments in the right places (and why we are doing it that way)
 * css of main content in center doesnt scale well when zooming out. It also has a lot of padding on the left and probably could take up more of the screen.
 * Consider putting a direct link on the left nav to Site Visit and Access Records (maybe requirements?)
+* rename .js files that relate to map to be consistent (currenlty job_map.js and site_access_map.js). Create subfolder and move three files.
 
 ## Access Record Improvements
 * The access record should have the same navigation buttons as the site page
