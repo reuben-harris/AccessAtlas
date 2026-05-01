@@ -245,8 +245,8 @@ def test_site_list_shows_warning_indicator_for_sites_with_access_warnings(client
                     "type": "Feature",
                     "geometry": {"type": "Point", "coordinates": [174.25, -41.25]},
                     "properties": {
-                        "access_atlas:type": "access_start",
-                        "name": "Access start",
+                        "access_atlas:type": "site",
+                        "label": "Warning Site",
                     },
                 }
             ],
@@ -259,7 +259,7 @@ def test_site_list_shows_warning_indicator_for_sites_with_access_warnings(client
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert "There are warnings for this site." in content
+    assert 'title="There are warnings for this site."' in content
     assert "site-warning-indicator" in content
 
 
@@ -280,11 +280,11 @@ def test_site_detail_renders_site_google_maps_button(client):
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert "Site Map" in content
+    assert "Open site coordinates in Google Maps" in content
     assert "Sync Status" in content
     assert "badge bg-green-lt" in content
     assert (
-        "https://www.google.com/maps/search/?api=1&query=-41.100000%2C174.100000"
+        "https://www.google.com/maps/search/?api=1&amp;query=-41.100000%2C174.100000"
         in content
     )
 
@@ -660,11 +660,11 @@ def test_site_detail_shows_access_start_actions_per_access_record(client):
     assert response.status_code == 200
     content = response.content.decode()
     assert (
-        "https://www.google.com/maps/dir/?api=1&destination=-41.200000%2C174.200000"
+        "https://www.google.com/maps/dir/?api=1&amp;destination=-41.200000%2C174.200000"
         in content
     )
     assert (
-        "https://www.google.com/maps/search/?api=1&query=-41.200000%2C174.200000"
+        "https://www.google.com/maps/search/?api=1&amp;query=-41.200000%2C174.200000"
         in content
     )
 
@@ -1179,9 +1179,7 @@ def test_access_record_downloads_return_current_version_data(client):
         reverse("access_record_kml_download", kwargs={"pk": access_record.pk})
     )
     assert kml_response.status_code == 200
-    assert (
-        kml_response["Content-Type"] == "application/vnd.google-earth.kml+xml"
-    )
+    assert kml_response["Content-Type"] == "application/vnd.google-earth.kml+xml"
     assert "aa-001-boat-access-v2.kml" in kml_response["Content-Disposition"]
     assert b"<kml" in kml_response.content
 

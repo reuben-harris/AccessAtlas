@@ -71,7 +71,7 @@ class AccessRecordGeoJSONUploadMixin(forms.Form):
                 pk=staged_upload_id,
                 user=self.user,
             )
-        except (AccessRecordUploadDraft.DoesNotExist, ValueError):
+        except AccessRecordUploadDraft.DoesNotExist, ValueError:
             return None
         if not self._staged_upload_matches_context(staged_upload):
             return None
