@@ -96,7 +96,7 @@ cp .env.example .env
 docker compose up -d db
 uv sync --dev
 pnpm install
-pnpm build:css
+pnpm build:frontend
 uv run python manage.py migrate
 uv run python manage.py runserver
 ```
@@ -114,7 +114,7 @@ uv run pytest
 uv run ruff check .
 uv run ruff format --check .
 pnpm install
-pnpm build:css
+pnpm build:frontend
 pnpm watch:css
 pnpm lint:frontend
 ```

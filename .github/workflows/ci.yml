@@ -66,8 +66,8 @@ jobs:
       - name: Lint frontend assets
         run: pnpm lint:frontend
 
-      - name: Build bundled CSS
-        run: pnpm build:css
+      - name: Build frontend assets
+        run: pnpm build:frontend
 
   test:
     name: Test

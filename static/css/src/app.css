@@ -1,5 +1,6 @@
 /* Access Atlas stylesheet entrypoint.
-   Keep the import order stable so layout and component overrides remain predictable. */
+   Keep the import order stable so layout and component overrides remain predictable.
+   The built output is `static/css/app.css`; edit files in `static/css/src/` only. */
 
 @import "./layout.css";
 @import "./forms.css";

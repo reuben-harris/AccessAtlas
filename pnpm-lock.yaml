@@ -7,6 +7,16 @@ settings:
 importers:
 
   .:
+    dependencies:
+      leaflet:
+        specifier: 1.9.4
+        version: 1.9.4
+      leaflet-ant-path:
+        specifier: 1.3.0
+        version: 1.3.0
+      leaflet.fullscreen:
+        specifier: 5.3.1
+        version: 5.3.1(leaflet@1.9.4)
     devDependencies:
       '@biomejs/biome':
         specifier: ^1.9.4
@@ -192,6 +202,17 @@ packages:
 
   jsonfile@6.2.1:
     resolution: {integrity: sha512-zwOTdL3rFQ/lRdBnntKVOX6k5cKJwEc1HdilT71BWEu7J41gXIB2MRp+vxduPSwZJPWBxEzv4yH1wYLJGUHX4Q==}
+
+  leaflet-ant-path@1.3.0:
+    resolution: {integrity: sha512-wgWWcAD4w8QVguRsHh89NGj5eqwLOP6e/HazunW0fQaytqZqEh3WePWYIrmbUeMcOf2cX/+GecHkFfI5tirS1Q==}
+
+  leaflet.fullscreen@5.3.1:
+    resolution: {integrity: sha512-2IO5WJ5xpQWyn2ZLICwwpyiWJ2KdZMuxAUCsrK7b4dj770GZ/zwPp4uVQNKOxqnz9xRWEN1d2VNpLaX4ptSdnA==}
+    peerDependencies:
+      leaflet: ^1.7.0 || >=2.0.0-alpha.1
+
+  leaflet@1.9.4:
+    resolution: {integrity: sha512-nxS1ynzJOmOlHp+iL3FyWqK89GtNL8U8rvlMOsQdTTssxZwCXh8N2NB3GDQOL+YR3XnWyZAxwQixURb+FA74PA==}
 
   lilconfig@3.1.3:
     resolution: {integrity: sha512-/vlFKAoH5Cgt3Ie+JLhRbwOsCQePABiU3tJ1egGvyQ+33R/vcwM2Zl2QR/LzjsBeItPt3oSVXapn+m4nQDvpzw==}
@@ -481,6 +502,14 @@ snapshots:
       universalify: 2.0.1
     optionalDependencies:
       graceful-fs: 4.2.11
+
+  leaflet-ant-path@1.3.0: {}
+
+  leaflet.fullscreen@5.3.1(leaflet@1.9.4):
+    dependencies:
+      leaflet: 1.9.4
+
+  leaflet@1.9.4: {}
 
   lilconfig@3.1.3: {}
 
