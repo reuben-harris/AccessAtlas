@@ -110,10 +110,14 @@
             <td>{{ version.uploaded_by }}</td>
             <td>{{ version.change_note }}</td>
             <td>{{ version.created_at }}</td>
-            <td class="text-end">
-              <div class="btn-list justify-content-end">
-                <a class="btn btn-sm btn-outline-secondary" href="{% url 'access_record_version_geojson_download' object.pk version.pk %}">GeoJSON</a>
-                <a class="btn btn-sm btn-outline-secondary" href="{% url 'access_record_version_kml_download' object.pk version.pk %}">KML</a>
+            <td class="text-end row-actions">
+              <div class="access-record-actions justify-content-end">
+                <a class="btn btn-icon btn-info" href="{% url 'access_record_version_geojson_download' object.pk version.pk %}" aria-label="Download version {{ version.version_number }} GeoJSON" title="Download GeoJSON">
+                  <i class="ti ti-brackets" aria-hidden="true"></i>
+                </a>
+                <a class="btn btn-icon btn-success" href="{% url 'access_record_version_kml_download' object.pk version.pk %}" aria-label="Download version {{ version.version_number }} KML" title="Download KML">
+                  <i class="ti ti-map-2" aria-hidden="true"></i>
+                </a>
               </div>
             </td>
           </tr>
