@@ -1,4 +1,4 @@
-(function () {
+(() => {
   const storageKey = "access-atlas-theme-mode";
   const modes = ["system", "light", "dark"];
   const modeIcons = {
@@ -34,7 +34,7 @@
   }
 
   function updateControl(mode) {
-    document.querySelectorAll("[data-theme-cycle]").forEach((button) => {
+    for (const button of document.querySelectorAll("[data-theme-cycle]")) {
       const label = `Theme: ${mode.charAt(0).toUpperCase()}${mode.slice(1)}`;
       const icon = button.querySelector("i");
       button.dataset.themeCurrentMode = mode;
@@ -44,7 +44,7 @@
       if (icon) {
         icon.className = `ti ${modeIcons[mode]}`;
       }
-    });
+    }
   }
 
   function applyTheme(mode) {

@@ -51,7 +51,9 @@ async function loadCountryData(globe, updateColors) {
     }
 
     const countries = await response.json();
-    globe.polygonsData(countries.features.filter((country) => country.properties.name !== "Antarctica"));
+    globe.polygonsData(
+      countries.features.filter((country) => country.properties.name !== "Antarctica"),
+    );
     updateColors();
   } catch (error) {
     // The base globe remains useful when the external country data is unavailable.
@@ -70,7 +72,8 @@ async function initGlobe() {
 
   try {
     THREE = await import("https://cdn.jsdelivr.net/npm/three@0.183.2/+esm");
-    ThreeGlobe = (await import("https://cdn.jsdelivr.net/npm/three-globe@2.45.2/+esm")).default;
+    ThreeGlobe = (await import("https://cdn.jsdelivr.net/npm/three-globe@2.45.2/+esm"))
+      .default;
   } catch (error) {
     createFallbackMessage();
     return;
@@ -95,7 +98,9 @@ async function initGlobe() {
     .showAtmosphere(true)
     .atmosphereAltitude(0.18)
     .polygonAltitude(0.014)
-    .polygonStrokeColor(() => (themeIsDark() ? "rgba(245,247,251,.22)" : "rgba(24,36,51,.24)"));
+    .polygonStrokeColor(() =>
+      themeIsDark() ? "rgba(245,247,251,.22)" : "rgba(24,36,51,.24)",
+    );
 
   globe.rotation.set(0.04, -0.55, 0.05);
   scene.add(globe);
@@ -115,9 +120,15 @@ async function initGlobe() {
     globeMaterial.emissiveIntensity = dark ? 0.32 : 0.24;
     globe
       .atmosphereColor(dark ? "#2fb344" : "#206bc4")
-      .polygonCapColor(() => (dark ? "rgba(47, 179, 68, .28)" : "rgba(125, 211, 137, .48)"))
-      .polygonSideColor(() => (dark ? "rgba(12, 166, 120, .20)" : "rgba(47, 179, 68, .24)"))
-      .polygonStrokeColor(() => (dark ? "rgba(245,247,251,.22)" : "rgba(35, 125, 55, .30)"));
+      .polygonCapColor(() =>
+        dark ? "rgba(47, 179, 68, .28)" : "rgba(125, 211, 137, .48)",
+      )
+      .polygonSideColor(() =>
+        dark ? "rgba(12, 166, 120, .20)" : "rgba(47, 179, 68, .24)",
+      )
+      .polygonStrokeColor(() =>
+        dark ? "rgba(245,247,251,.22)" : "rgba(35, 125, 55, .30)",
+      );
   }
 
   function createPulse() {
@@ -177,7 +188,10 @@ async function initGlobe() {
 
     globe.rotation.y += delta * 0.22;
 
-    if (!animate.lastPulse || currentTime - animate.lastPulse > randomBetween(0.26, 0.52)) {
+    if (
+      !animate.lastPulse ||
+      currentTime - animate.lastPulse > randomBetween(0.26, 0.52)
+    ) {
       createPulse();
       animate.lastPulse = currentTime;
     }

@@ -1,12 +1,14 @@
-(function () {
+(() => {
   const mapElement = document.getElementById("site-access-map");
   const dataElement = document.getElementById("site-access-map-data");
   const preferenceElement = document.getElementById("site-access-map-preference");
   const tileLayerElement = document.getElementById("site-access-map-tile-layer");
   const siteLatitudeElement = document.getElementById("site-access-map-site-latitude");
-  const siteLongitudeElement = document.getElementById("site-access-map-site-longitude");
+  const siteLongitudeElement = document.getElementById(
+    "site-access-map-site-longitude",
+  );
   const toggleButtons = Array.from(
-    document.querySelectorAll('[data-map-toggle="access-record"]')
+    document.querySelectorAll('[data-map-toggle="access-record"]'),
   );
   const escapeHtml = window.AccessAtlas?.escapeHtml;
   const createThemeTileController = window.AccessAtlas?.createThemeTileController;
@@ -59,7 +61,7 @@
     : [];
   const hasSavedVisibilityPreference = Object.prototype.hasOwnProperty.call(
     savedPreference,
-    "visible_record_ids"
+    "visible_record_ids",
   );
   const animateTracksEnabled = {
     value:
@@ -68,7 +70,7 @@
         : true,
   };
   const visibleRecordIds = new Set(
-    hasSavedVisibilityPreference ? savedVisibleRecordIds : allRecordIds
+    hasSavedVisibilityPreference ? savedVisibleRecordIds : allRecordIds,
   );
   const hasRecordToggles = toggleButtons.length > 0;
 
@@ -115,7 +117,7 @@
       <div><strong>Access Record:</strong> ${escapeHtml(feature.recordName)}</div>
       <div><strong>Label:</strong> ${escapeHtml(feature.label || "-")}</div>
       <div><strong>Coordinates:</strong> ${escapeHtml(
-        `${Number(feature.latitude).toFixed(6)}, ${Number(feature.longitude).toFixed(6)}`
+        `${Number(feature.latitude).toFixed(6)}, ${Number(feature.longitude).toFixed(6)}`,
       )}</div>
       ${
         details
@@ -163,7 +165,7 @@
   function drawFeatures() {
     featureLayer.clearLayers();
     const layers = [];
-    points.forEach((point) => {
+    for (const point of points) {
       if (
         hasRecordToggles &&
         point.recordId &&
@@ -182,8 +184,8 @@
       marker.bindPopup(buildPointPopup(point));
       marker.addTo(featureLayer);
       layers.push(marker);
-    });
-    tracks.forEach((track) => {
+    }
+    for (const track of tracks) {
       if (
         hasRecordToggles &&
         track.recordId &&
@@ -193,13 +195,10 @@
       }
       const path = Array.isArray(track.path)
         ? track.path
-            .map((position) => [
-              Number(position.latitude),
-              Number(position.longitude),
-            ])
+            .map((position) => [Number(position.latitude), Number(position.longitude)])
             .filter(
               ([latitude, longitude]) =>
-                Number.isFinite(latitude) && Number.isFinite(longitude)
+                Number.isFinite(latitude) && Number.isFinite(longitude),
             )
         : [];
       if (path.length < 2) {
@@ -209,7 +208,7 @@
       polyline.bindPopup(buildTrackPopup(track));
       polyline.addTo(featureLayer);
       layers.push(polyline);
-    });
+    }
     return layers;
   }
 
@@ -224,7 +223,7 @@
     button.title = isVisible ? "Hide on map" : "Show on map";
     button.setAttribute(
       "aria-label",
-      isVisible ? "Hide access record on map" : "Show access record on map"
+      isVisible ? "Hide access record on map" : "Show access record on map",
     );
     if (!icon) {
       return;
@@ -255,7 +254,7 @@
     button.title = enabled ? "Track animation on" : "Track animation off";
     button.setAttribute(
       "aria-label",
-      enabled ? "Disable track animation" : "Enable track animation"
+      enabled ? "Disable track animation" : "Enable track animation",
     );
     if (toggle) {
       toggle.checked = enabled;
@@ -264,10 +263,7 @@
 
   const TrackAnimationControl = L.Control.extend({
     onAdd() {
-      const container = L.DomUtil.create(
-        "div",
-        "site-map-animation-control"
-      );
+      const container = L.DomUtil.create("div", "site-map-animation-control");
       const button = L.DomUtil.create("button", "", container);
       button.type = "button";
       button.innerHTML =
@@ -293,10 +289,10 @@
   let drawnLayers = drawFeatures();
   fitFeatures(drawnLayers);
 
-  toggleButtons.forEach((button) => {
+  for (const button of toggleButtons) {
     const recordId = Number(button.dataset.recordId);
     if (!Number.isInteger(recordId)) {
-      return;
+      continue;
     }
     updateToggleButton(button, visibleRecordIds.has(recordId));
     button.addEventListener("click", () => {
@@ -310,6 +306,5 @@
       fitFeatures(drawnLayers);
       savePreference();
     });
-  });
-
+  }
 })();

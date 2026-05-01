@@ -1,4 +1,4 @@
-(function () {
+(() => {
   const mapElement = document.getElementById("job-map");
   const dataElement = document.getElementById("job-map-data");
   const statusControlsElement = document.getElementById("job-map-status-controls");
@@ -31,12 +31,12 @@
   const savedPreference = preference.value || {};
   const postJSON = window.AccessAtlas?.postJSON;
   const statusByValue = new Map(
-    statusLayers.map((statusLayer) => [statusLayer.value, statusLayer])
+    statusLayers.map((statusLayer) => [statusLayer.value, statusLayer]),
   );
   const visibleStatuses = new Set(
     statusLayers
       .filter((statusLayer) => statusLayer.visible)
-      .map((statusLayer) => statusLayer.value)
+      .map((statusLayer) => statusLayer.value),
   );
 
   const map = L.map(mapElement).setView([-41.2865, 174.7762], 5);
@@ -130,7 +130,7 @@
     markerLayer.clearLayers();
     const markers = [];
 
-    sites.forEach((entry) => {
+    for (const entry of sites) {
       const site = entry.site;
       const jobs = getVisibleJobs(entry.jobs);
       const latitude = Number(site.latitude);
@@ -152,7 +152,7 @@
       marker.bindPopup(buildPopup(site, jobs));
       marker.addTo(markerLayer);
       markers.push(marker);
-    });
+    }
 
     return markers;
   }
@@ -169,7 +169,7 @@
   function buildStatusControls() {
     statusControlsElement.replaceChildren();
 
-    statusLayers.forEach((statusLayer) => {
+    for (const statusLayer of statusLayers) {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "job-map-status-button";
@@ -190,7 +190,7 @@
       });
 
       statusControlsElement.appendChild(button);
-    });
+    }
   }
 
   const HomeControl = L.Control.extend({
@@ -228,7 +228,7 @@
   ) {
     map.setView(
       [Number(savedPreference.viewport.lat), Number(savedPreference.viewport.lng)],
-      savedPreference.viewport.zoom
+      savedPreference.viewport.zoom,
     );
   } else {
     fitMarkers(visibleMarkers);

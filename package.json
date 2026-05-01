@@ -5,11 +5,16 @@
   "description": "Frontend tooling for Access Atlas.",
   "packageManager": "pnpm@10.0.0",
   "scripts": {
-    "lint:js": "biome check static/js",
-    "format:js": "biome format --write static/js",
-    "format:js:check": "biome format --check static/js"
+    "build:css": "postcss static/css/src/app.css -o static/css/app.css",
+    "watch:css": "postcss static/css/src/app.css -o static/css/app.css --watch",
+    "lint:js": "biome check static/js static/css/src",
+    "format:js": "biome format --write static/js static/css/src",
+    "format:js:check": "biome format --check static/js static/css/src"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4"
+    "@biomejs/biome": "^1.9.4",
+    "postcss": "^8.5.13",
+    "postcss-cli": "^11.0.1",
+    "postcss-import": "^16.1.1"
   }
 }

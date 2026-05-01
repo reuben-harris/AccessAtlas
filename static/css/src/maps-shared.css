@@ -1,0 +1,47 @@
+/* Shared Leaflet treatment across maps */
+
+[data-bs-theme="dark"] .leaflet-bar,
+[data-bs-theme="dark"] .leaflet-control-attribution {
+  background: var(--tblr-bg-surface);
+  border-color: var(--tblr-border-color);
+}
+
+[data-bs-theme="dark"] .leaflet-bar a,
+[data-bs-theme="dark"] .leaflet-bar a:hover {
+  color: var(--tblr-body-color);
+  background: var(--tblr-bg-surface);
+  border-bottom-color: var(--tblr-border-color);
+}
+
+[data-bs-theme="dark"] .leaflet-bar a:hover {
+  background: var(--tblr-bg-surface-secondary);
+}
+
+[data-bs-theme="dark"] .leaflet-bar a.leaflet-disabled {
+  color: var(--tblr-muted);
+  background: var(--tblr-bg-surface);
+}
+
+[data-bs-theme="dark"] .leaflet-control-attribution,
+[data-bs-theme="dark"] .leaflet-control-attribution a {
+  color: var(--tblr-muted);
+}
+
+[data-bs-theme="dark"] .leaflet-popup-content-wrapper,
+[data-bs-theme="dark"] .leaflet-popup-tip {
+  color: var(--tblr-body-color);
+  background: var(--tblr-bg-surface);
+}
+
+[data-bs-theme="dark"] .leaflet-popup-content a {
+  color: var(--tblr-link-color);
+}
+
+[data-bs-theme="dark"] .leaflet-popup-close-button {
+  color: var(--tblr-muted) !important;
+}
+
+[data-bs-theme="dark"] .leaflet-popup-close-button:hover,
+[data-bs-theme="dark"] .leaflet-popup-close-button:focus {
+  color: var(--tblr-body-color) !important;
+}

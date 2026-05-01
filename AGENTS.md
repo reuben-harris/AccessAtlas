@@ -109,6 +109,7 @@ Do not add direct write-back to the source system unless the user explicitly cha
 - Prefer practical object pages over elaborate planning surfaces unless the user explicitly asks to expand them.
 - Preserve a consistent feel across list, detail, and edit views.
 - Status, history, and planning relationships should be visible without requiring deep navigation.
+- When adding or reorganizing CSS, include concise comments around sections or non-obvious rules so a human can navigate the stylesheet quickly later.
 
 ## Active Constraints
 

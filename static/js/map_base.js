@@ -1,5 +1,6 @@
-(function () {
-  const accessAtlas = (window.AccessAtlas = window.AccessAtlas || {});
+(() => {
+  window.AccessAtlas = window.AccessAtlas || {};
+  const accessAtlas = window.AccessAtlas;
 
   function escapeHtml(value) {
     const span = document.createElement("span");

@@ -50,10 +50,13 @@ jobs:
           version: 10
 
       - name: Install frontend dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Lint frontend JavaScript
         run: pnpm lint:js
+
+      - name: Build bundled CSS
+        run: pnpm build:css
 
   test:
     name: Test

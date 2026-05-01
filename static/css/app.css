@@ -1,3 +1,8 @@
+/* Access Atlas stylesheet entrypoint.
+   Keep the import order stable so layout and component overrides remain predictable. */
+
+/* Shell layout and primary navigation */
+
 .navbar-vertical {
   min-width: 14rem;
 }
@@ -50,14 +55,14 @@
 .nav-create-link:hover,
 .nav-create-link:focus {
   color: var(--tblr-success);
-  background-color: rgba(var(--tblr-success-rgb), .12);
+  background-color: rgba(var(--tblr-success-rgb), 0.12);
   text-decoration: none;
 }
 
 .nav-create-link-import:hover,
 .nav-create-link-import:focus {
   color: var(--tblr-orange);
-  background-color: rgba(var(--tblr-orange-rgb), .12);
+  background-color: rgba(var(--tblr-orange-rgb), 0.12);
 }
 
 .search-icon-addon {
@@ -66,6 +71,8 @@
   justify-content: center;
   font-size: 1.125rem;
 }
+
+/* Brand animation is isolated here so future logo tweaks stay out of page styles. */
 
 .brand-home {
   position: relative;
@@ -105,7 +112,9 @@
 }
 
 @keyframes brand-outline-draw {
-  to { stroke-dashoffset: 0; }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 .brand-mark {
@@ -125,14 +134,40 @@
   padding-bottom: 1rem;
 }
 
+.navbar-nav.flex-row {
+  align-items: center;
+}
+
+.header-square-button {
+  width: 2.25rem;
+  height: 2.25rem;
+  min-width: 2.25rem;
+  padding: 0;
+  border-radius: var(--tblr-border-radius);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-menu-button {
+  border: 0;
+  background: transparent;
+}
+
+.user-menu-button::after {
+  display: none;
+}
+
+/* Form field spacing and object-form validation treatment */
+
 form p {
   margin-bottom: 1rem;
 }
 
 form p label {
   display: block;
-  font-weight: 600;
   margin-bottom: .25rem;
+  font-weight: 600;
 }
 
 form p input,
@@ -141,11 +176,13 @@ form p textarea {
   display: block;
   width: 100%;
   padding: .4375rem .75rem;
-  border: var(--tblr-border-width) solid var(--tblr-border-color);
-  border-radius: var(--tblr-border-radius);
   color: var(--tblr-body-color);
   background-color: var(--tblr-bg-forms);
+  border: var(--tblr-border-width) solid var(--tblr-border-color);
+  border-radius: var(--tblr-border-radius);
 }
+
+/* Django error rendering and browser invalid affordances need custom spacing tweaks. */
 
 .form-control.is-invalid,
 input[type="date"].form-control.is-invalid,
@@ -171,6 +208,72 @@ input[type="time"].form-control.is-invalid {
   margin-bottom: .5rem;
 }
 
+/* Login experience */
+
+.login-page {
+  min-height: 100vh;
+  overflow: hidden;
+  background: radial-gradient(
+      circle at 58% 32%,
+      rgba(var(--tblr-success-rgb), 0.12),
+      transparent 22rem
+    ),
+    radial-gradient(
+      circle at 82% 58%,
+      rgba(var(--tblr-orange-rgb), 0.14),
+      transparent 24rem
+    ), var(--tblr-body-bg);
+}
+
+.login-globe {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  opacity: 0.42;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.login-globe canvas {
+  display: block;
+}
+
+.login-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.login-panel {
+  width: min(26rem, 100%);
+}
+
+.login-card {
+  background: color-mix(in srgb, var(--tblr-bg-surface) 88%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.16);
+}
+
+/* Shared object-page components and utility-level UI polish */
+
+.site-warning-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #fff;
+  background-color: var(--tblr-warning);
+  border-radius: .25rem;
+  font-size: .95rem;
+}
+
 .user-avatar {
   display: inline-flex;
   align-items: center;
@@ -185,203 +288,6 @@ input[type="time"].form-control.is-invalid {
   font-weight: 700;
   line-height: 1;
   transition: box-shadow .28s ease;
-}
-
-.navbar-nav.flex-row {
-  align-items: center;
-}
-
-.header-square-button {
-  width: 2.25rem;
-  height: 2.25rem;
-  min-width: 2.25rem;
-  padding: 0;
-  border-radius: var(--tblr-border-radius);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.login-page {
-  min-height: 100vh;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 58% 32%, rgba(var(--tblr-success-rgb), .12), transparent 22rem),
-    radial-gradient(circle at 82% 58%, rgba(var(--tblr-orange-rgb), .14), transparent 24rem),
-    var(--tblr-body-bg);
-}
-
-.login-globe {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  opacity: .42;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.login-globe canvas {
-  display: block;
-}
-
-.login-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  width: 100%;
-  padding: 1rem;
-  position: relative;
-  z-index: 10;
-}
-
-.login-panel {
-  width: min(26rem, 100%);
-}
-
-.login-card {
-  background: color-mix(in srgb, var(--tblr-bg-surface) 88%, transparent);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 1rem 3rem rgba(0, 0, 0, .16);
-}
-
-.user-menu-button {
-  border: 0;
-  background: transparent;
-}
-
-.user-menu-button::after {
-  display: none;
-}
-
-.site-warning-indicator {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: .25rem;
-  color: #fff;
-  background-color: var(--tblr-warning);
-  font-size: .95rem;
-}
-
-.site-access-map-card {
-  height: 26rem;
-}
-
-.site-access-map {
-  width: 100%;
-  height: 100%;
-  min-height: 100%;
-  border-radius: var(--tblr-card-border-radius);
-}
-
-.site-access-map-marker {
-  background: transparent;
-  border: 0;
-}
-
-.site-access-map-marker-pin {
-  --site-access-map-marker-color: var(--tblr-primary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  background: var(--site-access-map-marker-color);
-  border: 2px solid #fff;
-  border-radius: 50%;
-  box-shadow: 0 .2rem .5rem rgba(0, 0, 0, .35);
-}
-
-.site-access-map-marker-pin .ti {
-  font-size: .85rem;
-  line-height: 1;
-  color: #fff;
-}
-
-.site-access-map-popup-title {
-  margin-bottom: .375rem;
-  font-weight: 600;
-}
-
-.site-access-map-popup-details {
-  max-width: 18rem;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-.site-map-animation-control button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: .45rem;
-  min-height: 30px;
-  padding: .25rem .6rem;
-  color: #3b4754;
-  background: #fff;
-  border: 1px solid rgba(102, 115, 130, .35);
-  border-radius: .375rem;
-  cursor: pointer;
-  font-size: .75rem;
-  font-weight: 600;
-  line-height: 1;
-}
-
-.site-map-animation-control button:hover,
-.site-map-animation-control button:focus-visible {
-  background: #f4f4f4;
-}
-
-.site-map-animation-control .form-check-input {
-  cursor: pointer;
-  margin: 0;
-  pointer-events: none;
-}
-
-.site-map-animation-control .form-switch {
-  padding-left: 0;
-}
-
-.site-map-animation-control .form-switch .form-check-input {
-  margin-left: 0;
-}
-
-.site-map-animation-label {
-  white-space: nowrap;
-}
-
-.site-map-animation-control button.is-off {
-  color: #667382;
-}
-
-.site-map-animation-control button.is-on {
-  color: #1a5fb4;
-  border-color: rgba(26, 95, 180, .45);
-  background: rgba(26, 95, 180, .12);
-}
-
-[data-bs-theme="dark"] .site-map-animation-control button {
-  color: var(--tblr-body-color);
-  background: var(--tblr-bg-surface);
-  border-color: var(--tblr-border-color);
-}
-
-[data-bs-theme="dark"] .site-map-animation-control button:hover,
-[data-bs-theme="dark"] .site-map-animation-control button:focus-visible {
-  background: var(--tblr-bg-surface-secondary);
-}
-
-[data-bs-theme="dark"] .site-map-animation-control button.is-on {
-  color: #8cb6ff;
-  border-color: rgba(140, 182, 255, .45);
-  background: rgba(140, 182, 255, .18);
 }
 
 .user-menu-button .user-avatar {
@@ -438,10 +344,7 @@ input[type="time"].form-control.is-invalid {
   font-size: 1.125rem;
 }
 
-.row-actions .row-unassign-button {
-  min-height: 2.25rem;
-}
-
+.row-actions .row-unassign-button,
 .row-actions .row-upload-revision-button {
   min-height: 2.25rem;
 }
@@ -459,9 +362,9 @@ input[type="time"].form-control.is-invalid {
   gap: .25rem;
   margin-bottom: 1rem;
   padding: .25rem;
+  background: var(--tblr-bg-surface);
   border: var(--tblr-border-width) solid var(--tblr-border-color);
   border-radius: var(--tblr-border-radius);
-  background: var(--tblr-bg-surface);
 }
 
 .view-toolbar-item {
@@ -486,8 +389,177 @@ input[type="time"].form-control.is-invalid {
 
 .view-toolbar-item.is-active {
   color: var(--tblr-primary);
-  background: rgba(var(--tblr-primary-rgb), .12);
+  background: rgba(var(--tblr-primary-rgb), 0.12);
 }
+
+/* Shared Leaflet treatment across maps */
+
+[data-bs-theme="dark"] .leaflet-bar,
+[data-bs-theme="dark"] .leaflet-control-attribution {
+  background: var(--tblr-bg-surface);
+  border-color: var(--tblr-border-color);
+}
+
+[data-bs-theme="dark"] .leaflet-bar a,
+[data-bs-theme="dark"] .leaflet-bar a:hover {
+  color: var(--tblr-body-color);
+  background: var(--tblr-bg-surface);
+  border-bottom-color: var(--tblr-border-color);
+}
+
+[data-bs-theme="dark"] .leaflet-bar a:hover {
+  background: var(--tblr-bg-surface-secondary);
+}
+
+[data-bs-theme="dark"] .leaflet-bar a.leaflet-disabled {
+  color: var(--tblr-muted);
+  background: var(--tblr-bg-surface);
+}
+
+[data-bs-theme="dark"] .leaflet-control-attribution,
+[data-bs-theme="dark"] .leaflet-control-attribution a {
+  color: var(--tblr-muted);
+}
+
+[data-bs-theme="dark"] .leaflet-popup-content-wrapper,
+[data-bs-theme="dark"] .leaflet-popup-tip {
+  color: var(--tblr-body-color);
+  background: var(--tblr-bg-surface);
+}
+
+[data-bs-theme="dark"] .leaflet-popup-content a {
+  color: var(--tblr-link-color);
+}
+
+[data-bs-theme="dark"] .leaflet-popup-close-button {
+  color: var(--tblr-muted) !important;
+}
+
+[data-bs-theme="dark"] .leaflet-popup-close-button:hover,
+[data-bs-theme="dark"] .leaflet-popup-close-button:focus {
+  color: var(--tblr-body-color) !important;
+}
+
+/* Site access map */
+
+.site-access-map-card {
+  height: 26rem;
+}
+
+.site-access-map {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  border-radius: var(--tblr-card-border-radius);
+}
+
+.site-access-map-marker {
+  background: transparent;
+  border: 0;
+}
+
+.site-access-map-marker-pin {
+  --site-access-map-marker-color: var(--tblr-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: var(--site-access-map-marker-color);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 .2rem .5rem rgba(0, 0, 0, 0.35);
+}
+
+.site-access-map-marker-pin .ti {
+  color: #fff;
+  font-size: .85rem;
+  line-height: 1;
+}
+
+.site-access-map-popup-title {
+  margin-bottom: .375rem;
+  font-weight: 600;
+}
+
+.site-access-map-popup-details {
+  max-width: 18rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* The animation toggle is a map control, so it must visually read like a control
+   while still matching the Tabler theme used by the rest of the app. */
+
+.site-map-animation-control button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  min-height: 30px;
+  padding: .25rem .6rem;
+  color: #3b4754;
+  background: #fff;
+  border: 1px solid rgba(102, 115, 130, 0.35);
+  border-radius: .375rem;
+  cursor: pointer;
+  font-size: .75rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.site-map-animation-control button:hover,
+.site-map-animation-control button:focus-visible {
+  background: #f4f4f4;
+}
+
+.site-map-animation-control .form-check-input {
+  margin: 0;
+  cursor: pointer;
+  pointer-events: none;
+}
+
+.site-map-animation-control .form-switch {
+  padding-left: 0;
+}
+
+.site-map-animation-control .form-switch .form-check-input {
+  margin-left: 0;
+}
+
+.site-map-animation-label {
+  white-space: nowrap;
+}
+
+.site-map-animation-control button.is-off {
+  color: #667382;
+}
+
+.site-map-animation-control button.is-on {
+  color: #1a5fb4;
+  background: rgba(26, 95, 180, 0.12);
+  border-color: rgba(26, 95, 180, 0.45);
+}
+
+[data-bs-theme="dark"] .site-map-animation-control button {
+  color: var(--tblr-body-color);
+  background: var(--tblr-bg-surface);
+  border-color: var(--tblr-border-color);
+}
+
+[data-bs-theme="dark"] .site-map-animation-control button:hover,
+[data-bs-theme="dark"] .site-map-animation-control button:focus-visible {
+  background: var(--tblr-bg-surface-secondary);
+}
+
+[data-bs-theme="dark"] .site-map-animation-control button.is-on {
+  color: #8cb6ff;
+  background: rgba(140, 182, 255, 0.18);
+  border-color: rgba(140, 182, 255, 0.45);
+}
+
+/* Jobs map */
 
 .job-map-toolbar {
   display: flex;
@@ -538,63 +610,6 @@ input[type="time"].form-control.is-invalid {
   border-radius: var(--tblr-card-border-radius);
 }
 
-[data-bs-theme="dark"] .leaflet-bar,
-[data-bs-theme="dark"] .leaflet-control-attribution {
-  border-color: var(--tblr-border-color);
-  background: var(--tblr-bg-surface);
-}
-
-[data-bs-theme="dark"] .leaflet-bar a,
-[data-bs-theme="dark"] .leaflet-bar a:hover {
-  color: var(--tblr-body-color);
-  background: var(--tblr-bg-surface);
-  border-bottom-color: var(--tblr-border-color);
-}
-
-[data-bs-theme="dark"] .leaflet-bar a:hover {
-  background: var(--tblr-bg-surface-secondary);
-}
-
-[data-bs-theme="dark"] .leaflet-bar a.leaflet-disabled {
-  color: var(--tblr-muted);
-  background: var(--tblr-bg-surface);
-}
-
-[data-bs-theme="dark"] .job-map-home-control button {
-  color: var(--tblr-body-color);
-  background: var(--tblr-bg-surface);
-  border-color: var(--tblr-border-color);
-}
-
-[data-bs-theme="dark"] .job-map-home-control button:hover,
-[data-bs-theme="dark"] .job-map-home-control button:focus {
-  background: var(--tblr-bg-surface-secondary);
-}
-
-[data-bs-theme="dark"] .leaflet-control-attribution,
-[data-bs-theme="dark"] .leaflet-control-attribution a {
-  color: var(--tblr-muted);
-}
-
-[data-bs-theme="dark"] .leaflet-popup-content-wrapper,
-[data-bs-theme="dark"] .leaflet-popup-tip {
-  color: var(--tblr-body-color);
-  background: var(--tblr-bg-surface);
-}
-
-[data-bs-theme="dark"] .leaflet-popup-content a {
-  color: var(--tblr-link-color);
-}
-
-[data-bs-theme="dark"] .leaflet-popup-close-button {
-  color: var(--tblr-muted) !important;
-}
-
-[data-bs-theme="dark"] .leaflet-popup-close-button:hover,
-[data-bs-theme="dark"] .leaflet-popup-close-button:focus {
-  color: var(--tblr-body-color) !important;
-}
-
 .job-map-home-control button {
   display: flex;
   align-items: center;
@@ -613,11 +628,19 @@ input[type="time"].form-control.is-invalid {
   background: #f4f4f4;
 }
 
-@media (max-width: 767.98px) {
-  .job-map-card {
-    height: calc(100dvh - 22rem);
-  }
+[data-bs-theme="dark"] .job-map-home-control button {
+  color: var(--tblr-body-color);
+  background: var(--tblr-bg-surface);
+  border-color: var(--tblr-border-color);
 }
+
+[data-bs-theme="dark"] .job-map-home-control button:hover,
+[data-bs-theme="dark"] .job-map-home-control button:focus {
+  background: var(--tblr-bg-surface-secondary);
+}
+
+/* Marker styling stays local to the jobs map because status color and count
+   are jobs-specific semantics, not generic map semantics. */
 
 .job-map-marker {
   background: transparent;
@@ -635,7 +658,7 @@ input[type="time"].form-control.is-invalid {
   background: var(--job-map-marker-color);
   border: 2px solid #fff;
   border-radius: 50% 50% 50% 0;
-  box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .35);
+  box-shadow: 0 .25rem .75rem rgba(0, 0, 0, 0.35);
   transform: rotate(-45deg);
 }
 
@@ -679,4 +702,10 @@ input[type="time"].form-control.is-invalid {
   font-size: .6875rem;
   font-weight: 600;
   line-height: 1.2;
+}
+
+@media (max-width: 767.98px) {
+  .job-map-card {
+    height: calc(100dvh - 22rem);
+  }
 }

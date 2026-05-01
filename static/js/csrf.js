@@ -1,8 +1,9 @@
-(function () {
+(() => {
   // Shared frontend helper for authenticated JSON POST requests.
   // Centralizing CSRF handling here keeps map/theme scripts consistent
   // and avoids duplicating cookie parsing logic across files.
-  const accessAtlas = (window.AccessAtlas = window.AccessAtlas || {});
+  window.AccessAtlas = window.AccessAtlas || {};
+  const accessAtlas = window.AccessAtlas;
 
   function getCookie(name) {
     const cookie = document.cookie

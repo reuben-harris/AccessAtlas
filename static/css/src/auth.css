@@ -1,0 +1,51 @@
+/* Login experience */
+
+.login-page {
+  min-height: 100vh;
+  overflow: hidden;
+  background: radial-gradient(
+      circle at 58% 32%,
+      rgba(var(--tblr-success-rgb), 0.12),
+      transparent 22rem
+    ),
+    radial-gradient(
+      circle at 82% 58%,
+      rgba(var(--tblr-orange-rgb), 0.14),
+      transparent 24rem
+    ), var(--tblr-body-bg);
+}
+
+.login-globe {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  opacity: 0.42;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.login-globe canvas {
+  display: block;
+}
+
+.login-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.login-panel {
+  width: min(26rem, 100%);
+}
+
+.login-card {
+  background: color-mix(in srgb, var(--tblr-bg-surface) 88%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.16);
+}

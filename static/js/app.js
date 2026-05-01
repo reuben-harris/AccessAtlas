@@ -1,11 +1,11 @@
-(function () {
-  document.querySelectorAll('[data-bs-toggle="popover"]').forEach((element) => {
+(() => {
+  for (const element of document.querySelectorAll('[data-bs-toggle="popover"]')) {
     new bootstrap.Popover(element);
-  });
+  }
 
-  document.querySelectorAll("select[data-searchable-select]").forEach((select) => {
+  for (const select of document.querySelectorAll("select[data-searchable-select]")) {
     if (select.dataset.searchableSelectEnhanced === "true") {
-      return;
+      continue;
     }
 
     const search = document.createElement("input");
@@ -18,25 +18,25 @@
 
     const options = Array.from(select.options);
     const optionText = new Map(
-      options.map((option) => [option, option.textContent.toLowerCase()])
+      options.map((option) => [option, option.textContent.toLowerCase()]),
     );
 
     search.addEventListener("input", () => {
       const query = search.value.trim().toLowerCase();
       let firstMatch = null;
 
-      options.forEach((option) => {
+      for (const option of options) {
         const isEmptyOption = option.value === "";
         const matches = !query || optionText.get(option).includes(query);
         option.hidden = !isEmptyOption && !matches;
         if (!firstMatch && !isEmptyOption && matches) {
           firstMatch = option;
         }
-      });
+      }
 
       if (firstMatch && select.selectedOptions[0]?.hidden) {
         firstMatch.selected = true;
       }
     });
-  });
+  }
 })();

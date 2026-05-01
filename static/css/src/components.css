@@ -1,0 +1,131 @@
+/* Shared object-page components and utility-level UI polish */
+
+.site-warning-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #fff;
+  background-color: var(--tblr-warning);
+  border-radius: .25rem;
+  font-size: .95rem;
+}
+
+.user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  color: #fff;
+  background-color: var(--user-avatar-color);
+  border-radius: var(--tblr-border-radius);
+  box-shadow: 0 0 .4rem color-mix(in srgb, var(--user-avatar-color) 24%, transparent);
+  font-size: .8125rem;
+  font-weight: 700;
+  line-height: 1;
+  transition: box-shadow .28s ease;
+}
+
+.user-menu-button .user-avatar {
+  width: 100%;
+  height: 100%;
+}
+
+.user-menu-button:hover .user-avatar,
+.user-menu-button:focus .user-avatar,
+.user-menu-button:focus-visible .user-avatar {
+  box-shadow: 0 0 .78rem color-mix(in srgb, var(--user-avatar-color) 50%, transparent);
+}
+
+.row-actions {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.row-actions .row-edit-button {
+  width: 2.25rem;
+  height: 2.25rem;
+  color: #fff;
+  background-color: var(--tblr-warning);
+  border-color: var(--tblr-warning);
+}
+
+.row-actions .row-edit-button:hover,
+.row-actions .row-edit-button:focus {
+  color: #fff;
+  background-color: #d89b00;
+  border-color: var(--tblr-warning);
+}
+
+.row-actions .row-edit-button i {
+  font-size: 1.125rem;
+}
+
+.row-actions .row-delete-button {
+  width: 2.25rem;
+  height: 2.25rem;
+  color: #fff;
+  background-color: var(--tblr-danger);
+  border-color: var(--tblr-danger);
+}
+
+.row-actions .row-delete-button:hover,
+.row-actions .row-delete-button:focus {
+  color: #fff;
+  background-color: #b42626;
+  border-color: var(--tblr-danger);
+}
+
+.row-actions .row-delete-button i {
+  font-size: 1.125rem;
+}
+
+.row-actions .row-unassign-button,
+.row-actions .row-upload-revision-button {
+  min-height: 2.25rem;
+}
+
+.access-record-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  white-space: nowrap;
+}
+
+.view-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  margin-bottom: 1rem;
+  padding: .25rem;
+  background: var(--tblr-bg-surface);
+  border: var(--tblr-border-width) solid var(--tblr-border-color);
+  border-radius: var(--tblr-border-radius);
+}
+
+.view-toolbar-item {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+  min-height: 2rem;
+  padding: .3125rem .75rem;
+  color: var(--tblr-muted);
+  border-radius: calc(var(--tblr-border-radius) - 1px);
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.view-toolbar-item:hover,
+.view-toolbar-item:focus {
+  color: var(--tblr-body-color);
+  background: var(--tblr-bg-surface-secondary);
+  text-decoration: none;
+}
+
+.view-toolbar-item.is-active {
+  color: var(--tblr-primary);
+  background: rgba(var(--tblr-primary-rgb), 0.12);
+}
