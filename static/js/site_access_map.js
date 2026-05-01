@@ -51,8 +51,12 @@
         .map((recordId) => Number(recordId))
         .filter((recordId) => Number.isInteger(recordId))
     : [];
+  const hasSavedVisibilityPreference = Object.prototype.hasOwnProperty.call(
+    savedPreference,
+    "visible_record_ids"
+  );
   const visibleRecordIds = new Set(
-    savedVisibleRecordIds.length > 0 ? savedVisibleRecordIds : allRecordIds
+    hasSavedVisibilityPreference ? savedVisibleRecordIds : allRecordIds
   );
   const hasRecordToggles = toggleButtons.length > 0;
 
