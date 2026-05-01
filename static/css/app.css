@@ -459,6 +459,12 @@ input[type="time"].form-control.is-invalid {
   cursor: pointer;
 }
 
+.access-atlas-map-home-control button i,
+.job-map-home-control button i,
+.site-map-home-control button i {
+  font-size: 1rem;
+}
+
 .leaflet-control-fullscreen a {
   font-size: 1rem;
   line-height: 1;
