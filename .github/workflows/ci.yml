@@ -60,8 +60,8 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint frontend JavaScript
-        run: pnpm lint:js
+      - name: Lint frontend assets
+        run: pnpm lint:frontend
 
       - name: Build bundled CSS
         run: pnpm build:css

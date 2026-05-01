@@ -116,7 +116,7 @@ uv run ruff format --check .
 pnpm install
 pnpm build:css
 pnpm watch:css
-pnpm lint:js
+pnpm lint:frontend
 ```
 
 ## Deployment
