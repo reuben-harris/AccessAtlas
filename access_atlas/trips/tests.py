@@ -237,6 +237,61 @@ def test_trip_list_search_filters_results(client):
 
 
 @pytest.mark.django_db
+def test_trip_gantt_view_separates_scheduled_and_unscheduled_site_visits(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Scheduled Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    unscheduled_site = Site.objects.create(
+        source_name="dummy",
+        external_id="002",
+        code="AA-002",
+        name="Unscheduled Site",
+        latitude=-42.1,
+        longitude=175.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    empty_trip = Trip.objects.create(
+        name="Trip without visits",
+        start_date=date(2026, 4, 23),
+        end_date=date(2026, 4, 24),
+        trip_leader=user,
+    )
+    SiteVisit.objects.create(
+        trip=trip,
+        site=site,
+        planned_start=timezone.make_aware(datetime(2026, 4, 21, 9, 0)),
+        planned_end=timezone.make_aware(datetime(2026, 4, 21, 10, 0)),
+    )
+    SiteVisit.objects.create(trip=trip, site=unscheduled_site)
+    client.force_login(user)
+
+    response = client.get(reverse("trip_gantt"))
+
+    assert response.status_code == 200
+    gantt_rows = response.context["trip_gantt_rows"]
+    unscheduled_visits = response.context["unscheduled_site_visits"]
+    assert len(gantt_rows) == 2
+    assert gantt_rows[0]["tripName"] == "Trip"
+    assert len(gantt_rows[0]["siteVisits"]) == 1
+    assert gantt_rows[0]["siteVisits"][0]["siteCode"] == "AA-001"
+    assert gantt_rows[1]["tripId"] == empty_trip.pk
+    assert gantt_rows[1]["siteVisits"] == []
+    assert len(unscheduled_visits) == 1
+    assert unscheduled_visits[0]["siteCode"] == "AA-002"
+
+
+@pytest.mark.django_db
 def test_simple_trip_edit_records_history_reason(client):
     user = User.objects.create_user(email="user@example.com")
     trip = Trip.objects.create(

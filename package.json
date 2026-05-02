@@ -14,6 +14,7 @@
     "format:frontend:check": "biome format --check static/js static/css/src"
   },
   "dependencies": {
+    "frappe-gantt": "^1.2.2",
     "leaflet": "1.9.4",
     "leaflet-ant-path": "1.3.0",
     "leaflet.fullscreen": "5.3.1"
@@ -23,10 +24,5 @@
     "postcss": "^8.5.13",
     "postcss-cli": "^11.0.1",
     "postcss-import": "^16.1.1"
-  },
-  "dependencies": {
-    "leaflet": "1.9.4",
-    "leaflet-ant-path": "1.3.0",
-    "leaflet.fullscreen": "5.3.1"
   }
 }

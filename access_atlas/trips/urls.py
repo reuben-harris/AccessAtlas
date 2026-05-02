@@ -4,6 +4,7 @@ from . import views
 
 urlpatterns = [
     path("", views.TripListView.as_view(), name="trip_list"),
+    path("gantt/", views.TripGanttView.as_view(), name="trip_gantt"),
     path("new/", views.TripCreateView.as_view(), name="trip_create"),
     path("<int:pk>/history/", views.TripHistoryView.as_view(), name="trip_history"),
     path("<int:pk>/", views.TripDetailView.as_view(), name="trip_detail"),

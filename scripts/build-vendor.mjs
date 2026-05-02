@@ -38,3 +38,14 @@ await copyIntoVendor(path.join(vendorRoot, "leaflet-ant-path"), [
     "leaflet-ant-path.js",
   ],
 ]);
+
+await copyIntoVendor(path.join(vendorRoot, "frappe-gantt"), [
+  [
+    path.join(root, "node_modules", "frappe-gantt", "dist", "frappe-gantt.css"),
+    "frappe-gantt.css",
+  ],
+  [
+    path.join(root, "node_modules", "frappe-gantt", "dist", "frappe-gantt.umd.js"),
+    "frappe-gantt.umd.js",
+  ],
+]);

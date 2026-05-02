@@ -1,0 +1,8 @@
+<nav class="view-toolbar" aria-label="Trip views">
+  {% for view in trip_list_views %}
+    <a class="view-toolbar-item{% if view.is_active %} is-active{% endif %}" href="{{ view.url }}">
+      <i class="ti {{ view.icon }}" aria-hidden="true"></i>
+      <span>{{ view.label }}</span>
+    </a>
+  {% endfor %}
+</nav>

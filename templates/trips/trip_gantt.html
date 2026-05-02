@@ -1,0 +1,64 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}Trip Gantt - Access Atlas{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{% static 'vendor/frappe-gantt/frappe-gantt.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">Trips</h2>
+    </div>
+    <div class="col-auto ms-auto">
+      <a class="btn btn-primary" href="{% url 'trip_create' %}">New trip</a>
+    </div>
+  </div>
+</div>
+
+<div>
+  {% include "trips/_trip_view_toolbar.html" %}
+
+  {% if unscheduled_site_visits %}
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="card-title">Unscheduled Site Visits</h3>
+        <div class="card-actions text-secondary">{{ unscheduled_site_visits|length }} omitted from Gantt</div>
+      </div>
+      <div class="card-body py-2">
+        <div class="trip-gantt-unscheduled-list">
+          {% for visit in unscheduled_site_visits %}
+            <a class="trip-gantt-unscheduled-item" href="{{ visit.url }}">
+              <span class="trip-gantt-unscheduled-code">{{ visit.siteCode }}</span>
+              <span class="trip-gantt-unscheduled-name">{{ visit.siteName }}</span>
+              <span class="trip-gantt-unscheduled-trip">{{ visit.tripName }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="card trip-gantt-card">
+    <div class="card-header">
+      <h3 class="card-title">Timeline</h3>
+      <div class="card-actions">
+        <div class="trip-gantt-view-modes" role="group" aria-label="Gantt timescale">
+          <button class="trip-gantt-view-mode is-active" type="button" data-view-mode="Day">Day</button>
+          <button class="trip-gantt-view-mode" type="button" data-view-mode="Week">Week</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div id="trip-gantt" class="trip-gantt" aria-label="Gantt view of scheduled site visits"></div>
+    </div>
+  </div>
+</div>
+
+{{ trip_gantt_rows|json_script:"trip-gantt-data" }}
+<script src="{% static 'vendor/frappe-gantt/frappe-gantt.umd.js' %}"></script>
+<script src="{% static 'js/trip_gantt.js' %}"></script>
+{% endblock %}
