@@ -1,0 +1,56 @@
+{% load querystring %}
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row g-3 align-items-end">
+      <div class="col-md">
+        <form method="get" class="d-flex gap-2 align-items-end">
+          {% for key, value in search_preserved_query_items %}
+            <input type="hidden" name="{{ key }}" value="{{ value }}">
+          {% endfor %}
+          <div class="flex-fill">
+            <label class="form-label mb-1" for="list-search-input">Search</label>
+            <input
+              id="list-search-input"
+              class="form-control"
+              type="search"
+              name="{{ search_param }}"
+              value="{{ search_query }}"
+              placeholder="{{ search_placeholder }}"
+            >
+          </div>
+          {% if search_query %}
+            <a
+              class="btn btn-icon btn-outline-secondary"
+              href="{% query_update q='' page='' %}"
+              aria-label="Clear search"
+              title="Clear search"
+            >
+              <i class="ti ti-x" aria-hidden="true"></i>
+            </a>
+          {% endif %}
+          <button class="btn btn-primary" type="submit">Search</button>
+        </form>
+      </div>
+      <div class="col-md-auto">
+        <form method="get" class="d-flex gap-2 align-items-end">
+          {% for key, value in per_page_preserved_query_items %}
+            <input type="hidden" name="{{ key }}" value="{{ value }}">
+          {% endfor %}
+          <div>
+            <label class="form-label mb-1" for="list-per-page-select">Per page</label>
+            <select
+              id="list-per-page-select"
+              class="form-select"
+              name="{{ page_size_param }}"
+            >
+              {% for option in page_size_options %}
+                <option value="{{ option }}"{% if option == per_page %} selected{% endif %}>{{ option }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button class="btn btn-outline-primary" type="submit">Apply</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

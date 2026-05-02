@@ -86,6 +86,31 @@ def test_global_history_renders_changes(logged_in_client, site):
 
 
 @pytest.mark.django_db
+def test_global_history_supports_search_and_pagination(logged_in_client):
+    for index in range(30):
+        Site.objects.create(
+            source_name="dummy",
+            external_id=f"{index:03d}",
+            code=f"AA-{index:03d}",
+            name=f"History Site {index}",
+            latitude=-41.1,
+            longitude=174.1,
+        )
+
+    response = logged_in_client.get(reverse("global_history"), {"q": "AA-00"})
+
+    assert response.status_code == 200
+    assert response.context["per_page"] == 25
+    assert response.context["paginator"].count == 10
+
+    response = logged_in_client.get(reverse("global_history"), {"per_page": 10})
+
+    assert response.status_code == 200
+    assert len(response.context["entries"]) == 10
+    assert response.context["paginator"].num_pages >= 3
+
+
+@pytest.mark.django_db
 def test_history_records_get_default_reason(site):
     assert site.history.first().history_change_reason == "Created site"
 

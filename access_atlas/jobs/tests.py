@@ -143,6 +143,36 @@ def test_job_list_links_to_map_view(client):
 
 
 @pytest.mark.django_db
+def test_job_list_accepts_manual_per_page_value(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    for index in range(30):
+        Job.objects.create(site=site, title=f"Job {index}")
+
+    response = client.get(reverse("job_list"), {"per_page": "1000000"})
+
+    assert response.status_code == 200
+    assert len(response.context["object_list"]) == 30
+    assert response.context["per_page"] == 1000000
+
+
+@pytest.mark.django_db
+def test_job_template_list_search_filters_results(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    JobTemplate.objects.create(title="Inspect repeater", description="Hilltop")
+    JobTemplate.objects.create(title="Replace battery", description="Cabinet")
+
+    response = client.get(reverse("job_template_list"), {"q": "repeat"})
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert len(object_list) == 1
+    assert object_list[0].title == "Inspect repeater"
+
+
+@pytest.mark.django_db
 def test_job_detail_links_to_assigned_site_visit(client):
     user = User.objects.create_user(email="user@example.com")
     site = create_site()

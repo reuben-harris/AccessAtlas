@@ -264,6 +264,78 @@ def test_site_list_shows_warning_indicator_for_sites_with_access_warnings(client
 
 
 @pytest.mark.django_db
+def test_site_list_defaults_to_25_per_page(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    for index in range(30):
+        Site.objects.create(
+            source_name="dummy",
+            external_id=f"{index:03d}",
+            code=f"AA-{index:03d}",
+            name=f"Site {index}",
+            latitude=-41.1,
+            longitude=174.1,
+        )
+
+    response = client.get(reverse("site_list"))
+
+    assert response.status_code == 200
+    assert len(response.context["object_list"]) == 25
+    assert response.context["paginator"].num_pages == 2
+    assert response.context["per_page"] == 25
+
+
+@pytest.mark.django_db
+def test_site_list_invalid_per_page_falls_back_to_25(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    for index in range(30):
+        Site.objects.create(
+            source_name="dummy",
+            external_id=f"{index:03d}",
+            code=f"AA-{index:03d}",
+            name=f"Site {index}",
+            latitude=-41.1,
+            longitude=174.1,
+        )
+
+    response = client.get(reverse("site_list"), {"per_page": "banana"})
+
+    assert response.status_code == 200
+    assert len(response.context["object_list"]) == 25
+    assert response.context["per_page"] == 25
+
+
+@pytest.mark.django_db
+def test_site_list_search_filters_results(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="North Ridge",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    Site.objects.create(
+        source_name="dummy",
+        external_id="002",
+        code="AA-002",
+        name="South Valley",
+        latitude=-42.1,
+        longitude=175.1,
+    )
+
+    response = client.get(reverse("site_list"), {"q": "ridge"})
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert len(object_list) == 1
+    assert object_list[0].name == "North Ridge"
+
+
+@pytest.mark.django_db
 def test_site_detail_renders_site_google_maps_button(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)

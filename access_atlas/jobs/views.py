@@ -17,7 +17,7 @@ from access_atlas.accounts.preferences import (
     get_user_preference,
 )
 from access_atlas.core.history import HistoryReasonMixin
-from access_atlas.core.mixins import ObjectFormMixin
+from access_atlas.core.mixins import ObjectFormMixin, SearchablePaginatedListMixin
 from access_atlas.sites.models import Site
 
 from .forms import (
@@ -41,9 +41,14 @@ from .models import Job, JobStatus, JobTemplate, Requirement, TemplateRequiremen
 from .services import create_job_from_template
 
 
-class JobTemplateListView(LoginRequiredMixin, ListView):
+class JobTemplateListView(SearchablePaginatedListMixin, LoginRequiredMixin, ListView):
     model = JobTemplate
     template_name = "jobs/job_template_list.html"
+    search_fields = ("title", "description", "notes")
+    search_placeholder = "Search job templates"
+
+    def get_queryset(self):
+        return self.apply_search(super().get_queryset())
 
 
 def _job_template_detail_sections(
@@ -196,10 +201,11 @@ class TemplateRequirementDeleteView(LoginRequiredMixin, DeleteView):
         return self.object.job_template.get_absolute_url()
 
 
-class JobListView(LoginRequiredMixin, ListView):
+class JobListView(SearchablePaginatedListMixin, LoginRequiredMixin, ListView):
     model = Job
-    paginate_by = 50
     template_name = "jobs/job_list.html"
+    search_fields = ("title", "description", "notes", "site__code", "site__name")
+    search_placeholder = "Search jobs"
 
     def get_queryset(self):
         queryset = super().get_queryset().select_related("site", "template")
@@ -209,7 +215,7 @@ class JobListView(LoginRequiredMixin, ListView):
                 status=JobStatus.UNASSIGNED,
                 site_visit_assignment__isnull=True,
             )
-        return queryset
+        return self.apply_search(queryset)
 
 
 class JobMapView(LoginRequiredMixin, ListView):

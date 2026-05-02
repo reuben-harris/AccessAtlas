@@ -211,6 +211,31 @@ def test_assigning_job_records_history_reason(client):
 
 
 @pytest.mark.django_db
+def test_trip_list_search_filters_results(client):
+    user = User.objects.create_user(email="user@example.com", display_name="Alex")
+    Trip.objects.create(
+        name="North Island Sweep",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    Trip.objects.create(
+        name="South Island Sweep",
+        start_date=date(2026, 4, 23),
+        end_date=date(2026, 4, 24),
+        trip_leader=user,
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("trip_list"), {"q": "north"})
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert len(object_list) == 1
+    assert object_list[0].name == "North Island Sweep"
+
+
+@pytest.mark.django_db
 def test_simple_trip_edit_records_history_reason(client):
     user = User.objects.create_user(email="user@example.com")
     trip = Trip.objects.create(

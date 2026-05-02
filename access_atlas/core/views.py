@@ -2,10 +2,12 @@ from dataclasses import dataclass
 from itertools import chain
 
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import render
 
 from access_atlas.core.history import history_reason
+from access_atlas.core.mixins import SearchablePaginatedListMixin
 from access_atlas.jobs.models import (
     Job,
     JobStatus,
@@ -101,12 +103,62 @@ def search(request):
 @login_required
 def global_history(request):
     records = chain.from_iterable(
-        model.history.select_related("history_user").all()[:25]
-        for model in HISTORY_MODELS
+        model.history.select_related("history_user").all() for model in HISTORY_MODELS
     )
     entries = sorted(
         (build_history_entry(record) for record in records),
         key=lambda entry: entry.date,
         reverse=True,
-    )[:100]
-    return render(request, "core/history.html", {"entries": entries})
+    )
+    search_query = request.GET.get("q", "").strip()
+    if search_query:
+        search_value = search_query.casefold()
+        entries = [
+            entry
+            for entry in entries
+            if search_value in entry.object_display.casefold()
+            or search_value in entry.object_type.casefold()
+            or search_value in entry.action.casefold()
+            or search_value in (entry.reason or "").casefold()
+            or search_value in str(entry.user or "System").casefold()
+        ]
+
+    try:
+        per_page = int(request.GET.get("per_page", ""))
+    except TypeError, ValueError:
+        per_page = SearchablePaginatedListMixin.default_paginate_by
+    if per_page <= 0:
+        per_page = SearchablePaginatedListMixin.default_paginate_by
+    page_size_options = list(SearchablePaginatedListMixin.page_size_options)
+    if per_page not in page_size_options:
+        page_size_options.append(per_page)
+        page_size_options.sort()
+
+    paginator = Paginator(entries, per_page)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    context = {
+        "entries": page_obj.object_list,
+        "is_paginated": page_obj.has_other_pages(),
+        "page_obj": page_obj,
+        "paginator": paginator,
+        "page_range": paginator.get_elided_page_range(number=page_obj.number),
+        "search_query": search_query,
+        "search_param": "q",
+        "search_placeholder": "Search history",
+        "per_page": per_page,
+        "page_size_param": "per_page",
+        "page_size_options": page_size_options,
+        "search_preserved_query_items": [
+            (key, value)
+            for key in request.GET
+            if key not in {"q", "page"}
+            for value in request.GET.getlist(key)
+        ],
+        "per_page_preserved_query_items": [
+            (key, value)
+            for key in request.GET
+            if key not in {"per_page", "page"}
+            for value in request.GET.getlist(key)
+        ],
+    }
+    return render(request, "core/history.html", context)

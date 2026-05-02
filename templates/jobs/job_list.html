@@ -20,6 +20,7 @@
 </div>
 
 {% include "jobs/_job_view_toolbar.html" with active_job_view="table" %}
+{% include "includes/list_controls.html" %}
 
 <div class="card">
   <div class="table-responsive">
@@ -43,4 +44,5 @@
     </table>
   </div>
 </div>
+{% include "includes/pagination_footer.html" %}
 {% endblock %}
