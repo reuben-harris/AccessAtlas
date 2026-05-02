@@ -86,6 +86,7 @@ class TripGanttView(LoginRequiredMixin, ListView):
         for trip in context["object_list"]:
             scheduled_visits = []
             for site_visit in trip.site_visits.select_related("site").order_by(
+                F("planned_day").asc(nulls_last=True),
                 F("planned_start").asc(nulls_last=True),
                 "site__code",
                 "id",
@@ -269,6 +270,7 @@ class TripDetailView(LoginRequiredMixin, DetailView):
         context["site_visits"] = self.object.site_visits.select_related(
             "site"
         ).order_by(
+            F("planned_day").asc(nulls_last=True),
             F("planned_start").asc(nulls_last=True),
             "site__code",
             "id",
@@ -277,6 +279,7 @@ class TripDetailView(LoginRequiredMixin, DetailView):
             SiteVisitJob.objects.filter(site_visit__trip=self.object)
             .select_related("site_visit__site", "job")
             .order_by(
+                F("site_visit__planned_day").asc(nulls_last=True),
                 F("site_visit__planned_start").asc(nulls_last=True),
                 "site_visit__site__code",
                 "site_visit_id",
@@ -373,7 +376,7 @@ class SiteVisitCreateView(
     history_action = "Created"
     model = SiteVisit
     form_class = SiteVisitForm
-    template_name = "object_form.html"
+    template_name = "trips/site_visit_form.html"
     approval_reset_reason = "Returned to submitted after site visit creation"
 
     def get_trip(self):
@@ -419,7 +422,7 @@ class SiteVisitUpdateView(
 ):
     model = SiteVisit
     form_class = SiteVisitForm
-    template_name = "object_form.html"
+    template_name = "trips/site_visit_form.html"
     approval_reset_reason = "Returned to submitted after site visit update"
 
     def get_approval_trip(self):

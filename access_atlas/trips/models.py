@@ -100,6 +100,7 @@ class SiteVisit(models.Model):
         related_name="site_visits",
         on_delete=models.PROTECT,
     )
+    planned_day = models.DateField(blank=True, null=True)
     planned_start = models.DateTimeField(blank=True, null=True)
     planned_end = models.DateTimeField(blank=True, null=True)
     status = models.CharField(
@@ -119,7 +120,7 @@ class SiteVisit(models.Model):
     history = HistoricalRecords()
 
     class Meta:
-        ordering = ["trip", "planned_start", "site__code", "id"]
+        ordering = ["trip", "planned_day", "planned_start", "site__code", "id"]
 
     def __str__(self) -> str:
         return f"{self.trip} - {self.site}"
@@ -138,6 +139,8 @@ class SiteVisit(models.Model):
 
     def clean(self) -> None:
         errors = {}
+        if not self.planned_day:
+            errors["planned_day"] = "Choose a trip day."
         if self.planned_end and not self.planned_start:
             errors["planned_start"] = "A planned end requires a planned start."
         if (
@@ -154,13 +157,20 @@ class SiteVisit(models.Model):
         trip_start = self.trip.start_date
         trip_end = self.trip.end_date
         trip_date_message = f"Must be between {trip_start} and {trip_end}."
+        if self.planned_day:
+            if self.planned_day < trip_start or self.planned_day > trip_end:
+                errors["planned_day"] = trip_date_message
         if self.planned_start:
             planned_start_date = self.planned_date(self.planned_start)
-            if planned_start_date < trip_start or planned_start_date > trip_end:
+            if self.planned_day and planned_start_date != self.planned_day:
+                errors["planned_start"] = "Start time must be on the selected trip day."
+            elif planned_start_date < trip_start or planned_start_date > trip_end:
                 errors["planned_start"] = trip_date_message
         if self.planned_end:
             planned_end_date = self.planned_date(self.planned_end)
-            if planned_end_date < trip_start or planned_end_date > trip_end:
+            if self.planned_day and planned_end_date != self.planned_day:
+                errors["planned_end"] = "End time must be on the selected trip day."
+            elif planned_end_date < trip_start or planned_end_date > trip_end:
                 errors["planned_end"] = trip_date_message
         if errors:
             raise ValidationError(errors)

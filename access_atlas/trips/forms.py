@@ -1,4 +1,7 @@
+from datetime import datetime, timedelta
+
 from django import forms
+from django.utils import timezone
 
 from access_atlas.jobs.models import Job, JobStatus
 
@@ -44,29 +47,21 @@ class TripForm(forms.ModelForm):
 
 
 class SiteVisitForm(forms.ModelForm):
-    planned_start = forms.SplitDateTimeField(
-        required=False,
-        label="Planned start",
-        input_date_formats=["%Y-%m-%d"],
-        input_time_formats=["%H:%M"],
-        widget=forms.SplitDateTimeWidget(
-            date_attrs={"type": "date"},
-            time_attrs={"type": "time"},
-            date_format="%Y-%m-%d",
-            time_format="%H:%M",
-        ),
+    planned_day = forms.ChoiceField(
+        label="Visit day",
+        widget=forms.RadioSelect,
     )
-    planned_end = forms.SplitDateTimeField(
+    planned_start_time = forms.TimeField(
         required=False,
-        label="Planned end",
-        input_date_formats=["%Y-%m-%d"],
-        input_time_formats=["%H:%M"],
-        widget=forms.SplitDateTimeWidget(
-            date_attrs={"type": "date"},
-            time_attrs={"type": "time"},
-            date_format="%Y-%m-%d",
-            time_format="%H:%M",
-        ),
+        label="Start time",
+        input_formats=["%H:%M"],
+        widget=forms.TimeInput(attrs={"type": "time"}),
+    )
+    planned_end_time = forms.TimeField(
+        required=False,
+        label="End time",
+        input_formats=["%H:%M"],
+        widget=forms.TimeInput(attrs={"type": "time"}),
     )
 
     def __init__(self, *args, **kwargs):
@@ -80,40 +75,125 @@ class SiteVisitForm(forms.ModelForm):
         )
         if trip is not None:
             self.instance.trip = trip
+        trip = self.instance.trip
+        if trip and trip.start_date and trip.end_date:
+            self.fields["planned_day"].choices = list(self.trip_day_choices(trip))
+        else:
+            self.fields["planned_day"].choices = []
+        self.order_fields(
+            [
+                "site",
+                "planned_day",
+                "planned_start_time",
+                "planned_end_time",
+                "status",
+                "notes",
+            ]
+        )
+
+        initial_day = self.instance.planned_day
+        if initial_day is None and self.instance.planned_start:
+            initial_day = SiteVisit.planned_date(self.instance.planned_start)
+        if initial_day is not None:
+            self.initial["planned_day"] = initial_day.isoformat()
+        if self.instance.planned_start:
+            self.initial["planned_start_time"] = timezone.localtime(
+                self.instance.planned_start
+            ).strftime("%H:%M")
+        if self.instance.planned_end:
+            self.initial["planned_end_time"] = timezone.localtime(
+                self.instance.planned_end
+            ).strftime("%H:%M")
+
+    @staticmethod
+    def trip_day_choices(trip: Trip):
+        current_day = trip.start_date
+        while current_day <= trip.end_date:
+            label = current_day.strftime("%a %d %b %Y")
+            yield (current_day.isoformat(), label)
+            current_day += timedelta(days=1)
+
+    @staticmethod
+    def combine_day_and_time(planned_day, planned_time):
+        naive_value = datetime.combine(planned_day, planned_time)
+        return timezone.make_aware(naive_value, timezone.get_current_timezone())
 
     def clean(self):
         cleaned_data = super().clean()
-        planned_start = cleaned_data.get("planned_start")
-        planned_end = cleaned_data.get("planned_end")
         trip = self.instance.trip
+        planned_day_value = cleaned_data.get("planned_day")
+        planned_start_time = cleaned_data.get("planned_start_time")
+        planned_end_time = cleaned_data.get("planned_end_time")
 
-        if planned_end and not planned_start:
-            self.add_error("planned_start", "A planned end requires a planned start.")
-        if planned_start and planned_end and planned_end <= planned_start:
-            self.add_error("planned_end", "Planned end must be after planned start.")
+        planned_day = None
+        if planned_day_value:
+            try:
+                planned_day = datetime.strptime(planned_day_value, "%Y-%m-%d").date()
+            except ValueError:
+                self.add_error("planned_day", "Choose a valid trip day.")
+        else:
+            self.add_error("planned_day", "Choose a trip day.")
+
         if not trip:
             return cleaned_data
 
         trip_date_message = f"Must be between {trip.start_date} and {trip.end_date}."
-        if planned_start:
-            planned_start_date = SiteVisit.planned_date(planned_start)
-            if (
-                planned_start_date < trip.start_date
-                or planned_start_date > trip.end_date
-            ):
-                self.add_error("planned_start", trip_date_message)
-        if planned_end:
-            planned_end_date = SiteVisit.planned_date(planned_end)
-            if planned_end_date < trip.start_date or planned_end_date > trip.end_date:
-                self.add_error("planned_end", trip_date_message)
+        if planned_day and (
+            planned_day < trip.start_date or planned_day > trip.end_date
+        ):
+            self.add_error("planned_day", trip_date_message)
+
+        if planned_end_time and not planned_start_time:
+            self.add_error("planned_start_time", "An end time requires a start time.")
+        if (
+            planned_start_time
+            and planned_end_time
+            and planned_end_time <= planned_start_time
+        ):
+            self.add_error("planned_end_time", "End time must be after start time.")
+
+        planned_start = None
+        planned_end = None
+        if planned_day and planned_start_time:
+            planned_start = self.combine_day_and_time(planned_day, planned_start_time)
+        if planned_day and planned_end_time:
+            planned_end = self.combine_day_and_time(planned_day, planned_end_time)
+
+        cleaned_data["planned_day"] = planned_day
+        cleaned_data["planned_start"] = planned_start
+        cleaned_data["planned_end"] = planned_end
+        self.instance.planned_day = planned_day
+        self.instance.planned_start = planned_start
+        self.instance.planned_end = planned_end
+
+        try:
+            self.instance.clean()
+        except forms.ValidationError as exc:
+            if hasattr(exc, "message_dict"):
+                field_map = {
+                    "planned_start": "planned_start_time",
+                    "planned_end": "planned_end_time",
+                }
+                for field_name, errors in exc.message_dict.items():
+                    target_field = field_map.get(field_name, field_name)
+                    for error in errors:
+                        self.add_error(target_field, error)
+            else:
+                self.add_error(None, exc)
+
         return cleaned_data
+
+    def save(self, commit=True):
+        self.instance.planned_day = self.cleaned_data.get("planned_day")
+        self.instance.planned_start = self.cleaned_data.get("planned_start")
+        self.instance.planned_end = self.cleaned_data.get("planned_end")
+        return super().save(commit=commit)
 
     class Meta:
         model = SiteVisit
         fields = [
             "site",
-            "planned_start",
-            "planned_end",
+            "planned_day",
             "status",
             "notes",
         ]

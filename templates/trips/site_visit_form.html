@@ -1,0 +1,104 @@
+{% extends "base/base.html" %}
+{% load form_extras %}
+
+{% block title %}{{ form_title|default:"Edit" }} - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">{{ form_title|default:"Edit" }}</h2>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    {% if form_notice %}
+      {% include "includes/stacked_alert.html" with alert_title="Approval reset" alert_body=form_notice alert_class="alert-warning" %}
+    {% endif %}
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.site.id_for_label }}">{{ form.site.label }}</label>
+        {{ form.site|render_form_field }}
+        {% if form.site.help_text %}<div class="form-hint">{{ form.site.help_text }}</div>{% endif %}
+        {% for error in form.site.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">{{ form.planned_day.label }}</label>
+        <div class="trip-day-picker" role="radiogroup" aria-label="{{ form.planned_day.label }}">
+          {% for choice in form.planned_day %}
+            <label class="trip-day-picker-item">
+              {{ choice.tag }}
+              <span class="trip-day-picker-label">{{ choice.choice_label }}</span>
+            </label>
+          {% endfor %}
+        </div>
+        {% if form.planned_day.help_text %}<div class="form-hint">{{ form.planned_day.help_text }}</div>{% endif %}
+        {% for error in form.planned_day.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.planned_start_time.id_for_label }}">{{ form.planned_start_time.label }}</label>
+            {{ form.planned_start_time|render_form_field }}
+            {% for error in form.planned_start_time.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.planned_end_time.id_for_label }}">{{ form.planned_end_time.label }}</label>
+            {{ form.planned_end_time|render_form_field }}
+            {% for error in form.planned_end_time.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.status.id_for_label }}">{{ form.status.label }}</label>
+        {{ form.status|render_form_field }}
+        {% for error in form.status.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+        {{ form.notes|render_form_field }}
+        {% for error in form.notes.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+      </div>
+
+      {% if form.confirm_trip_approval_reset %}
+        <div class="form-check mb-3">
+          {{ form.confirm_trip_approval_reset|render_form_field }}
+          <label class="form-check-label" for="{{ form.confirm_trip_approval_reset.id_for_label }}">
+            {{ form.confirm_trip_approval_reset.label }}
+          </label>
+          {% for error in form.confirm_trip_approval_reset.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+      {% endif %}
+
+      {% if form.errors %}
+        <div class="alert alert-danger object-form-errors" role="alert">
+          <h4 class="alert-title">Unable to save changes</h4>
+          <p class="mb-2">Review the highlighted fields and try again.</p>
+          <ul class="mb-0 ps-3">
+            {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+            {% for field in form %}
+              {% for error in field.errors %}<li>{{ field.label }}: {{ error }}</li>{% endfor %}
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <div class="btn-list">
+        <button class="btn btn-primary" type="submit">Save</button>
+        <a class="btn btn-outline-secondary" href="{{ cancel_url|default:'/' }}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

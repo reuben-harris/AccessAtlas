@@ -600,6 +600,25 @@ def test_site_visit_form_marks_site_select_as_searchable():
 
 
 @pytest.mark.django_db
+def test_site_visit_form_uses_trip_day_choices():
+    user = User.objects.create_user(email="user@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 23),
+        trip_leader=user,
+    )
+
+    form = SiteVisitForm(trip=trip)
+
+    assert form.fields["planned_day"].choices == [
+        ("2026-04-21", "Tue 21 Apr 2026"),
+        ("2026-04-22", "Wed 22 Apr 2026"),
+        ("2026-04-23", "Thu 23 Apr 2026"),
+    ]
+
+
+@pytest.mark.django_db
 def test_assign_job_form_marks_job_select_as_searchable():
     site = Site.objects.create(
         source_name="dummy",
@@ -695,7 +714,8 @@ def test_trip_detail_orders_site_visits_by_planned_start(client):
 
     assert response.status_code == 200
     assert content.index("Morning Site") < content.index("Afternoon Site")
-    assert "21 Apr 2026 09:00" in content
+    assert "21 Apr 2026" in content
+    assert "09:00 - 11:00" in content
 
 
 @pytest.mark.django_db
@@ -758,6 +778,31 @@ def test_site_visit_validation_requires_planned_times_within_trip_dates():
 
 
 @pytest.mark.django_db
+def test_site_visit_validation_requires_planned_day():
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    site_visit = SiteVisit(trip=trip, site=site)
+
+    with pytest.raises(ValidationError) as exc:
+        site_visit.full_clean()
+
+    assert "Choose a trip day." in str(exc.value)
+
+
+@pytest.mark.django_db
 def test_invalid_site_visit_date_shows_error_summary_and_keeps_values(client):
     user = User.objects.create_user(email="user@example.com")
     site = Site.objects.create(
@@ -780,10 +825,9 @@ def test_invalid_site_visit_date_shows_error_summary_and_keeps_values(client):
         reverse("site_visit_create", kwargs={"trip_pk": trip.pk}),
         {
             "site": site.pk,
-            "planned_start_0": "2026-04-23",
-            "planned_start_1": "09:00",
-            "planned_end_0": "2026-04-23",
-            "planned_end_1": "10:00",
+            "planned_day": "2026-04-23",
+            "planned_start_time": "09:00",
+            "planned_end_time": "10:00",
             "status": SiteVisitStatus.PLANNED,
             "notes": "",
         },
@@ -792,14 +836,9 @@ def test_invalid_site_visit_date_shows_error_summary_and_keeps_values(client):
     assert response.status_code == 200
     assert b"Unable to save changes" in response.content
     assert b"Review the highlighted fields and try again." in response.content
-    assert (
-        b"Planned start: Must be between 2026-04-21 and 2026-04-22." in response.content
-    )
-    assert (
-        b"Planned end: Must be between 2026-04-21 and 2026-04-22." in response.content
-    )
+    assert b"Visit day: Must be between 2026-04-21 and 2026-04-22." in response.content
     assert b"Must be between 2026-04-21 and 2026-04-22." in response.content
-    assert b'name="planned_start_0"' in response.content
+    assert b'name="planned_day"' in response.content
     assert b'value="2026-04-23"' in response.content
     assert b'value="09:00"' in response.content
     assert b'value="10:00"' in response.content
@@ -830,10 +869,9 @@ def test_invalid_site_visit_time_order_shows_error_summary_and_keeps_values(clie
         reverse("site_visit_create", kwargs={"trip_pk": trip.pk}),
         {
             "site": site.pk,
-            "planned_start_0": "2026-04-22",
-            "planned_start_1": "11:00",
-            "planned_end_0": "2026-04-22",
-            "planned_end_1": "09:00",
+            "planned_day": "2026-04-22",
+            "planned_start_time": "11:00",
+            "planned_end_time": "09:00",
             "status": SiteVisitStatus.PLANNED,
             "notes": "",
         },
@@ -841,7 +879,7 @@ def test_invalid_site_visit_time_order_shows_error_summary_and_keeps_values(clie
 
     assert response.status_code == 200
     assert b"Unable to save changes" in response.content
-    assert b"Planned end: Planned end must be after planned start." in response.content
+    assert b"End time: End time must be after start time." in response.content
     assert b'value="2026-04-22"' in response.content
     assert b'value="11:00"' in response.content
     assert b'value="09:00"' in response.content
@@ -849,7 +887,7 @@ def test_invalid_site_visit_time_order_shows_error_summary_and_keeps_values(clie
 
 
 @pytest.mark.django_db
-def test_site_visit_create_allows_blank_planned_start(client):
+def test_site_visit_create_allows_blank_times(client):
     user = User.objects.create_user(email="user@example.com")
     site = Site.objects.create(
         source_name="dummy",
@@ -871,10 +909,9 @@ def test_site_visit_create_allows_blank_planned_start(client):
         reverse("site_visit_create", kwargs={"trip_pk": trip.pk}),
         {
             "site": site.pk,
-            "planned_start_0": "",
-            "planned_start_1": "",
-            "planned_end_0": "",
-            "planned_end_1": "",
+            "planned_day": "2026-04-21",
+            "planned_start_time": "",
+            "planned_end_time": "",
             "status": SiteVisitStatus.PLANNED,
             "notes": "",
         },
@@ -882,6 +919,7 @@ def test_site_visit_create_allows_blank_planned_start(client):
 
     assert response.status_code == 302
     site_visit = SiteVisit.objects.get(trip=trip)
+    assert site_visit.planned_day == date(2026, 4, 21)
     assert site_visit.planned_start is None
     assert site_visit.planned_end is None
 
@@ -909,10 +947,9 @@ def test_site_visit_create_saves_planned_times(client):
         reverse("site_visit_create", kwargs={"trip_pk": trip.pk}),
         {
             "site": site.pk,
-            "planned_start_0": "2026-04-21",
-            "planned_start_1": "09:00",
-            "planned_end_0": "2026-04-21",
-            "planned_end_1": "10:30",
+            "planned_day": "2026-04-21",
+            "planned_start_time": "09:00",
+            "planned_end_time": "10:30",
             "status": SiteVisitStatus.PLANNED,
             "notes": "",
         },
@@ -920,8 +957,55 @@ def test_site_visit_create_saves_planned_times(client):
 
     assert response.status_code == 302
     site_visit = SiteVisit.objects.get(trip=trip)
+    assert site_visit.planned_day == date(2026, 4, 21)
     assert site_visit.planned_start is not None
     assert site_visit.planned_end is not None
+
+
+@pytest.mark.django_db
+def test_site_visit_update_moves_visit_day_and_keeps_assignment(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(
+        trip=trip,
+        site=site,
+        planned_day=date(2026, 4, 21),
+        planned_start=timezone.make_aware(datetime(2026, 4, 21, 9, 0)),
+        planned_end=timezone.make_aware(datetime(2026, 4, 21, 10, 0)),
+    )
+    job = Job.objects.create(site=site, title="Assigned job")
+    SiteVisitJob.objects.create(site_visit=site_visit, job=job)
+    client.force_login(user)
+
+    response = client.post(
+        reverse("site_visit_update", kwargs={"pk": site_visit.pk}),
+        {
+            "site": site.pk,
+            "planned_day": "2026-04-22",
+            "planned_start_time": "11:00",
+            "planned_end_time": "12:00",
+            "status": SiteVisitStatus.PLANNED,
+            "notes": "",
+        },
+    )
+
+    assert response.status_code == 302
+    site_visit.refresh_from_db()
+    assert site_visit.planned_day == date(2026, 4, 22)
+    assert SiteVisitJob.objects.filter(site_visit=site_visit, job=job).exists()
 
 
 @pytest.mark.django_db
@@ -982,6 +1066,38 @@ def test_terminal_trip_blocks_site_visit_create(client):
 
     assert response.status_code == 302
     assert response.url == trip.get_absolute_url()
+
+
+@pytest.mark.django_db
+def test_approved_trip_site_visit_form_shows_approval_reset_checkbox(client):
+    user = User.objects.create_user(email="user@example.com")
+    Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+        status=TripStatus.APPROVED,
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("site_visit_create", kwargs={"trip_pk": trip.pk}))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert (
+        "Making changes to this approved trip will send it back to waiting "
+        "for approval." in content
+    )
+    assert 'name="confirm_trip_approval_reset"' in content
+    assert "I understand this change will send the trip back for approval." in content
 
 
 @pytest.mark.django_db

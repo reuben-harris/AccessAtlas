@@ -40,17 +40,20 @@
   </div>
   <div class="table-responsive">
     <table class="table table-vcenter">
-      <thead><tr><th>Site Visits</th><th>Planned Time</th><th>Status</th><th>Jobs</th><th class="text-end">Actions</th></tr></thead>
+      <thead><tr><th>Site Visits</th><th>Day</th><th>Time</th><th>Status</th><th>Jobs</th><th class="text-end">Actions</th></tr></thead>
       <tbody>
         {% for visit in site_visits %}
           <tr>
             <td><a href="{{ visit.get_absolute_url }}">{{ visit.site }}</a></td>
             <td>
+              {{ visit.planned_day|date:"j M Y"|default:"-" }}
+            </td>
+            <td>
               {% if visit.planned_start %}
-                {{ visit.planned_start|date:"j M Y H:i" }}
+                {{ visit.planned_start|date:"H:i" }}
                 {% if visit.planned_end %} - {{ visit.planned_end|date:"H:i" }}{% endif %}
               {% else %}
-                <span class="text-secondary">Unscheduled</span>
+                <span class="text-secondary">Not set</span>
               {% endif %}
             </td>
             <td><span class="badge {{ visit.status|status_badge_class }}">{{ visit.get_status_display }}</span></td>
@@ -59,7 +62,7 @@
             {% include "includes/row_actions.html" with edit_url=edit_url label=visit.site %}
           </tr>
         {% empty %}
-          <tr><td colspan="5" class="text-secondary">No site visits yet.</td></tr>
+          <tr><td colspan="6" class="text-secondary">No site visits yet.</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -69,18 +72,21 @@
   <div class="card-header"><h3 class="card-title">Jobs</h3></div>
   <div class="table-responsive">
     <table class="table table-vcenter">
-      <thead><tr><th>Job</th><th>Site Visit</th><th>Planned Time</th><th>Status</th><th>Priority</th><th>Estimate</th><th class="text-end">Actions</th></tr></thead>
+      <thead><tr><th>Job</th><th>Site Visit</th><th>Visit Day</th><th>Visit Time</th><th>Status</th><th>Priority</th><th>Estimate</th><th class="text-end">Actions</th></tr></thead>
       <tbody>
         {% for assignment in job_assignments %}
           <tr>
             <td><a href="{{ assignment.job.get_absolute_url }}">{{ assignment.job.title }}</a></td>
             <td><a href="{{ assignment.site_visit.get_absolute_url }}">{{ assignment.site_visit.site }}</a></td>
             <td>
+              {{ assignment.site_visit.planned_day|date:"j M Y"|default:"-" }}
+            </td>
+            <td>
               {% if assignment.site_visit.planned_start %}
-                {{ assignment.site_visit.planned_start|date:"j M Y H:i" }}
+                {{ assignment.site_visit.planned_start|date:"H:i" }}
                 {% if assignment.site_visit.planned_end %} - {{ assignment.site_visit.planned_end|date:"H:i" }}{% endif %}
               {% else %}
-                <span class="text-secondary">Unscheduled</span>
+                <span class="text-secondary">Not set</span>
               {% endif %}
             </td>
             <td><span class="badge {{ assignment.job.status|status_badge_class }}">{{ assignment.job.get_status_display }}</span></td>
@@ -90,7 +96,7 @@
             {% include "includes/row_actions.html" with edit_url=edit_url label=assignment.job.title %}
           </tr>
         {% empty %}
-          <tr><td colspan="7" class="text-secondary">No jobs assigned to this trip.</td></tr>
+          <tr><td colspan="8" class="text-secondary">No jobs assigned to this trip.</td></tr>
         {% endfor %}
       </tbody>
     </table>

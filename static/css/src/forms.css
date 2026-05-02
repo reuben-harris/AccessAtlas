@@ -46,3 +46,46 @@ input[type="time"].form-control.is-invalid {
 .searchable-select-input {
   margin-bottom: .5rem;
 }
+
+/* Site-visit day selection is a compact per-trip button group rather than a
+   free-form date field so users choose a valid trip day directly. */
+.trip-day-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+
+.trip-day-picker-item {
+  position: relative;
+  margin: 0;
+}
+
+.trip-day-picker-item input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.trip-day-picker-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: .5rem .875rem;
+  color: var(--tblr-body-color);
+  background: var(--tblr-bg-surface);
+  border: 1px solid var(--tblr-border-color);
+  border-radius: var(--tblr-border-radius);
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.trip-day-picker-item input:focus-visible + .trip-day-picker-label {
+  outline: 2px solid rgba(var(--tblr-primary-rgb), 0.45);
+  outline-offset: 2px;
+}
+
+.trip-day-picker-item input:checked + .trip-day-picker-label {
+  color: var(--tblr-primary);
+  background: rgba(var(--tblr-primary-rgb), 0.12);
+  border-color: rgba(var(--tblr-primary-rgb), 0.38);
+}
