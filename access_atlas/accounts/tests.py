@@ -5,6 +5,7 @@ from django.urls import reverse
 from access_atlas.accounts.models import User, UserPreference
 from access_atlas.accounts.preferences import (
     JOBS_MAP_PREFERENCE_KEY,
+    LIST_SORT_PREFERENCE_KEY_PREFIX,
     SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX,
     UI_THEME_PREFERENCE_KEY,
 )
@@ -229,6 +230,39 @@ def test_preference_view_saves_site_access_map_preference(client):
     assert response.status_code == 200
     preference = UserPreference.objects.get(user=user, key=key)
     assert preference.value == {"visible_record_ids": [3, 9], "animate_tracks": False}
+
+
+@pytest.mark.django_db
+def test_preference_view_saves_list_sort_preference(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    key = f"{LIST_SORT_PREFERENCE_KEY_PREFIX}jobs"
+
+    response = client.post(
+        reverse("account_preference"),
+        {"key": key, "value": {"value": "-status"}},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    preference = UserPreference.objects.get(user=user, key=key)
+    assert preference.value == {"value": "-status"}
+
+
+@pytest.mark.django_db
+def test_preference_view_rejects_invalid_list_sort_preference(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    key = f"{LIST_SORT_PREFERENCE_KEY_PREFIX}jobs"
+
+    response = client.post(
+        reverse("account_preference"),
+        {"key": key, "value": {"value": ""}},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert not UserPreference.objects.filter(user=user, key=key).exists()
 
 
 @pytest.mark.django_db

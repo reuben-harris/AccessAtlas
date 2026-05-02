@@ -18,12 +18,22 @@
 <div class="card">
   <div class="table-responsive">
     <table class="table table-vcenter">
-      <thead><tr><th>Name</th><th>Dates</th><th>Leader</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+      <thead>
+        <tr>
+          {% include "includes/sortable_th.html" with label="Name" sort_key="name" %}
+          {% include "includes/sortable_th.html" with label="Start Date" sort_key="start-date" %}
+          {% include "includes/sortable_th.html" with label="End Date" sort_key="end-date" %}
+          {% include "includes/sortable_th.html" with label="Leader" sort_key="leader" %}
+          {% include "includes/sortable_th.html" with label="Status" sort_key="status" %}
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
       <tbody>
         {% for trip in object_list %}
           <tr>
             <td><a href="{{ trip.get_absolute_url }}">{{ trip.name }}</a></td>
-            <td>{{ trip.start_date }} - {{ trip.end_date }}</td>
+            <td>{{ trip.start_date }}</td>
+            <td>{{ trip.end_date }}</td>
             <td>{{ trip.trip_leader }}</td>
             <td><span class="badge {{ trip.status|status_badge_class }}">{{ trip.get_status_display }}</span></td>
             {% url 'trip_update' trip.pk as edit_url %}

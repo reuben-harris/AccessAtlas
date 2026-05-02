@@ -1,0 +1,16 @@
+{% load querystring %}
+{% if current_sort_field == sort_key and not current_sort_descending %}
+  {% query_update sort='-'|add:sort_key page='' as sort_url %}
+{% else %}
+  {% query_update sort=sort_key page='' as sort_url %}
+{% endif %}
+<th>
+  <a class="table-sort-link{% if current_sort_field == sort_key %} is-active{% endif %}" href="{{ sort_url }}">
+    <span>{{ label }}</span>
+    {% if current_sort_field == sort_key %}
+      <i class="ti {% if current_sort_descending %}ti-chevron-down{% else %}ti-chevron-up{% endif %}" aria-hidden="true"></i>
+    {% else %}
+      <i class="ti ti-selector text-secondary" aria-hidden="true"></i>
+    {% endif %}
+  </a>
+</th>

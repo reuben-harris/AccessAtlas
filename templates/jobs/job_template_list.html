@@ -17,7 +17,15 @@
 <div class="card">
   <div class="table-responsive">
     <table class="table table-vcenter">
-      <thead><tr><th>Title</th><th>Priority</th><th>Estimate</th><th>Active</th><th class="text-end">Actions</th></tr></thead>
+      <thead>
+        <tr>
+          {% include "includes/sortable_th.html" with label="Title" sort_key="title" %}
+          {% include "includes/sortable_th.html" with label="Priority" sort_key="priority" %}
+          {% include "includes/sortable_th.html" with label="Estimate" sort_key="estimate" %}
+          {% include "includes/sortable_th.html" with label="Active" sort_key="active" %}
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
       <tbody>
         {% for template in object_list %}
           <tr>

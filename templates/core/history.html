@@ -17,12 +17,12 @@
     <table class="table table-vcenter">
       <thead>
         <tr>
-          <th>When</th>
-          <th>Object</th>
-          <th>Type</th>
-          <th>Action</th>
+          {% include "includes/sortable_th.html" with label="When" sort_key="date" %}
+          {% include "includes/sortable_th.html" with label="Object" sort_key="object" %}
+          {% include "includes/sortable_th.html" with label="Type" sort_key="type" %}
+          {% include "includes/sortable_th.html" with label="Action" sort_key="action" %}
           <th>Reason</th>
-          <th>User</th>
+          {% include "includes/sortable_th.html" with label="User" sort_key="user" %}
         </tr>
       </thead>
       <tbody>

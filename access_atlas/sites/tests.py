@@ -8,6 +8,7 @@ from django.urls import reverse
 from access_atlas.accounts.models import User
 from access_atlas.accounts.preferences import (
     get_user_preference,
+    list_sort_preference_key,
     set_user_preference,
     site_access_map_preference_key,
 )
@@ -333,6 +334,38 @@ def test_site_list_search_filters_results(client):
     object_list = list(response.context["object_list"])
     assert len(object_list) == 1
     assert object_list[0].name == "North Ridge"
+
+
+@pytest.mark.django_db
+def test_site_list_sorts_by_name_and_saves_preference(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-002",
+        name="Zulu",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    Site.objects.create(
+        source_name="dummy",
+        external_id="002",
+        code="AA-001",
+        name="Alpha",
+        latitude=-42.1,
+        longitude=175.1,
+    )
+
+    response = client.get(reverse("site_list"), {"sort": "name"})
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert [site.name for site in object_list] == ["Alpha", "Zulu"]
+    assert get_user_preference(
+        user,
+        list_sort_preference_key("sites"),
+    ) == {"value": "name"}
 
 
 @pytest.mark.django_db

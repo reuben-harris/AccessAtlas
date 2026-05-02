@@ -1,6 +1,12 @@
 from django.db.models import Q
 from django.urls import reverse
 
+from access_atlas.accounts.preferences import (
+    get_user_preference,
+    list_sort_preference_key,
+    set_user_preference,
+)
+
 
 class ObjectFormMixin:
     def get_cancel_url(self) -> str:
@@ -35,7 +41,7 @@ class SearchablePaginatedListMixin:
     def get_per_page(self) -> int:
         try:
             per_page = int(self.request.GET.get(self.page_size_param, ""))
-        except TypeError, ValueError:
+        except (TypeError, ValueError):
             return self.default_paginate_by
         return per_page if per_page > 0 else self.default_paginate_by
 
@@ -84,4 +90,70 @@ class SearchablePaginatedListMixin:
             context["page_range"] = page_obj.paginator.get_elided_page_range(
                 number=page_obj.number
             )
+        return context
+
+
+class SortableListMixin:
+    sort_param = "sort"
+    default_sort = ""
+    sort_preference_page_key = ""
+    sort_field_map: dict[str, str] = {}
+
+    def normalize_sort_value(self, value: str | None) -> str | None:
+        if not value:
+            return None
+        direction = "-" if value.startswith("-") else ""
+        sort_key = value.removeprefix("-")
+        if sort_key not in self.sort_field_map:
+            return None
+        return f"{direction}{sort_key}"
+
+    def get_sort_preference_key(self) -> str:
+        return list_sort_preference_key(self.sort_preference_page_key)
+
+    def get_saved_sort_value(self) -> str | None:
+        preference = get_user_preference(
+            self.request.user,
+            self.get_sort_preference_key(),
+        )
+        return self.normalize_sort_value(preference.get("value"))
+
+    def get_sort_value(self) -> str:
+        if hasattr(self, "_cached_sort_value"):
+            return self._cached_sort_value
+
+        explicit_sort = self.normalize_sort_value(self.request.GET.get(self.sort_param))
+        if explicit_sort is not None:
+            if self.request.user.is_authenticated:
+                saved_sort = self.get_saved_sort_value()
+                if saved_sort != explicit_sort:
+                    set_user_preference(
+                        self.request.user,
+                        self.get_sort_preference_key(),
+                        {"value": explicit_sort},
+                    )
+            self._cached_sort_value = explicit_sort
+            return explicit_sort
+
+        saved_sort = self.get_saved_sort_value()
+        self._cached_sort_value = saved_sort or self.default_sort
+        return self._cached_sort_value
+
+    def apply_sort(self, queryset):
+        sort_value = self.get_sort_value()
+        descending = sort_value.startswith("-")
+        sort_key = sort_value.removeprefix("-")
+        sort_field = self.sort_field_map.get(sort_key)
+        if not sort_field:
+            return queryset
+        prefix = "-" if descending else ""
+        return queryset.order_by(f"{prefix}{sort_field}")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        sort_value = self.get_sort_value()
+        context["current_sort"] = sort_value
+        context["current_sort_field"] = sort_value.removeprefix("-")
+        context["current_sort_descending"] = sort_value.startswith("-")
+        context["sort_param"] = self.sort_param
         return context

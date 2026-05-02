@@ -11,9 +11,17 @@ from .models import User, UserPreference
 JOBS_MAP_PREFERENCE_KEY = "jobs.map"
 UI_THEME_PREFERENCE_KEY = "ui.theme"
 SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX = "sites.map."
+LIST_SORT_PREFERENCE_KEY_PREFIX = "lists.sort."
 MAX_PREFERENCE_KEY_LENGTH = 120
 
 ALLOWED_PREFERENCE_KEYS = {JOBS_MAP_PREFERENCE_KEY, UI_THEME_PREFERENCE_KEY}
+ALLOWED_LIST_SORT_PREFERENCE_PAGES = {
+    "sites",
+    "trips",
+    "jobs",
+    "job-templates",
+    "history",
+}
 ALLOWED_JOB_STATUSES = set(JobStatus.values)
 ALLOWED_THEME_MODES = {"system", "light", "dark"}
 
@@ -30,9 +38,16 @@ def site_access_map_preference_key(site_id: int) -> str:
     return f"{SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX}{site_id}"
 
 
+def list_sort_preference_key(page_key: str) -> str:
+    return f"{LIST_SORT_PREFERENCE_KEY_PREFIX}{page_key}"
+
+
 def is_allowed_preference_key(key: str) -> bool:
     if key in ALLOWED_PREFERENCE_KEYS:
         return True
+    if key.startswith(LIST_SORT_PREFERENCE_KEY_PREFIX):
+        page_key = key.removeprefix(LIST_SORT_PREFERENCE_KEY_PREFIX)
+        return page_key in ALLOWED_LIST_SORT_PREFERENCE_PAGES
     if not key.startswith(SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX):
         return False
     site_id = key.removeprefix(SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX)
@@ -83,6 +98,12 @@ def validate_preference(key: str, value: object) -> dict[str, Any]:
         if not isinstance(mode, str) or mode not in ALLOWED_THEME_MODES:
             raise ValidationError("mode must be system, light, or dark.")
         return {"mode": mode}
+
+    if key.startswith(LIST_SORT_PREFERENCE_KEY_PREFIX):
+        sort_value = value.get("value")
+        if not isinstance(sort_value, str) or not sort_value.strip():
+            raise ValidationError("value must be a non-empty string.")
+        return {"value": sort_value.strip()}
 
     if key.startswith(SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX):
         visible_record_ids = value.get("visible_record_ids")

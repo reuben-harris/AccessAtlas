@@ -18,9 +18,17 @@
 </div>
 {% include "includes/list_controls.html" %}
 <div class="card">
-  <div class="table-responsive">
+      <div class="table-responsive">
     <table class="table table-vcenter">
-      <thead><tr><th>Code</th><th>Name</th><th>Source</th><th>Coordinates</th><th>Status</th></tr></thead>
+      <thead>
+        <tr>
+          {% include "includes/sortable_th.html" with label="Code" sort_key="code" %}
+          {% include "includes/sortable_th.html" with label="Name" sort_key="name" %}
+          {% include "includes/sortable_th.html" with label="Source" sort_key="source" %}
+          <th>Coordinates</th>
+          {% include "includes/sortable_th.html" with label="Status" sort_key="sync-status" %}
+        </tr>
+      </thead>
       <tbody>
         {% for site in object_list %}
           <tr>

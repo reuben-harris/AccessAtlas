@@ -5,9 +5,10 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import render
+from django.views.generic import TemplateView
 
 from access_atlas.core.history import history_reason
-from access_atlas.core.mixins import SearchablePaginatedListMixin
+from access_atlas.core.mixins import SearchablePaginatedListMixin, SortableListMixin
 from access_atlas.jobs.models import (
     Job,
     JobStatus,
@@ -100,20 +101,36 @@ def search(request):
     return render(request, "core/search.html", {"query": query, "results": results})
 
 
-@login_required
-def global_history(request):
-    records = chain.from_iterable(
-        model.history.select_related("history_user").all() for model in HISTORY_MODELS
-    )
-    entries = sorted(
-        (build_history_entry(record) for record in records),
-        key=lambda entry: entry.date,
-        reverse=True,
-    )
-    search_query = request.GET.get("q", "").strip()
-    if search_query:
+class GlobalHistoryView(
+    SortableListMixin,
+    SearchablePaginatedListMixin,
+    TemplateView,
+):
+    template_name = "core/history.html"
+    search_placeholder = "Search history"
+    sort_preference_page_key = "history"
+    default_sort = "-date"
+    sort_field_map = {
+        "date": "date",
+        "object": "object",
+        "type": "type",
+        "action": "action",
+        "user": "user",
+    }
+
+    def get_entries(self) -> list[HistoryEntry]:
+        records = chain.from_iterable(
+            model.history.select_related("history_user").all()
+            for model in HISTORY_MODELS
+        )
+        return [build_history_entry(record) for record in records]
+
+    def filter_entries(self, entries: list[HistoryEntry]) -> list[HistoryEntry]:
+        search_query = self.get_search_query()
+        if not search_query:
+            return entries
         search_value = search_query.casefold()
-        entries = [
+        return [
             entry
             for entry in entries
             if search_value in entry.object_display.casefold()
@@ -123,42 +140,36 @@ def global_history(request):
             or search_value in str(entry.user or "System").casefold()
         ]
 
-    try:
-        per_page = int(request.GET.get("per_page", ""))
-    except TypeError, ValueError:
-        per_page = SearchablePaginatedListMixin.default_paginate_by
-    if per_page <= 0:
-        per_page = SearchablePaginatedListMixin.default_paginate_by
-    page_size_options = list(SearchablePaginatedListMixin.page_size_options)
-    if per_page not in page_size_options:
-        page_size_options.append(per_page)
-        page_size_options.sort()
+    def sort_entries(self, entries: list[HistoryEntry]) -> list[HistoryEntry]:
+        sort_value = self.get_sort_value()
+        descending = sort_value.startswith("-")
+        sort_key = sort_value.removeprefix("-")
+        sort_functions = {
+            "date": lambda entry: entry.date,
+            "object": lambda entry: entry.object_display.casefold(),
+            "type": lambda entry: entry.object_type.casefold(),
+            "action": lambda entry: entry.action.casefold(),
+            "user": lambda entry: str(entry.user or "System").casefold(),
+        }
+        key_function = sort_functions.get(sort_key, sort_functions["date"])
+        return sorted(entries, key=key_function, reverse=descending)
 
-    paginator = Paginator(entries, per_page)
-    page_obj = paginator.get_page(request.GET.get("page"))
-    context = {
-        "entries": page_obj.object_list,
-        "is_paginated": page_obj.has_other_pages(),
-        "page_obj": page_obj,
-        "paginator": paginator,
-        "page_range": paginator.get_elided_page_range(number=page_obj.number),
-        "search_query": search_query,
-        "search_param": "q",
-        "search_placeholder": "Search history",
-        "per_page": per_page,
-        "page_size_param": "per_page",
-        "page_size_options": page_size_options,
-        "search_preserved_query_items": [
-            (key, value)
-            for key in request.GET
-            if key not in {"q", "page"}
-            for value in request.GET.getlist(key)
-        ],
-        "per_page_preserved_query_items": [
-            (key, value)
-            for key in request.GET
-            if key not in {"per_page", "page"}
-            for value in request.GET.getlist(key)
-        ],
-    }
-    return render(request, "core/history.html", context)
+    def get_context_data(self, **kwargs):
+        entries = self.sort_entries(self.filter_entries(self.get_entries()))
+        paginator = Paginator(entries, self.get_per_page())
+        page_obj = paginator.get_page(self.request.GET.get("page"))
+        context = super().get_context_data(
+            page_obj=page_obj,
+            paginator=paginator,
+            is_paginated=page_obj.has_other_pages(),
+            **kwargs,
+        )
+        context.update(
+            {
+                "entries": page_obj.object_list,
+            }
+        )
+        return context
+
+
+global_history = login_required(GlobalHistoryView.as_view())

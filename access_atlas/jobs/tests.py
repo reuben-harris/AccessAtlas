@@ -6,6 +6,7 @@ from django.urls import reverse
 from access_atlas.accounts.models import User
 from access_atlas.accounts.preferences import (
     JOBS_MAP_PREFERENCE_KEY,
+    list_sort_preference_key,
     set_user_preference,
 )
 from access_atlas.core.test_utils import parse_json_script
@@ -170,6 +171,28 @@ def test_job_template_list_search_filters_results(client):
     object_list = list(response.context["object_list"])
     assert len(object_list) == 1
     assert object_list[0].title == "Inspect repeater"
+
+
+@pytest.mark.django_db
+def test_job_list_uses_saved_sort_preference(client):
+    user = User.objects.create_user(email="user@example.com")
+    site_a = create_site("AA-002")
+    site_b = create_site("AA-001")
+    Job.objects.create(site=site_a, title="Zulu")
+    Job.objects.create(site=site_b, title="Alpha")
+    set_user_preference(
+        user,
+        list_sort_preference_key("jobs"),
+        {"value": "site"},
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("job_list"))
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert [job.site.code for job in object_list] == ["AA-001", "AA-002"]
+    assert response.context["current_sort"] == "site"
 
 
 @pytest.mark.django_db

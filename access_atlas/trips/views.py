@@ -8,7 +8,11 @@ from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from access_atlas.core.history import HistoryReasonMixin
-from access_atlas.core.mixins import ObjectFormMixin, SearchablePaginatedListMixin
+from access_atlas.core.mixins import (
+    ObjectFormMixin,
+    SearchablePaginatedListMixin,
+    SortableListMixin,
+)
 
 from .forms import AssignJobForm, SiteVisitForm, TripCloseoutForm, TripForm
 from .models import SiteVisit, SiteVisitJob, Trip
@@ -21,15 +25,29 @@ from .services import (
 )
 
 
-class TripListView(SearchablePaginatedListMixin, LoginRequiredMixin, ListView):
+class TripListView(
+    SortableListMixin,
+    SearchablePaginatedListMixin,
+    LoginRequiredMixin,
+    ListView,
+):
     model = Trip
     template_name = "trips/trip_list.html"
     search_fields = ("name", "notes", "trip_leader__email", "trip_leader__display_name")
     search_placeholder = "Search trips"
+    sort_preference_page_key = "trips"
+    default_sort = "start-date"
+    sort_field_map = {
+        "name": "name",
+        "start-date": "start_date",
+        "end-date": "end_date",
+        "leader": "trip_leader__email",
+        "status": "status",
+    }
 
     def get_queryset(self):
         queryset = super().get_queryset().select_related("trip_leader")
-        return self.apply_search(queryset)
+        return self.apply_sort(self.apply_search(queryset))
 
 
 def _trip_detail_sections(

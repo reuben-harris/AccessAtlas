@@ -132,3 +132,28 @@
   color: var(--tblr-primary);
   background: rgba(var(--tblr-primary-rgb), 0.12);
 }
+
+/* Sortable table headers keep the list-page controls consistent and compact. */
+
+.table-sort-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.table-sort-link:hover,
+.table-sort-link:focus {
+  color: var(--tblr-primary);
+  text-decoration: none;
+}
+
+.table-sort-link.is-active {
+  color: var(--tblr-primary);
+}
+
+.table-sort-link i {
+  font-size: .95rem;
+}

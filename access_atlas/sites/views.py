@@ -14,7 +14,7 @@ from access_atlas.accounts.preferences import (
     get_user_preference,
     site_access_map_preference_key,
 )
-from access_atlas.core.mixins import SearchablePaginatedListMixin
+from access_atlas.core.mixins import SearchablePaginatedListMixin, SortableListMixin
 
 from .access_record_snapshots import build_access_record_snapshots
 from .access_warnings import build_access_record_warnings, build_site_warnings
@@ -105,15 +105,28 @@ def build_site_access_map_data(
     return {"points": points, "tracks": tracks}
 
 
-class SiteListView(SearchablePaginatedListMixin, LoginRequiredMixin, ListView):
+class SiteListView(
+    SortableListMixin,
+    SearchablePaginatedListMixin,
+    LoginRequiredMixin,
+    ListView,
+):
     model = Site
     template_name = "sites/site_list.html"
     search_fields = ("code", "name", "external_id", "source_name")
     search_placeholder = "Search sites"
+    sort_preference_page_key = "sites"
+    default_sort = "code"
+    sort_field_map = {
+        "code": "code",
+        "name": "name",
+        "source": "source_name",
+        "sync-status": "sync_status",
+    }
 
     def get_queryset(self):
         queryset = Site.objects.prefetch_related("access_records__versions")
-        return self.apply_search(queryset)
+        return self.apply_sort(self.apply_search(queryset))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

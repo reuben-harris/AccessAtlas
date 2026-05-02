@@ -2,6 +2,10 @@ import pytest
 from django.urls import reverse
 
 from access_atlas.accounts.models import User
+from access_atlas.accounts.preferences import (
+    get_user_preference,
+    list_sort_preference_key,
+)
 from access_atlas.jobs.models import Job, JobTemplate
 from access_atlas.sites.models import AccessRecord, Site
 from access_atlas.trips.models import SiteVisit, Trip
@@ -108,6 +112,37 @@ def test_global_history_supports_search_and_pagination(logged_in_client):
     assert response.status_code == 200
     assert len(response.context["entries"]) == 10
     assert response.context["paginator"].num_pages >= 3
+
+
+@pytest.mark.django_db
+def test_global_history_sorts_and_saves_user_preference(client, user):
+    client.force_login(user)
+    Site.objects.create(
+        source_name="dummy",
+        external_id="002",
+        code="AA-002",
+        name="Zulu Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Alpha Site",
+        latitude=-42.1,
+        longitude=175.1,
+    )
+
+    response = client.get(reverse("global_history"), {"sort": "object"})
+
+    assert response.status_code == 200
+    entries = list(response.context["entries"])
+    assert entries[0].object_display == "AA-001 - Alpha Site"
+    assert get_user_preference(
+        user,
+        list_sort_preference_key("history"),
+    ) == {"value": "object"}
 
 
 @pytest.mark.django_db
