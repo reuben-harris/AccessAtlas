@@ -158,6 +158,10 @@ should stand on their own even when they are each small. If reverting one part
 would reasonably be useful without reverting the other, the changes belong in
 separate commits.
 
+After modifying Python files, run the Python lint/check pass before finishing
+the change. At minimum, run `ruff check` against the touched Python scope; run
+broader project checks when the change reaches shared behavior.
+
 ## Planning Workflow
 
 For larger agreed feature sets, keep an active checklist and update it as work
