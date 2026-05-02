@@ -1,0 +1,47 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}Site Map - Access Atlas{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/leaflet.fullscreen/Control.FullScreen.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">Sites</h2>
+    </div>
+    <div class="col-auto ms-auto">
+      <form method="post" action="{% url 'sync_sites' %}">
+        {% csrf_token %}
+        <button class="btn btn-primary" type="submit">Sync sites</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="access-atlas-map-page">
+  {% include "sites/_site_view_toolbar.html" %}
+
+  <div class="card job-map-card access-atlas-map-card--fill">
+    <div class="card-body p-0">
+      <div
+        id="site-list-map"
+        class="site-list-map"
+        data-preference-url="{% url 'account_preference' %}"
+        aria-label="Map of synced sites"
+      ></div>
+    </div>
+  </div>
+</div>
+
+{{ site_map_sites|json_script:"site-list-map-data" }}
+{{ site_map_preference|json_script:"site-list-map-preference" }}
+{{ map_tile_layer|json_script:"site-list-map-tile-layer" }}
+<script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
+<script src="{% static 'vendor/leaflet.fullscreen/Control.FullScreen.umd.js' %}"></script>
+<script src="{% static 'js/site_list_map.js' %}"></script>
+{% endblock %}

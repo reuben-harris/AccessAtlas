@@ -9,12 +9,17 @@ from access_atlas.jobs.models import JobStatus
 from .models import User, UserPreference
 
 JOBS_MAP_PREFERENCE_KEY = "jobs.map"
+SITES_MAP_PREFERENCE_KEY = "sites.map"
 UI_THEME_PREFERENCE_KEY = "ui.theme"
 SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX = "sites.map."
 LIST_SORT_PREFERENCE_KEY_PREFIX = "lists.sort."
 MAX_PREFERENCE_KEY_LENGTH = 120
 
-ALLOWED_PREFERENCE_KEYS = {JOBS_MAP_PREFERENCE_KEY, UI_THEME_PREFERENCE_KEY}
+ALLOWED_PREFERENCE_KEYS = {
+    JOBS_MAP_PREFERENCE_KEY,
+    SITES_MAP_PREFERENCE_KEY,
+    UI_THEME_PREFERENCE_KEY,
+}
 ALLOWED_LIST_SORT_PREFERENCE_PAGES = {
     "sites",
     "trips",
@@ -28,6 +33,10 @@ ALLOWED_THEME_MODES = {"system", "light", "dark"}
 
 def default_jobs_map_preference() -> dict[str, Any]:
     return {"visible_statuses": [JobStatus.UNASSIGNED, JobStatus.PLANNED]}
+
+
+def default_sites_map_preference() -> dict[str, Any]:
+    return {}
 
 
 def default_theme_preference() -> dict[str, Any]:
@@ -91,6 +100,28 @@ def validate_preference(key: str, value: object) -> dict[str, Any]:
                 "zoom": zoom,
             }
 
+        return cleaned_value
+
+    if key == SITES_MAP_PREFERENCE_KEY:
+        viewport = value.get("viewport")
+        cleaned_value: dict[str, Any] = {}
+        if viewport is not None:
+            if not isinstance(viewport, dict):
+                raise ValidationError("viewport must be an object.")
+            latitude = viewport.get("lat")
+            longitude = viewport.get("lng")
+            zoom = viewport.get("zoom")
+            if not isinstance(latitude, int | float) or not -90 <= latitude <= 90:
+                raise ValidationError("viewport lat is invalid.")
+            if not isinstance(longitude, int | float) or not -180 <= longitude <= 180:
+                raise ValidationError("viewport lng is invalid.")
+            if not isinstance(zoom, int) or not 0 <= zoom <= 22:
+                raise ValidationError("viewport zoom is invalid.")
+            cleaned_value["viewport"] = {
+                "lat": latitude,
+                "lng": longitude,
+                "zoom": zoom,
+            }
         return cleaned_value
 
     if key == UI_THEME_PREFERENCE_KEY:

@@ -6,11 +6,14 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import Http404, HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
 from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import DetailView, FormView, ListView, UpdateView
 
 from access_atlas.accounts.preferences import (
+    SITES_MAP_PREFERENCE_KEY,
+    default_sites_map_preference,
     get_user_preference,
     site_access_map_preference_key,
 )
@@ -109,6 +112,43 @@ def build_site_access_map_data(
     return {"points": points, "tracks": tracks}
 
 
+def build_site_list_map_data(
+    sites: list[Site], warning_site_ids: set[int]
+) -> list[dict]:
+    payload: list[dict] = []
+    for site in sites:
+        payload.append(
+            {
+                "code": site.code,
+                "name": site.name,
+                "url": site.get_absolute_url(),
+                "latitude": float(site.latitude),
+                "longitude": float(site.longitude),
+                "syncStatus": site.sync_status,
+                "syncStatusLabel": site.get_sync_status_display(),
+                "hasWarnings": site.pk in warning_site_ids,
+            }
+        )
+    return payload
+
+
+def _site_list_views(active_view: str) -> list[dict[str, str | bool]]:
+    return [
+        {
+            "label": "Table",
+            "icon": "ti-table",
+            "url": reverse("site_list"),
+            "is_active": active_view == "table",
+        },
+        {
+            "label": "Map",
+            "icon": "ti-map",
+            "url": reverse("site_map"),
+            "is_active": active_view == "map",
+        },
+    ]
+
+
 class SiteListView(
     SortableListMixin,
     SearchablePaginatedListMixin,
@@ -141,6 +181,53 @@ class SiteListView(
             if build_site_warnings(site, snapshots_by_record_id=snapshots_by_record_id):
                 warning_site_ids.add(site.pk)
         context["warning_site_ids"] = warning_site_ids
+        context["site_list_views"] = _site_list_views("table")
+        return context
+
+
+class SiteMapView(LoginRequiredMixin, ListView):
+    model = Site
+    template_name = "sites/site_map.html"
+
+    def get_queryset(self):
+        return Site.objects.prefetch_related("access_records__versions").order_by(
+            "code"
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        warning_site_ids = set()
+        for site in context["object_list"]:
+            access_records = list(site.access_records.all())
+            snapshots_by_record_id = build_access_record_snapshots(access_records)
+            if build_site_warnings(site, snapshots_by_record_id=snapshots_by_record_id):
+                warning_site_ids.add(site.pk)
+
+        map_preference = get_user_preference(
+            self.request.user,
+            SITES_MAP_PREFERENCE_KEY,
+            default_sites_map_preference(),
+        )
+        context["site_list_views"] = _site_list_views("map")
+        context["site_map_sites"] = build_site_list_map_data(
+            list(context["object_list"]),
+            warning_site_ids,
+        )
+        context["site_map_preference"] = {
+            "key": SITES_MAP_PREFERENCE_KEY,
+            "value": map_preference,
+        }
+        context["map_tile_layer"] = {
+            "light": {
+                "url": settings.MAP_TILE_URL,
+                "attribution": settings.MAP_TILE_ATTRIBUTION,
+            },
+            "dark": {
+                "url": settings.MAP_TILE_DARK_URL,
+                "attribution": settings.MAP_TILE_DARK_ATTRIBUTION,
+            },
+            "maxZoom": settings.MAP_TILE_MAX_ZOOM,
+        }
         return context
 
 

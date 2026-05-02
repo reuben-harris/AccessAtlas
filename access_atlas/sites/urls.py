@@ -4,6 +4,7 @@ from . import views
 
 urlpatterns = [
     path("", views.SiteListView.as_view(), name="site_list"),
+    path("map/", views.SiteMapView.as_view(), name="site_map"),
     path("sync/", views.sync_sites_view, name="sync_sites"),
     path(
         "<int:pk>/access-records/",

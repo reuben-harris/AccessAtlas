@@ -7,6 +7,7 @@ from access_atlas.accounts.preferences import (
     JOBS_MAP_PREFERENCE_KEY,
     LIST_SORT_PREFERENCE_KEY_PREFIX,
     SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX,
+    SITES_MAP_PREFERENCE_KEY,
     UI_THEME_PREFERENCE_KEY,
 )
 from access_atlas.accounts.templatetags.avatar import avatar_color, avatar_initials
@@ -179,6 +180,45 @@ def test_preference_view_rejects_invalid_map_viewport(client):
 
     assert response.status_code == 400
     assert not UserPreference.objects.exists()
+
+
+@pytest.mark.django_db
+def test_preference_view_saves_sites_map_preference(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.post(
+        reverse("account_preference"),
+        {
+            "key": SITES_MAP_PREFERENCE_KEY,
+            "value": {"viewport": {"lat": -41.2, "lng": 174.7, "zoom": 8}},
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    preference = UserPreference.objects.get(user=user, key=SITES_MAP_PREFERENCE_KEY)
+    assert preference.value == {"viewport": {"lat": -41.2, "lng": 174.7, "zoom": 8}}
+
+
+@pytest.mark.django_db
+def test_preference_view_rejects_invalid_sites_map_viewport(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.post(
+        reverse("account_preference"),
+        {
+            "key": SITES_MAP_PREFERENCE_KEY,
+            "value": {"viewport": {"lat": -91, "lng": 174.7, "zoom": 8}},
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert not UserPreference.objects.filter(
+        user=user, key=SITES_MAP_PREFERENCE_KEY
+    ).exists()
 
 
 @pytest.mark.django_db
