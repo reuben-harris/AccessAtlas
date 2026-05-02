@@ -91,6 +91,13 @@
   stroke: rgba(46, 204, 113, 0.78);
 }
 
+.trip-gantt .trip-gantt-site-visit-row--date-only .bar-progress,
+.trip-gantt .trip-gantt-site-visit-row--date-only .bar {
+  fill: rgba(46, 204, 113, 0.16);
+  stroke: rgba(46, 204, 113, 0.72);
+  stroke-dasharray: 5 3;
+}
+
 .trip-gantt .bar-label {
   fill: var(--tblr-body-color);
   font-weight: 500;
@@ -136,6 +143,12 @@
   font-size: .875rem;
 }
 
+.trip-gantt-popup-time {
+  margin-bottom: .5rem;
+  color: var(--tblr-secondary);
+  font-size: .875rem;
+}
+
 .trip-gantt-popup-meta {
   display: flex;
   flex-wrap: wrap;
@@ -156,6 +169,12 @@
   color: #1f7a43;
   background: rgba(46, 204, 113, 0.16);
   border-color: rgba(46, 204, 113, 0.24);
+}
+
+.trip-gantt-type-badge--date-only {
+  color: #1f7a43;
+  background: rgba(46, 204, 113, 0.08);
+  border-color: rgba(46, 204, 113, 0.16);
 }
 
 .trip-gantt-status-badge {
@@ -208,6 +227,12 @@
   border-color: rgba(139, 228, 170, 0.16);
 }
 
+[data-bs-theme="dark"] .trip-gantt-type-badge--date-only {
+  color: #8be4aa;
+  background: rgba(46, 204, 113, 0.12);
+  border-color: rgba(139, 228, 170, 0.12);
+}
+
 [data-bs-theme="dark"] .trip-gantt-status-badge--draft {
   color: #d5dbe5;
   background: rgba(148, 163, 184, 0.16);
@@ -244,38 +269,4 @@
 
 .trip-gantt .holiday-highlight {
   fill: var(--g-weekend-highlight-color);
-}
-
-.trip-gantt-unscheduled-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .75rem;
-}
-
-.trip-gantt-unscheduled-item {
-  display: inline-flex;
-  align-items: center;
-  gap: .5rem;
-  min-height: 2rem;
-  padding: .35rem .65rem;
-  color: var(--tblr-body-color);
-  background: var(--tblr-bg-surface-secondary);
-  border: 1px solid var(--tblr-border-color);
-  border-radius: var(--tblr-border-radius);
-  text-decoration: none;
-}
-
-.trip-gantt-unscheduled-item:hover,
-.trip-gantt-unscheduled-item:focus {
-  color: var(--tblr-primary);
-  text-decoration: none;
-}
-
-.trip-gantt-unscheduled-code {
-  font-weight: 600;
-}
-
-.trip-gantt-unscheduled-trip {
-  color: var(--tblr-muted);
-  font-size: .875rem;
 }

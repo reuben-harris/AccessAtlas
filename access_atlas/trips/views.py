@@ -1,3 +1,5 @@
+from datetime import datetime, time
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -6,6 +8,7 @@ from django.db import transaction
 from django.db.models import F
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
@@ -81,7 +84,6 @@ class TripGanttView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         trip_rows = []
-        unscheduled_visits = []
 
         for trip in context["object_list"]:
             scheduled_visits = []
@@ -91,31 +93,50 @@ class TripGanttView(LoginRequiredMixin, ListView):
                 "site__code",
                 "id",
             ):
-                if site_visit.planned_start and site_visit.planned_end:
-                    scheduled_visits.append(
-                        {
-                            "id": f"site-visit-{site_visit.pk}",
-                            "tripId": trip.pk,
-                            "tripName": trip.name,
-                            "siteVisitId": site_visit.pk,
-                            "siteCode": site_visit.site.code,
-                            "siteName": site_visit.site.name,
-                            "status": site_visit.status,
-                            "statusLabel": site_visit.get_status_display(),
-                            "start": site_visit.planned_start.isoformat(),
-                            "end": site_visit.planned_end.isoformat(),
-                            "url": site_visit.get_absolute_url(),
-                        }
+                has_explicit_time = bool(
+                    site_visit.planned_start and site_visit.planned_end
+                )
+                if has_explicit_time:
+                    start_value = site_visit.planned_start
+                    end_value = site_visit.planned_end
+                    start_label = timezone.localtime(site_visit.planned_start).strftime(
+                        "%H:%M"
+                    )
+                    end_label = timezone.localtime(site_visit.planned_end).strftime(
+                        "%H:%M"
+                    )
+                    timeLabel = (
+                        f"{start_label} - {end_label}"
                     )
                 else:
-                    unscheduled_visits.append(
-                        {
-                            "tripName": trip.name,
-                            "siteCode": site_visit.site.code,
-                            "siteName": site_visit.site.name,
-                            "url": site_visit.get_absolute_url(),
-                        }
+                    start_value = timezone.make_aware(
+                        datetime.combine(site_visit.planned_day, time.min)
                     )
+                    end_value = timezone.make_aware(
+                        datetime.combine(
+                            site_visit.planned_day,
+                            time.max.replace(microsecond=0),
+                        )
+                    )
+                    timeLabel = "Not set"
+
+                scheduled_visits.append(
+                    {
+                        "id": f"site-visit-{site_visit.pk}",
+                        "tripId": trip.pk,
+                        "tripName": trip.name,
+                        "siteVisitId": site_visit.pk,
+                        "siteCode": site_visit.site.code,
+                        "siteName": site_visit.site.name,
+                        "status": site_visit.status,
+                        "statusLabel": site_visit.get_status_display(),
+                        "start": start_value.isoformat(),
+                        "end": end_value.isoformat(),
+                        "url": site_visit.get_absolute_url(),
+                        "hasExplicitTime": has_explicit_time,
+                        "timeLabel": timeLabel,
+                    }
+                )
 
             trip_rows.append(
                 {
@@ -133,7 +154,6 @@ class TripGanttView(LoginRequiredMixin, ListView):
 
         context["trip_list_views"] = _trip_list_views("gantt")
         context["trip_gantt_rows"] = trip_rows
-        context["unscheduled_site_visits"] = unscheduled_visits
         return context
 
 
