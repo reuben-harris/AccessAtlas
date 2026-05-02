@@ -152,6 +152,12 @@ shared element in its own right, split it into a separate commit. A good rule
 is: keep required feature-completion fixes with the feature, but separate
 standalone shared polish so history stays easier to review and revert.
 
+Do not mix unrelated maintenance changes into a UI or feature fix commit.
+Dependency automation, CI, docs-only updates, and unrelated shell/layout fixes
+should stand on their own even when they are each small. If reverting one part
+would reasonably be useful without reverting the other, the changes belong in
+separate commits.
+
 ## Planning Workflow
 
 For larger agreed feature sets, keep an active checklist and update it as work
