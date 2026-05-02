@@ -42,7 +42,7 @@ class SearchablePaginatedListMixin:
     def get_per_page(self) -> int:
         try:
             per_page = int(self.request.GET.get(self.page_size_param, ""))
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return self.default_paginate_by
         return per_page if per_page > 0 else self.default_paginate_by
 
@@ -168,7 +168,7 @@ class PaginatedObjectHistoryMixin:
     def get_history_per_page(self) -> int:
         try:
             per_page = int(self.request.GET.get(self.page_size_param, ""))
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return self.default_paginate_by
         return per_page if per_page > 0 else self.default_paginate_by
 

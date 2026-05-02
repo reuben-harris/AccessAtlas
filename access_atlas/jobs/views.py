@@ -384,7 +384,10 @@ class JobCreateView(
 
 class JobUpdateView(
     ApprovedTripChangeMixin,
-    HistoryReasonMixin, ObjectFormMixin, LoginRequiredMixin, UpdateView
+    HistoryReasonMixin,
+    ObjectFormMixin,
+    LoginRequiredMixin,
+    UpdateView,
 ):
     model = Job
     form_class = JobForm

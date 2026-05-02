@@ -105,9 +105,7 @@ class TripGanttView(LoginRequiredMixin, ListView):
                     end_label = timezone.localtime(site_visit.planned_end).strftime(
                         "%H:%M"
                     )
-                    timeLabel = (
-                        f"{start_label} - {end_label}"
-                    )
+                    timeLabel = f"{start_label} - {end_label}"
                 else:
                     start_value = timezone.make_aware(
                         datetime.combine(site_visit.planned_day, time.min)
