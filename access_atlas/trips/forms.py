@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 from django import forms
+from django.forms.models import construct_instance
 from django.utils import timezone
 
 from access_atlas.jobs.models import Job, JobStatus
@@ -187,6 +188,17 @@ class SiteVisitForm(forms.ModelForm):
                 self.add_error(None, exc)
 
         return cleaned_data
+
+    def _post_clean(self):
+        opts = self._meta
+        self.instance = construct_instance(
+            self,
+            self.instance,
+            opts.fields,
+            opts.exclude,
+        )
+        if self._validate_unique:
+            self.validate_unique()
 
     def save(self, commit=True):
         self.instance.planned_day = self.cleaned_data.get("planned_day")

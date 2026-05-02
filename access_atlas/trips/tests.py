@@ -809,7 +809,7 @@ def test_site_visit_validation_requires_planned_day():
 
 
 @pytest.mark.django_db
-def test_invalid_site_visit_date_shows_error_summary_and_keeps_values(client):
+def test_invalid_site_visit_date_shows_inline_error_and_keeps_values(client):
     user = User.objects.create_user(email="user@example.com")
     site = Site.objects.create(
         source_name="dummy",
@@ -840,9 +840,6 @@ def test_invalid_site_visit_date_shows_error_summary_and_keeps_values(client):
     )
 
     assert response.status_code == 200
-    assert b"Unable to save changes" in response.content
-    assert b"Review the highlighted fields and try again." in response.content
-    assert b"Visit day: Must be between 2026-04-21 and 2026-04-22." in response.content
     assert b"Must be between 2026-04-21 and 2026-04-22." in response.content
     assert b'name="planned_day"' in response.content
     assert b'value="2026-04-23"' in response.content
@@ -853,7 +850,7 @@ def test_invalid_site_visit_date_shows_error_summary_and_keeps_values(client):
 
 
 @pytest.mark.django_db
-def test_invalid_site_visit_time_order_shows_error_summary_and_keeps_values(client):
+def test_invalid_site_visit_time_order_shows_inline_error_and_keeps_values(client):
     user = User.objects.create_user(email="user@example.com")
     site = Site.objects.create(
         source_name="dummy",
@@ -884,12 +881,49 @@ def test_invalid_site_visit_time_order_shows_error_summary_and_keeps_values(clie
     )
 
     assert response.status_code == 200
-    assert b"Unable to save changes" in response.content
-    assert b"End time: End time must be after start time." in response.content
+    assert b"End time must be after start time." in response.content
     assert b'value="2026-04-22"' in response.content
     assert b'value="11:00"' in response.content
     assert b'value="09:00"' in response.content
     assert not SiteVisit.objects.filter(trip=trip).exists()
+
+
+@pytest.mark.django_db
+def test_missing_site_visit_day_shows_single_inline_required_error(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    client.force_login(user)
+
+    response = client.post(
+        reverse("site_visit_create", kwargs={"trip_pk": trip.pk}),
+        {
+            "site": site.pk,
+            "planned_day": "",
+            "planned_start_time": "",
+            "planned_end_time": "",
+            "status": SiteVisitStatus.PLANNED,
+            "notes": "",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.content.count(b"This field is required.") == 2
+    assert b"Choose a trip day." not in response.content
+    assert b"Visit day: This field is required." in response.content
+    assert b"Unable to save changes" in response.content
 
 
 @pytest.mark.django_db
