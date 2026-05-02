@@ -292,6 +292,7 @@ class SiteHistoryView(SiteDetailContextMixin, LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context.update(self._site_detail_data())
         context["history_records"] = self.object.history.all()
         return context
 

@@ -395,6 +395,30 @@ def test_site_detail_renders_site_google_maps_button(client):
 
 
 @pytest.mark.django_db
+def test_site_history_renders_site_google_maps_button(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+
+    response = client.get(reverse("site_history", kwargs={"pk": site.pk}))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Open site coordinates in Google Maps" in content
+    assert (
+        "https://www.google.com/maps/search/?api=1&amp;query=-41.100000%2C174.100000"
+        in content
+    )
+
+
+@pytest.mark.django_db
 def test_site_detail_includes_access_map_feature_data(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
