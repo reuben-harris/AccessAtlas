@@ -14,7 +14,11 @@ from access_atlas.accounts.preferences import (
     get_user_preference,
     site_access_map_preference_key,
 )
-from access_atlas.core.mixins import SearchablePaginatedListMixin, SortableListMixin
+from access_atlas.core.mixins import (
+    PaginatedObjectHistoryMixin,
+    SearchablePaginatedListMixin,
+    SortableListMixin,
+)
 
 from .access_record_snapshots import build_access_record_snapshots
 from .access_warnings import build_access_record_warnings, build_site_warnings
@@ -284,7 +288,12 @@ class SiteAccessRecordsView(SiteDetailContextMixin, LoginRequiredMixin, DetailVi
         return context
 
 
-class SiteHistoryView(SiteDetailContextMixin, LoginRequiredMixin, DetailView):
+class SiteHistoryView(
+    PaginatedObjectHistoryMixin,
+    SiteDetailContextMixin,
+    LoginRequiredMixin,
+    DetailView,
+):
     template_name = "sites/site_history.html"
 
     def get_detail_sections(self) -> list[dict[str, str | bool]]:
@@ -293,7 +302,7 @@ class SiteHistoryView(SiteDetailContextMixin, LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(self._site_detail_data())
-        context["history_records"] = self.object.history.all()
+        context.update(self.get_history_context())
         return context
 
 
@@ -489,7 +498,11 @@ class AccessRecordMapView(LoginRequiredMixin, DetailView):
         return context
 
 
-class AccessRecordHistoryView(LoginRequiredMixin, DetailView):
+class AccessRecordHistoryView(
+    PaginatedObjectHistoryMixin,
+    LoginRequiredMixin,
+    DetailView,
+):
     model = AccessRecord
     template_name = "sites/access_record_history.html"
 
@@ -502,7 +515,7 @@ class AccessRecordHistoryView(LoginRequiredMixin, DetailView):
             self.object, "history"
         )
         context["detail_navigation_label"] = "Access record sections"
-        context["history_records"] = self.object.history.all()
+        context.update(self.get_history_context())
         return context
 
 

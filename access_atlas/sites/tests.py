@@ -419,6 +419,34 @@ def test_site_history_renders_site_google_maps_button(client):
 
 
 @pytest.mark.django_db
+def test_access_record_history_accepts_custom_per_page(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    access_record = AccessRecord.objects.create(site=site, name="Road access")
+    for index in range(12):
+        access_record.name = f"Road access {index}"
+        access_record.save()
+
+    response = client.get(
+        reverse("access_record_history", kwargs={"pk": access_record.pk}),
+        {"per_page": 10},
+    )
+
+    assert response.status_code == 200
+    assert len(response.context["history_records"]) == 10
+    assert response.context["per_page"] == 10
+    assert response.context["paginator"].num_pages == 2
+
+
+@pytest.mark.django_db
 def test_site_detail_includes_access_map_feature_data(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)

@@ -19,6 +19,7 @@ from access_atlas.accounts.preferences import (
 from access_atlas.core.history import HistoryReasonMixin
 from access_atlas.core.mixins import (
     ObjectFormMixin,
+    PaginatedObjectHistoryMixin,
     SearchablePaginatedListMixin,
     SortableListMixin,
 )
@@ -117,7 +118,11 @@ class JobTemplateDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class JobTemplateHistoryView(LoginRequiredMixin, DetailView):
+class JobTemplateHistoryView(
+    PaginatedObjectHistoryMixin,
+    LoginRequiredMixin,
+    DetailView,
+):
     model = JobTemplate
     template_name = "jobs/job_template_history.html"
 
@@ -127,7 +132,7 @@ class JobTemplateHistoryView(LoginRequiredMixin, DetailView):
             self.object, "history"
         )
         context["detail_navigation_label"] = "Job template sections"
-        context["history_records"] = self.object.history.all()
+        context.update(self.get_history_context())
         return context
 
 
@@ -353,7 +358,7 @@ class JobDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class JobHistoryView(LoginRequiredMixin, DetailView):
+class JobHistoryView(PaginatedObjectHistoryMixin, LoginRequiredMixin, DetailView):
     model = Job
     template_name = "jobs/job_history.html"
 
@@ -361,7 +366,7 @@ class JobHistoryView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context["detail_sections"] = _job_detail_sections(self.object, "history")
         context["detail_navigation_label"] = "Job sections"
-        context["history_records"] = self.object.history.all()
+        context.update(self.get_history_context())
         return context
 
 

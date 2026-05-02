@@ -10,6 +10,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from access_atlas.core.history import HistoryReasonMixin
 from access_atlas.core.mixins import (
     ObjectFormMixin,
+    PaginatedObjectHistoryMixin,
     SearchablePaginatedListMixin,
     SortableListMixin,
 )
@@ -116,7 +117,7 @@ class TripDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class TripHistoryView(LoginRequiredMixin, DetailView):
+class TripHistoryView(PaginatedObjectHistoryMixin, LoginRequiredMixin, DetailView):
     model = Trip
     template_name = "trips/trip_history.html"
 
@@ -124,7 +125,7 @@ class TripHistoryView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context["detail_sections"] = _trip_detail_sections(self.object, "history")
         context["detail_navigation_label"] = "Trip sections"
-        context["history_records"] = self.object.history.all()
+        context.update(self.get_history_context())
         return context
 
 
@@ -164,7 +165,7 @@ class SiteVisitDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class SiteVisitHistoryView(LoginRequiredMixin, DetailView):
+class SiteVisitHistoryView(PaginatedObjectHistoryMixin, LoginRequiredMixin, DetailView):
     model = SiteVisit
     template_name = "trips/site_visit_history.html"
 
@@ -172,7 +173,7 @@ class SiteVisitHistoryView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context["detail_sections"] = _site_visit_detail_sections(self.object, "history")
         context["detail_navigation_label"] = "Site visit sections"
-        context["history_records"] = self.object.history.all()
+        context.update(self.get_history_context())
         return context
 
 

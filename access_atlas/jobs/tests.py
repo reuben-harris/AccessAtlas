@@ -220,6 +220,24 @@ def test_job_detail_links_to_assigned_site_visit(client):
 
 
 @pytest.mark.django_db
+def test_job_history_defaults_to_25_entries_per_page(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = create_site()
+    job = Job.objects.create(site=site, title="Initial title")
+    for index in range(30):
+        job.title = f"Revision {index}"
+        job.save()
+    client.force_login(user)
+
+    response = client.get(reverse("job_history", kwargs={"pk": job.pk}))
+
+    assert response.status_code == 200
+    assert len(response.context["history_records"]) == 25
+    assert response.context["paginator"].num_pages == 2
+    assert response.context["per_page"] == 25
+
+
+@pytest.mark.django_db
 def test_job_map_includes_jobs_and_status_layers(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)

@@ -1,3 +1,4 @@
+from django.core.paginator import Paginator
 from django.db.models import Q
 from django.urls import reverse
 
@@ -157,3 +158,47 @@ class SortableListMixin:
         context["current_sort_descending"] = sort_value.startswith("-")
         context["sort_param"] = self.sort_param
         return context
+
+
+class PaginatedObjectHistoryMixin:
+    default_paginate_by = 25
+    page_size_options = (25, 50, 100)
+    page_size_param = "per_page"
+
+    def get_history_per_page(self) -> int:
+        try:
+            per_page = int(self.request.GET.get(self.page_size_param, ""))
+        except (TypeError, ValueError):
+            return self.default_paginate_by
+        return per_page if per_page > 0 else self.default_paginate_by
+
+    def get_history_queryset(self):
+        return self.object.history.all()
+
+    def get_history_context(self) -> dict:
+        per_page = self.get_history_per_page()
+        page_size_options = list(self.page_size_options)
+        if per_page not in page_size_options:
+            page_size_options.append(per_page)
+            page_size_options.sort()
+
+        paginator = Paginator(self.get_history_queryset(), per_page)
+        page_obj = paginator.get_page(self.request.GET.get("page"))
+        preserved_query_items: list[tuple[str, str]] = []
+        for key in self.request.GET:
+            if key in {self.page_size_param, "page"}:
+                continue
+            for value in self.request.GET.getlist(key):
+                preserved_query_items.append((key, value))
+
+        return {
+            "history_records": page_obj.object_list,
+            "is_paginated": page_obj.has_other_pages(),
+            "page_obj": page_obj,
+            "paginator": paginator,
+            "page_range": paginator.get_elided_page_range(number=page_obj.number),
+            "per_page": per_page,
+            "page_size_param": self.page_size_param,
+            "page_size_options": page_size_options,
+            "per_page_preserved_query_items": preserved_query_items,
+        }

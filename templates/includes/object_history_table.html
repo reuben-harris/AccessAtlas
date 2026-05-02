@@ -1,8 +1,27 @@
 {% load history_extras %}
+{% load querystring %}
 
 {% if history_records %}
 <div class="card{% if card_class %} {{ card_class }}{% endif %}">
-  <div class="card-header"><h3 class="card-title">{{ history_title|default:"History" }}</h3></div>
+  <div class="card-header">
+    <h3 class="card-title">{{ history_title|default:"History" }}</h3>
+    {% if page_size_options %}
+      <div class="card-actions">
+        <form method="get" class="d-flex align-items-center gap-2">
+          {% for key, value in per_page_preserved_query_items %}
+            <input type="hidden" name="{{ key }}" value="{{ value }}">
+          {% endfor %}
+          <label class="form-label mb-0 text-secondary text-nowrap" for="history-per-page">Per page</label>
+          <select id="history-per-page" class="form-select form-select-sm" name="{{ page_size_param }}">
+            {% for option in page_size_options %}
+              <option value="{{ option }}"{% if option == per_page %} selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn btn-sm btn-outline-primary" type="submit">Apply</button>
+        </form>
+      </div>
+    {% endif %}
+  </div>
   <div class="table-responsive">
     <table class="table table-vcenter">
       <thead>
@@ -26,4 +45,5 @@
     </table>
   </div>
 </div>
+{% include "includes/pagination_footer.html" %}
 {% endif %}
