@@ -2,7 +2,7 @@ from django import forms
 
 from access_atlas.jobs.models import Job, JobStatus
 
-from .models import SiteVisit, SiteVisitStatus, Trip, TripStatus
+from .models import SiteVisit, SiteVisitStatus, Trip
 from .services import (
     JOB_OUTCOME_CANCELLED,
     JOB_OUTCOME_COMPLETED,
@@ -24,13 +24,6 @@ class TripCloseoutJobOutcome:
 
 
 class TripForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["status"].choices = [
-            (TripStatus.DRAFT, TripStatus.DRAFT.label),
-            (TripStatus.PLANNED, TripStatus.PLANNED.label),
-        ]
-
     class Meta:
         model = Trip
         fields = [
@@ -39,7 +32,6 @@ class TripForm(forms.ModelForm):
             "end_date",
             "trip_leader",
             "team_members",
-            "status",
             "notes",
         ]
         widgets = {

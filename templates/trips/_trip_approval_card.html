@@ -1,0 +1,26 @@
+<div class="card mt-3">
+  <div class="card-header">
+    <h3 class="card-title">Approval</h3>
+  </div>
+  <div class="card-body">
+    <dl class="row mb-0">
+      <dt class="col-sm-3">Submitted By</dt>
+      <dd class="col-sm-9">{{ approval_summary.submitted_by|default:"-" }}</dd>
+
+      <dt class="col-sm-3">Submitted At</dt>
+      <dd class="col-sm-9">{{ approval_summary.submitted_at|date:"j M Y H:i"|default:"-" }}</dd>
+
+      <dt class="col-sm-3">Approved At</dt>
+      <dd class="col-sm-9">{{ approval_summary.approved_at|date:"j M Y H:i"|default:"-" }}</dd>
+
+      <dt class="col-sm-3">Approvers</dt>
+      <dd class="col-sm-9">
+        {% for approval in approval_summary.approvals %}
+          <div>{{ approval.approver }} <span class="text-secondary">({{ approval.created_at|date:"j M Y H:i" }})</span></div>
+        {% empty %}
+          -
+        {% endfor %}
+      </dd>
+    </dl>
+  </div>
+</div>

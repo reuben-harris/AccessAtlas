@@ -24,6 +24,7 @@ from access_atlas.core.mixins import (
     SortableListMixin,
 )
 from access_atlas.sites.models import Site
+from access_atlas.trips.approval import ApprovedTripChangeMixin
 
 from .forms import (
     JobForm,
@@ -380,11 +381,19 @@ class JobCreateView(
 
 
 class JobUpdateView(
+    ApprovedTripChangeMixin,
     HistoryReasonMixin, ObjectFormMixin, LoginRequiredMixin, UpdateView
 ):
     model = Job
     form_class = JobForm
     template_name = "object_form.html"
+    approval_reset_reason = "Returned to submitted after job update"
+
+    def get_approval_trip(self):
+        assignment = getattr(self.object, "site_visit_assignment", None)
+        if assignment is None:
+            return None
+        return assignment.site_visit.trip
 
 
 @login_required

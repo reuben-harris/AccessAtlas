@@ -14,6 +14,7 @@ from access_atlas.trips.models import (
     SiteVisitJob,
     SiteVisitStatus,
     Trip,
+    TripApproval,
     TripStatus,
 )
 from access_atlas.trips.services import assign_job_to_site_visit
@@ -254,7 +255,6 @@ def test_simple_trip_edit_records_history_reason(client):
             "end_date": "2026-04-22",
             "trip_leader": user.pk,
             "team_members": [],
-            "status": TripStatus.DRAFT,
             "notes": "Updated notes.",
         },
     )
@@ -263,6 +263,193 @@ def test_simple_trip_edit_records_history_reason(client):
     trip.refresh_from_db()
     assert trip.name == "Updated trip"
     assert trip.history.first().history_change_reason == "Updated trip"
+
+
+@pytest.mark.django_db
+def test_submit_trip_for_approval_sets_submitted_state(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+        status=TripStatus.DRAFT,
+    )
+    client.force_login(user)
+
+    response = client.post(reverse("trip_submit", kwargs={"pk": trip.pk}))
+
+    assert response.status_code == 302
+    trip.refresh_from_db()
+    assert trip.status == TripStatus.SUBMITTED
+    assert trip.submitted_by == user
+    assert trip.submitted_at is not None
+    assert trip.approval_round == 1
+
+
+@pytest.mark.django_db
+def test_submitted_trip_cannot_be_resubmitted_for_approval(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+        status=TripStatus.SUBMITTED,
+        approval_round=1,
+    )
+    client.force_login(user)
+
+    response = client.post(reverse("trip_submit", kwargs={"pk": trip.pk}))
+
+    assert response.status_code == 302
+    trip.refresh_from_db()
+    assert trip.status == TripStatus.SUBMITTED
+    assert trip.approval_round == 1
+
+
+@pytest.mark.django_db
+def test_trip_leader_cannot_approve_trip(client):
+    user = User.objects.create_user(email="leader@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+        status=TripStatus.SUBMITTED,
+        approval_round=1,
+    )
+    client.force_login(user)
+
+    response = client.post(reverse("trip_approve", kwargs={"pk": trip.pk}))
+
+    assert response.status_code == 302
+    trip.refresh_from_db()
+    assert trip.status == TripStatus.SUBMITTED
+    assert not TripApproval.objects.filter(trip=trip).exists()
+
+
+@pytest.mark.django_db
+def test_trip_approval_moves_trip_to_approved_and_records_approver(client):
+    leader = User.objects.create_user(email="leader@example.com")
+    approver = User.objects.create_user(email="approver@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=leader,
+        status=TripStatus.SUBMITTED,
+        approval_round=1,
+    )
+    client.force_login(approver)
+
+    response = client.post(reverse("trip_approve", kwargs={"pk": trip.pk}))
+
+    assert response.status_code == 302
+    trip.refresh_from_db()
+    approval = TripApproval.objects.get(trip=trip, approver=approver)
+    assert trip.status == TripStatus.APPROVED
+    assert trip.approved_at is not None
+    assert approval.approval_round == 1
+
+
+@pytest.mark.django_db
+def test_approved_trip_edit_requires_confirmation_and_resubmits(client):
+    user = User.objects.create_user(email="user@example.com")
+    approver = User.objects.create_user(email="approver@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+        status=TripStatus.APPROVED,
+        approval_round=1,
+    )
+    TripApproval.objects.create(trip=trip, approver=approver, approval_round=1)
+    client.force_login(user)
+
+    initial_response = client.post(
+        reverse("trip_update", kwargs={"pk": trip.pk}),
+        {
+            "name": "Updated trip",
+            "start_date": "2026-04-21",
+            "end_date": "2026-04-22",
+            "trip_leader": user.pk,
+            "team_members": [],
+            "notes": "Updated notes.",
+        },
+    )
+
+    assert initial_response.status_code == 200
+    assert b"Approval reset" in initial_response.content
+    assert Trip.objects.get(pk=trip.pk).status == TripStatus.APPROVED
+
+    response = client.post(
+        reverse("trip_update", kwargs={"pk": trip.pk}),
+        {
+            "name": "Updated trip",
+            "start_date": "2026-04-21",
+            "end_date": "2026-04-22",
+            "trip_leader": user.pk,
+            "team_members": [],
+            "notes": "Updated notes.",
+            "confirm_trip_approval_reset": "on",
+        },
+    )
+
+    assert response.status_code == 302
+    trip.refresh_from_db()
+    assert trip.name == "Updated trip"
+    assert trip.status == TripStatus.SUBMITTED
+    assert trip.submitted_by == user
+    assert trip.approval_round == 2
+
+
+@pytest.mark.django_db
+def test_assigning_job_to_approved_trip_requires_confirmation_and_resubmits(client):
+    leader = User.objects.create_user(email="leader@example.com")
+    approver = User.objects.create_user(email="approver@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=leader,
+        status=TripStatus.APPROVED,
+        approval_round=1,
+    )
+    TripApproval.objects.create(trip=trip, approver=approver, approval_round=1)
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Site job")
+    client.force_login(leader)
+
+    initial_response = client.post(
+        reverse("assign_job", kwargs={"pk": site_visit.pk}),
+        {"job": job.pk},
+    )
+
+    assert initial_response.status_code == 200
+    assert b"Approval reset" in initial_response.content
+    assert not SiteVisitJob.objects.filter(job=job).exists()
+
+    response = client.post(
+        reverse("assign_job", kwargs={"pk": site_visit.pk}),
+        {"job": job.pk, "confirm_trip_approval_reset": "1"},
+    )
+
+    assert response.status_code == 302
+    trip.refresh_from_db()
+    job.refresh_from_db()
+    assert trip.status == TripStatus.SUBMITTED
+    assert trip.approval_round == 2
+    assert job.status == JobStatus.PLANNED
 
 
 @pytest.mark.django_db
@@ -284,7 +471,6 @@ def test_invalid_trip_date_edit_shows_error_summary_and_stable_cancel(client):
             "end_date": "2026-04-22",
             "trip_leader": user.pk,
             "team_members": [],
-            "status": TripStatus.DRAFT,
             "notes": "",
         },
     )
@@ -311,7 +497,6 @@ def test_invalid_trip_date_create_shows_error_summary(client):
             "end_date": "2026-04-22",
             "trip_leader": user.pk,
             "team_members": [],
-            "status": TripStatus.DRAFT,
             "notes": "",
         },
     )
@@ -335,7 +520,6 @@ def test_trip_create_with_missing_date_shows_field_error(client):
             "end_date": "2026-04-22",
             "trip_leader": user.pk,
             "team_members": [],
-            "status": TripStatus.DRAFT,
             "notes": "",
         },
     )
@@ -346,12 +530,9 @@ def test_trip_create_with_missing_date_shows_field_error(client):
     assert not Trip.objects.filter(name="Trip").exists()
 
 
-def test_trip_form_only_offers_draft_and_planned_statuses():
+def test_trip_form_does_not_offer_status_field():
     form = TripForm()
-
-    status_values = [value for value, _label in form.fields["status"].choices]
-
-    assert status_values == [TripStatus.DRAFT, TripStatus.PLANNED]
+    assert "status" not in form.fields
 
 
 def test_site_visit_form_marks_site_select_as_searchable():
@@ -764,7 +945,7 @@ def test_cancel_trip_returns_planned_jobs_and_skips_site_visits(client):
         start_date="2026-04-21",
         end_date="2026-04-22",
         trip_leader=user,
-        status=TripStatus.PLANNED,
+        status=TripStatus.SUBMITTED,
     )
     site_visit = SiteVisit.objects.create(trip=trip, site=site)
     job = Job.objects.create(site=site, title="Site job")
@@ -808,7 +989,7 @@ def test_cancel_trip_blocks_when_child_work_has_moved_forward(client):
         start_date="2026-04-21",
         end_date="2026-04-22",
         trip_leader=user,
-        status=TripStatus.PLANNED,
+        status=TripStatus.SUBMITTED,
     )
     site_visit = SiteVisit.objects.create(trip=trip, site=site)
     job = Job.objects.create(site=site, title="Site job")
@@ -822,7 +1003,7 @@ def test_cancel_trip_blocks_when_child_work_has_moved_forward(client):
     assert response.status_code == 302
     trip.refresh_from_db()
     job.refresh_from_db()
-    assert trip.status == TripStatus.PLANNED
+    assert trip.status == TripStatus.SUBMITTED
     assert job.status == JobStatus.COMPLETED
     assert SiteVisitJob.objects.filter(job=job).exists()
 
@@ -843,7 +1024,7 @@ def test_close_trip_resolves_site_visits_and_jobs(client):
         start_date="2026-04-21",
         end_date="2026-04-22",
         trip_leader=user,
-        status=TripStatus.PLANNED,
+        status=TripStatus.SUBMITTED,
     )
     completed_visit = SiteVisit.objects.create(trip=trip, site=site)
     returned_visit = SiteVisit.objects.create(trip=trip, site=site)
@@ -927,7 +1108,7 @@ def test_close_trip_requires_reason_for_cancelled_jobs(client):
         start_date="2026-04-21",
         end_date="2026-04-22",
         trip_leader=user,
-        status=TripStatus.PLANNED,
+        status=TripStatus.SUBMITTED,
     )
     site_visit = SiteVisit.objects.create(trip=trip, site=site)
     job = Job.objects.create(site=site, title="Cancel")
@@ -946,7 +1127,7 @@ def test_close_trip_requires_reason_for_cancelled_jobs(client):
     assert response.status_code == 200
     trip.refresh_from_db()
     job.refresh_from_db()
-    assert trip.status == TripStatus.PLANNED
+    assert trip.status == TripStatus.SUBMITTED
     assert job.status == JobStatus.PLANNED
 
 

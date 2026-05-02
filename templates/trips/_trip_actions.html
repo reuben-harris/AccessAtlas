@@ -1,0 +1,43 @@
+<div class="btn-list">
+  <a class="btn btn-warning" href="{% url 'trip_update' object.pk %}">Edit</a>
+
+  {% if trip_action_controls.submit_enabled %}
+    <form method="post" action="{% url 'trip_submit' object.pk %}" class="d-inline">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.path }}">
+      <button class="btn btn-outline-primary" type="submit">Submit for approval</button>
+    </form>
+  {% else %}
+    <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="{{ trip_action_controls.submit_disabled_reason }}">
+      <button class="btn btn-outline-secondary disabled" type="button" disabled>Submit for approval</button>
+    </span>
+  {% endif %}
+
+  {% if trip_action_controls.approve_enabled %}
+    <form method="post" action="{% url 'trip_approve' object.pk %}" class="d-inline">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.path }}">
+      <button class="btn btn-outline-primary" type="submit">{{ trip_action_controls.approve_label }}</button>
+    </form>
+  {% else %}
+    <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="{{ trip_action_controls.approve_disabled_reason }}">
+      <button class="btn btn-outline-secondary disabled" type="button" disabled>{{ trip_action_controls.approve_label }}</button>
+    </span>
+  {% endif %}
+
+  {% if trip_action_controls.cancel_enabled %}
+    <a class="btn btn-outline-danger" href="{% url 'trip_cancel' object.pk %}">Cancel trip</a>
+  {% else %}
+    <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="{{ trip_action_controls.cancel_disabled_reason }}">
+      <button class="btn btn-outline-secondary disabled" type="button" disabled>Cancel trip</button>
+    </span>
+  {% endif %}
+
+  {% if trip_action_controls.close_enabled %}
+    <a class="btn btn-outline-success" href="{% url 'trip_close' object.pk %}">Close trip</a>
+  {% else %}
+    <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="{{ trip_action_controls.close_disabled_reason }}">
+      <button class="btn btn-outline-secondary disabled" type="button" disabled>Close trip</button>
+    </span>
+  {% endif %}
+</div>

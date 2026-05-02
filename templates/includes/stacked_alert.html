@@ -1,0 +1,13 @@
+<div class="alert {{ alert_class|default:'alert-warning' }}" role="alert">
+  <div class="access-atlas-alert-content">
+    {% if alert_title %}
+      <h4 class="alert-title">{{ alert_title }}</h4>
+    {% endif %}
+    {% if alert_body %}
+      <div>{{ alert_body }}</div>
+    {% endif %}
+    {% if alert_body_template %}
+      {% include alert_body_template %}
+    {% endif %}
+  </div>
+</div>

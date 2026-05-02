@@ -12,7 +12,10 @@
   </div>
 </div>
 <div class="card">
-  <div class="card-body">
+    <div class="card-body">
+      {% if form_notice %}
+        {% include "includes/stacked_alert.html" with alert_title="Approval reset" alert_body=form_notice alert_class="alert-warning" %}
+      {% endif %}
     <form method="post" novalidate>
       {% csrf_token %}
       {% for field in form %}

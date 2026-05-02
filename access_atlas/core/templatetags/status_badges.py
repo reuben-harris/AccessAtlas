@@ -6,7 +6,8 @@ STATUS_BADGE_CLASSES = {
     "cancelled": "bg-red-lt",
     "completed": "bg-green-lt",
     "draft": "bg-secondary-lt",
-    "planned": "bg-blue-lt",
+    "submitted": "bg-blue-lt",
+    "approved": "bg-green-lt",
     "skipped": "bg-yellow-lt",
     "unassigned": "bg-secondary-lt",
 }

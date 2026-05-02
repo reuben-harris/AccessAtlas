@@ -4,11 +4,12 @@ from dataclasses import dataclass
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.utils import timezone
 from simple_history.utils import update_change_reason
 
 from access_atlas.jobs.models import JobStatus
 
-from .models import SiteVisitJob, SiteVisitStatus, Trip, TripStatus
+from .models import SiteVisitJob, SiteVisitStatus, Trip, TripApproval, TripStatus
 
 JOB_OUTCOME_COMPLETED = "completed"
 JOB_OUTCOME_RETURN = "return"
@@ -40,6 +41,89 @@ def get_trip_cancel_summary(trip: Trip) -> TripCancelSummary:
         jobs_to_return=assignments.filter(job__status=JobStatus.PLANNED).count(),
         can_cancel=can_cancel,
     )
+
+
+def user_can_approve_trip(trip: Trip, user) -> bool:
+    if not getattr(user, "is_authenticated", False):
+        return False
+    if trip.is_terminal or trip.status not in {
+        TripStatus.SUBMITTED,
+        TripStatus.APPROVED,
+    }:
+        return False
+    if trip.trip_leader_id == user.pk:
+        return False
+    return not trip.current_approvals().filter(approver=user).exists()
+
+
+@transaction.atomic
+def submit_trip_for_approval(trip: Trip, user) -> None:
+    if not trip.can_submit_for_approval:
+        raise ValidationError("This trip cannot be submitted for approval.")
+
+    trip.approval_round += 1
+    trip.status = TripStatus.SUBMITTED
+    trip.submitted_by = user
+    trip.submitted_at = timezone.now()
+    trip.approved_at = None
+    trip.save(
+        update_fields=[
+            "approval_round",
+            "status",
+            "submitted_by",
+            "submitted_at",
+            "approved_at",
+            "updated_at",
+        ]
+    )
+    update_change_reason(trip, "Submitted trip for approval")
+
+
+@transaction.atomic
+def approve_trip(trip: Trip, user) -> TripApproval:
+    if not user_can_approve_trip(trip, user):
+        raise ValidationError("You cannot approve this trip.")
+
+    approval = TripApproval.objects.create(
+        trip=trip,
+        approver=user,
+        approval_round=trip.approval_round,
+    )
+
+    if trip.status == TripStatus.SUBMITTED:
+        trip.status = TripStatus.APPROVED
+        trip.approved_at = approval.created_at
+        trip.save(update_fields=["status", "approved_at", "updated_at"])
+        update_change_reason(trip, "Approved trip")
+    else:
+        trip.save(update_fields=["updated_at"])
+        update_change_reason(trip, "Recorded additional trip approval")
+
+    return approval
+
+
+@transaction.atomic
+def invalidate_trip_approval(trip: Trip, user, reason: str) -> bool:
+    if trip.status != TripStatus.APPROVED:
+        return False
+
+    trip.approval_round += 1
+    trip.status = TripStatus.SUBMITTED
+    trip.submitted_by = user
+    trip.submitted_at = timezone.now()
+    trip.approved_at = None
+    trip.save(
+        update_fields=[
+            "approval_round",
+            "status",
+            "submitted_by",
+            "submitted_at",
+            "approved_at",
+            "updated_at",
+        ]
+    )
+    update_change_reason(trip, reason)
+    return True
 
 
 @transaction.atomic

@@ -1,5 +1,18 @@
 /* Shared object-page components and utility-level UI polish */
 
+/* Alert blocks appear across forms and confirmation flows. Keep the title/body
+   stacked consistently instead of relying on framework defaults. */
+
+.access-atlas-alert-content {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.access-atlas-alert-content .alert-title {
+  margin: 0;
+}
+
 .site-warning-indicator {
   display: inline-flex;
   align-items: center;

@@ -9,22 +9,7 @@
       <h2 class="page-title">{{ object.name }}</h2>
     </div>
     <div class="col-auto ms-auto">
-      <div class="btn-list">
-        <a class="btn btn-warning" href="{% url 'trip_update' object.pk %}">
-          Edit
-        </a>
-        {% if object.is_terminal %}
-          <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="This trip is already {{ object.get_status_display|lower }} and cannot be cancelled.">
-            <button class="btn btn-outline-secondary disabled" type="button" disabled>Cancel trip</button>
-          </span>
-          <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="This trip is already {{ object.get_status_display|lower }} and cannot be closed again.">
-            <button class="btn btn-outline-secondary disabled" type="button" disabled>Close trip</button>
-          </span>
-        {% else %}
-          <a class="btn btn-outline-danger" href="{% url 'trip_cancel' object.pk %}">Cancel trip</a>
-          <a class="btn btn-outline-success" href="{% url 'trip_close' object.pk %}">Close trip</a>
-        {% endif %}
-      </div>
+      {% include "trips/_trip_actions.html" %}
     </div>
   </div>
 </div>

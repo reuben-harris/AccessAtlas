@@ -1,0 +1,29 @@
+{% extends "base/base.html" %}
+
+{% block title %}{{ title }} - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">{{ title }}</h2>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-body">
+    {% include "includes/stacked_alert.html" with alert_title="Approval reset" alert_body=message alert_class="alert-warning" %}
+    <form method="post">
+      {% csrf_token %}
+      {% for key, value in hidden_fields %}
+        <input type="hidden" name="{{ key }}" value="{{ value }}">
+      {% endfor %}
+      <input type="hidden" name="{{ confirm_field_name }}" value="1">
+      <div class="btn-list">
+        <button class="btn btn-primary" type="submit">{{ submit_label }}</button>
+        <a class="btn btn-outline-secondary" href="{{ cancel_url }}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

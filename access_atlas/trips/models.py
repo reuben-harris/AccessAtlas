@@ -13,7 +13,8 @@ from access_atlas.sites.models import Site
 
 class TripStatus(models.TextChoices):
     DRAFT = "draft", "Draft"
-    PLANNED = "planned", "Planned"
+    SUBMITTED = "submitted", "Submitted"
+    APPROVED = "approved", "Approved"
     COMPLETED = "completed", "Completed"
     CANCELLED = "cancelled", "Cancelled"
 
@@ -38,6 +39,16 @@ class Trip(models.Model):
         related_name="trips",
         blank=True,
     )
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="submitted_trips",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    submitted_at = models.DateTimeField(blank=True, null=True)
+    approved_at = models.DateTimeField(blank=True, null=True)
+    approval_round = models.PositiveIntegerField(default=0)
     status = models.CharField(
         max_length=20,
         choices=TripStatus.choices,
@@ -63,6 +74,13 @@ class Trip(models.Model):
     @property
     def is_terminal(self) -> bool:
         return self.status in {TripStatus.COMPLETED, TripStatus.CANCELLED}
+
+    @property
+    def can_submit_for_approval(self) -> bool:
+        return self.status == TripStatus.DRAFT
+
+    def current_approvals(self):
+        return self.trip_approvals.filter(approval_round=self.approval_round)
 
     def clean(self) -> None:
         if self.start_date and self.end_date and self.end_date < self.start_date:
@@ -171,3 +189,30 @@ class SiteVisitJob(models.Model):
     def clean(self) -> None:
         if self.job.site_id != self.site_visit.site_id:
             raise ValidationError("Job site must match the site visit site.")
+
+
+class TripApproval(models.Model):
+    trip = models.ForeignKey(
+        Trip,
+        related_name="trip_approvals",
+        on_delete=models.CASCADE,
+    )
+    approver = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="trip_approvals",
+        on_delete=models.PROTECT,
+    )
+    approval_round = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["trip", "approver", "approval_round"],
+                name="unique_trip_approval_per_round",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.approver} approved {self.trip} (round {self.approval_round})"
