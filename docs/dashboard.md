@@ -16,6 +16,7 @@
 
 - Show Jobs by status in a chart
 - The chart should be clickable so each status can take the user into a filtered Jobs view
+- Filter links should use the normal Jobs list route with URL state rather than a dashboard-only drilldown endpoint
 - Hover can show:
   - status name
   - count
@@ -30,6 +31,7 @@
   - Trip Name
   - Leader
   - Date
+- Status is also useful here when it fits without crowding the table
 - Prefer non-terminal trips only. Completed and cancelled trips should not clutter an upcoming list unless there is a strong reason later.
 
 ### Data Attention
@@ -40,6 +42,7 @@
   - sites with access warnings
   - stale synced sites
 - These should link into the relevant deeper view when practical
+- If no dedicated filtered stale/warning site view exists yet, link to the closest useful page rather than inventing a placeholder route
 
 ### Clarifications and limits
 

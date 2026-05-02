@@ -196,6 +196,30 @@ def test_job_list_uses_saved_sort_preference(client):
 
 
 @pytest.mark.django_db
+def test_job_list_filters_any_supported_status(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    planned_job = Job(
+        site=site,
+        title="Visible planned job",
+        status=JobStatus.PLANNED,
+    )
+    planned_job.save(skip_validation=True)
+    Job.objects.create(
+        site=site,
+        title="Visible completed job",
+        status=JobStatus.COMPLETED,
+    )
+
+    response = client.get(reverse("job_list"), {"status": JobStatus.PLANNED})
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert [job.title for job in object_list] == ["Visible planned job"]
+
+
+@pytest.mark.django_db
 def test_job_detail_links_to_assigned_site_visit(client):
     user = User.objects.create_user(email="user@example.com")
     site = create_site()

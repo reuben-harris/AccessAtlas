@@ -247,11 +247,13 @@ class JobListView(
     def get_queryset(self):
         queryset = super().get_queryset().select_related("site", "template")
         status = self.request.GET.get("status")
-        if status == "unassigned":
+        if status == JobStatus.UNASSIGNED:
             queryset = queryset.filter(
                 status=JobStatus.UNASSIGNED,
                 site_visit_assignment__isnull=True,
             )
+        elif status in JobStatus.values:
+            queryset = queryset.filter(status=status)
         return self.apply_sort(self.apply_search(queryset))
 
 

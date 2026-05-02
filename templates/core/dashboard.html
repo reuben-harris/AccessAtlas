@@ -7,34 +7,154 @@
 <div class="page-header">
   <h2 class="page-title">Dashboard</h2>
 </div>
+
 <div class="row row-cards">
-  <div class="col-sm-6 col-lg-3"><div class="card card-sm"><div class="card-body"><div class="subheader">Sites</div><div class="h1">{{ site_count }}</div></div></div></div>
-  <div class="col-sm-6 col-lg-3"><div class="card card-sm"><div class="card-body"><div class="subheader">Active Templates</div><div class="h1">{{ job_template_count }}</div></div></div></div>
-</div>
-<div class="row row-cards mt-2">
-  <div class="col-md-6">
-    <div class="card">
-      <div class="card-header"><h3 class="card-title">Planned Trips</h3></div>
-      <div class="list-group list-group-flush">
-        {% for trip in planned_trips %}
-          <a class="list-group-item list-group-item-action" href="{{ trip.get_absolute_url }}">{{ trip.name }} <span class="badge {{ trip.status|status_badge_class }}">{{ trip.get_status_display }}</span></a>
-        {% empty %}
-          <div class="list-group-item text-secondary">No planned trips.</div>
-        {% endfor %}
+  <div class="col-12">
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Work Overview</h3>
+          <p class="text-secondary mb-0">Jobs by status with direct links into filtered work.</p>
+        </div>
       </div>
-    </div>
+      <div class="card-body">
+        <div class="dashboard-work-overview">
+          <div class="dashboard-status-chart-panel">
+            {% if job_status_chart.total %}
+              <svg class="dashboard-status-chart" viewBox="0 0 120 120" role="img" aria-labelledby="dashboard-jobs-title dashboard-jobs-desc">
+                <title id="dashboard-jobs-title">Jobs by status</title>
+                <desc id="dashboard-jobs-desc">Pie chart showing job counts by status.</desc>
+                <circle class="dashboard-status-chart-track" cx="60" cy="60" r="44"></circle>
+                {% for slice in job_status_chart.slices %}
+                  <a href="{{ slice.url }}" class="dashboard-status-chart-link">
+                    <title>{{ slice.label }}: {{ slice.count }}</title>
+                    <circle
+                      class="dashboard-status-chart-slice"
+                      cx="60"
+                      cy="60"
+                      r="44"
+                      stroke="{{ slice.color }}"
+                      stroke-dasharray="{{ slice.dasharray }}"
+                      stroke-dashoffset="{{ slice.dashoffset }}"
+                    ></circle>
+                  </a>
+                {% endfor %}
+                <circle class="dashboard-status-chart-hole" cx="60" cy="60" r="28"></circle>
+                <text class="dashboard-status-chart-total" x="60" y="58">{{ job_status_chart.total }}</text>
+                <text class="dashboard-status-chart-caption" x="60" y="72">Jobs</text>
+              </svg>
+            {% else %}
+              <div class="dashboard-status-chart-empty">
+                <div class="text-secondary">No jobs yet.</div>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="dashboard-status-legend">
+            {% for item in job_status_chart.legend_items %}
+              <a class="dashboard-status-legend-item" href="{{ item.url }}">
+                <span class="dashboard-status-legend-swatch" style="--dashboard-status-color: {{ item.color }};"></span>
+                <span class="dashboard-status-legend-label">{{ item.label }}</span>
+                <span class="dashboard-status-legend-count">{{ item.count }}</span>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
-  <div class="col-md-6">
-    <div class="card">
-      <div class="card-header"><h3 class="card-title">Unassigned Jobs</h3></div>
-      <div class="list-group list-group-flush">
-        {% for job in unassigned_jobs %}
-          <a class="list-group-item list-group-item-action" href="{{ job.get_absolute_url }}">{{ job.title }} <span class="text-secondary">{{ job.site.code }}</span></a>
-        {% empty %}
-          <div class="list-group-item text-secondary">No unassigned jobs.</div>
-        {% endfor %}
+
+  <div class="col-12 col-xl-7">
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Upcoming Field Work</h3>
+          <p class="text-secondary mb-0">Trips starting between today and {{ upcoming_trips_window_end|date:"j M Y" }}.</p>
+        </div>
       </div>
-    </div>
+      <div class="table-responsive">
+        <table class="table table-vcenter">
+          <thead>
+            <tr>
+              <th>Trip</th>
+              <th>Leader</th>
+              <th>Date</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for trip in upcoming_trips %}
+              <tr>
+                <td><a href="{{ trip.get_absolute_url }}">{{ trip.name }}</a></td>
+                <td>{{ trip.trip_leader }}</td>
+                <td>{{ trip.start_date|date:"j M Y" }}{% if trip.end_date != trip.start_date %} - {{ trip.end_date|date:"j M Y" }}{% endif %}</td>
+                <td><span class="badge {{ trip.status|status_badge_class }}">{{ trip.get_status_display }}</span></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4" class="text-secondary">No trips start in the next 30 days.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="col-12 col-xl-5">
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Data Attention</h3>
+          <p class="text-secondary mb-0">Source sync and access data that needs review.</p>
+        </div>
+      </div>
+      <div class="card-body dashboard-attention-groups">
+        <div class="dashboard-attention-group">
+          <div class="dashboard-attention-group-header">
+            <div>
+              <h4 class="dashboard-attention-group-title">Sites with access warnings</h4>
+              <div class="text-secondary">{{ warning_sites_count }} site{{ warning_sites_count|pluralize }}</div>
+            </div>
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'site_list' %}">View sites</a>
+          </div>
+          <div class="list-group list-group-flush">
+            {% for site in warning_sites %}
+              <a class="list-group-item list-group-item-action" href="{{ site.get_access_records_url }}">
+                <div class="fw-semibold">{{ site.code }}</div>
+                <div class="text-secondary">{{ site.name }}</div>
+              </a>
+            {% empty %}
+              <div class="list-group-item text-secondary">No access warnings right now.</div>
+            {% endfor %}
+            {% if warning_sites_has_more %}
+              <div class="list-group-item text-secondary">More sites need attention in the sites list.</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="dashboard-attention-group">
+          <div class="dashboard-attention-group-header">
+            <div>
+              <h4 class="dashboard-attention-group-title">Stale synced sites</h4>
+              <div class="text-secondary">{{ stale_sites_count }} site{{ stale_sites_count|pluralize }}</div>
+            </div>
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'site_list' %}">View sites</a>
+          </div>
+          <div class="list-group list-group-flush">
+            {% for site in stale_sites %}
+              <a class="list-group-item list-group-item-action" href="{{ site.get_absolute_url }}">
+                <div class="fw-semibold">{{ site.code }}</div>
+                <div class="text-secondary">{{ site.name }}</div>
+              </a>
+            {% empty %}
+              <div class="list-group-item text-secondary">No stale synced sites right now.</div>
+            {% endfor %}
+            {% if stale_sites_has_more %}
+              <div class="list-group-item text-secondary">More stale sites are available in the sites list.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 </div>
 {% endblock %}

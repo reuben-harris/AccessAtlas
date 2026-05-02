@@ -7,8 +7,13 @@ from access_atlas.accounts.preferences import (
     list_sort_preference_key,
 )
 from access_atlas.jobs.models import Job, JobTemplate
-from access_atlas.sites.models import AccessRecord, Site
-from access_atlas.trips.models import SiteVisit, Trip
+from access_atlas.sites.models import (
+    AccessRecord,
+    AccessRecordVersion,
+    Site,
+    SiteSyncStatus,
+)
+from access_atlas.trips.models import SiteVisit, Trip, TripStatus
 
 
 @pytest.fixture
@@ -40,8 +45,85 @@ def test_dashboard_renders(logged_in_client):
 
     assert response.status_code == 200
     assert b"Dashboard" in response.content
+    assert b"Work Overview" in response.content
+    assert b"Upcoming Field Work" in response.content
+    assert b"Data Attention" in response.content
     assert b'href="/static/css/app.css"' in response.content
     assert b'src="/static/js/theme.js"' in response.content
+
+
+@pytest.mark.django_db
+def test_dashboard_shows_actionable_sections(logged_in_client, user):
+    warning_site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Warning Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    stale_site = Site.objects.create(
+        source_name="dummy",
+        external_id="002",
+        code="AA-002",
+        name="Stale Site",
+        latitude=-41.2,
+        longitude=174.2,
+        sync_status=SiteSyncStatus.STALE,
+    )
+    warning_record = AccessRecord.objects.create(site=warning_site, name="Road access")
+    AccessRecordVersion.objects.create(
+        access_record=warning_record,
+        version_number=1,
+        geojson={
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [174.11, -41.11]},
+                    "properties": {"access_atlas:type": "site", "name": "Warning"},
+                }
+            ],
+        },
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+    active_trip = Trip.objects.create(
+        name="Upcoming Trip",
+        start_date="2026-05-10",
+        end_date="2026-05-12",
+        trip_leader=user,
+        status=TripStatus.APPROVED,
+    )
+    Trip.objects.create(
+        name="Cancelled Trip",
+        start_date="2026-05-11",
+        end_date="2026-05-12",
+        trip_leader=user,
+        status=TripStatus.CANCELLED,
+    )
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="003",
+        code="AA-003",
+        name="Job Site",
+        latitude=-41.3,
+        longitude=174.3,
+    )
+    Job.objects.create(site=site, title="Unassigned Job")
+    planned_job = Job(site=site, title="Planned Job", status="planned")
+    planned_job.save(skip_validation=True)
+
+    response = logged_in_client.get(reverse("dashboard"))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert active_trip.name in content
+    assert "Cancelled Trip" not in content
+    assert warning_site.code in content
+    assert stale_site.code in content
+    assert 'href="/jobs/?status=unassigned"' in content
+    assert 'href="/jobs/?status=planned"' in content
 
 
 @pytest.mark.django_db

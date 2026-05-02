@@ -1,10 +1,14 @@
 from dataclasses import dataclass
 from itertools import chain
+from math import pi
+from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import render
+from django.urls import reverse
+from django.utils import timezone
 from django.views.generic import TemplateView
 
 from access_atlas.core.history import history_reason
@@ -16,7 +20,9 @@ from access_atlas.jobs.models import (
     Requirement,
     TemplateRequirement,
 )
-from access_atlas.sites.models import Site
+from access_atlas.sites.access_record_snapshots import build_access_record_snapshots
+from access_atlas.sites.access_warnings import build_site_warnings
+from access_atlas.sites.models import Site, SiteSyncStatus
 from access_atlas.trips.models import SiteVisit, SiteVisitJob, Trip, TripStatus
 
 
@@ -42,6 +48,102 @@ HISTORY_MODELS = [
     SiteVisitJob,
 ]
 
+JOB_STATUS_CHART_COLORS = {
+    JobStatus.UNASSIGNED: "#667382",
+    JobStatus.PLANNED: "#206bc4",
+    JobStatus.COMPLETED: "#2fb344",
+    JobStatus.CANCELLED: "#d63939",
+}
+JOB_STATUS_CHART_CIRCUMFERENCE = 2 * pi * 44
+
+
+@dataclass(frozen=True)
+class DashboardJobStatusSlice:
+    value: str
+    label: str
+    count: int
+    color: str
+    url: str
+    dasharray: str
+    dashoffset: str
+
+
+def _dashboard_job_filter_url(status: str) -> str:
+    query = urlencode({"status": status})
+    return f"{reverse('job_list')}?{query}"
+
+
+def build_dashboard_job_status_chart() -> dict[str, object]:
+    counts = {
+        row["status"]: row["count"]
+        for row in Job.objects.values("status").order_by().annotate(count=Count("id"))
+    }
+    total = sum(counts.values())
+    progress = 0.0
+    slices: list[DashboardJobStatusSlice] = []
+    legend_items: list[dict[str, object]] = []
+
+    for status in JobStatus:
+        count = counts.get(status, 0)
+        legend_items.append(
+            {
+                "value": status,
+                "label": status.label,
+                "count": count,
+                "color": JOB_STATUS_CHART_COLORS[status],
+                "url": _dashboard_job_filter_url(status),
+            }
+        )
+        if total == 0 or count == 0:
+            continue
+        segment_length = JOB_STATUS_CHART_CIRCUMFERENCE * (count / total)
+        slices.append(
+            DashboardJobStatusSlice(
+                value=status,
+                label=status.label,
+                count=count,
+                color=JOB_STATUS_CHART_COLORS[status],
+                url=_dashboard_job_filter_url(status),
+                dasharray=(
+                    f"{segment_length:.3f} "
+                    f"{JOB_STATUS_CHART_CIRCUMFERENCE - segment_length:.3f}"
+                ),
+                dashoffset=f"{-progress:.3f}",
+            )
+        )
+        progress += segment_length
+
+    return {
+        "total": total,
+        "circumference": f"{JOB_STATUS_CHART_CIRCUMFERENCE:.3f}",
+        "slices": slices,
+        "legend_items": legend_items,
+    }
+
+
+def build_dashboard_attention_groups() -> dict[str, object]:
+    stale_sites: list[Site] = []
+    warning_sites: list[Site] = []
+    sites = list(
+        Site.objects.prefetch_related("access_records__versions").order_by("code")
+    )
+    for site in sites:
+        if site.sync_status == SiteSyncStatus.STALE:
+            stale_sites.append(site)
+        access_records = list(site.access_records.all())
+        snapshots_by_record_id = build_access_record_snapshots(access_records)
+        if build_site_warnings(site, snapshots_by_record_id=snapshots_by_record_id):
+            warning_sites.append(site)
+
+    return {
+        "warning_sites": warning_sites[:6],
+        "warning_sites_count": len(warning_sites),
+        "warning_sites_has_more": len(warning_sites) > 6,
+        "stale_sites": stale_sites[:6],
+        "stale_sites_count": len(stale_sites),
+        "stale_sites_has_more": len(stale_sites) > 6,
+    }
+
 
 def build_history_entry(record) -> HistoryEntry:
     instance = record.instance
@@ -61,14 +163,18 @@ def build_history_entry(record) -> HistoryEntry:
 
 @login_required
 def dashboard(request):
+    today = timezone.localdate()
+    upcoming_cutoff = today + timezone.timedelta(days=30)
+    job_status_chart = build_dashboard_job_status_chart()
+    attention_groups = build_dashboard_attention_groups()
     context = {
-        "planned_trips": Trip.objects.exclude(status=TripStatus.COMPLETED)[:5],
-        "unassigned_jobs": Job.objects.filter(
-            status=JobStatus.UNASSIGNED,
-            site_visit_assignment__isnull=True,
-        )[:10],
-        "site_count": Site.objects.count(),
-        "job_template_count": JobTemplate.objects.filter(is_active=True).count(),
+        "job_status_chart": job_status_chart,
+        "upcoming_trips": Trip.objects.select_related("trip_leader")
+        .exclude(status__in=[TripStatus.COMPLETED, TripStatus.CANCELLED])
+        .filter(start_date__gte=today, start_date__lte=upcoming_cutoff)
+        .order_by("start_date", "name")[:8],
+        "upcoming_trips_window_end": upcoming_cutoff,
+        **attention_groups,
     }
     return render(request, "core/dashboard.html", context)
 

@@ -1,0 +1,149 @@
+/* Dashboard layout and SVG chart styles stay here so the page can evolve
+   without burying dashboard-only rules inside generic components. */
+
+.dashboard-work-overview {
+  display: grid;
+  grid-template-columns: minmax(16rem, 20rem) minmax(18rem, 1fr);
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.dashboard-status-chart-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dashboard-status-chart,
+.dashboard-status-chart-empty {
+  width: min(18rem, 100%);
+  aspect-ratio: 1;
+}
+
+.dashboard-status-chart {
+  display: block;
+  overflow: visible;
+}
+
+.dashboard-status-chart-track,
+.dashboard-status-chart-slice {
+  fill: none;
+  stroke-width: 16;
+}
+
+.dashboard-status-chart-track {
+  stroke: color-mix(in srgb, var(--tblr-border-color) 80%, transparent);
+}
+
+.dashboard-status-chart-link {
+  transform-origin: 50% 50%;
+}
+
+.dashboard-status-chart-slice {
+  transform: rotate(-90deg);
+  transform-origin: 60px 60px;
+  transition: stroke-width .18s ease, opacity .18s ease;
+}
+
+.dashboard-status-chart-link:hover .dashboard-status-chart-slice,
+.dashboard-status-chart-link:focus-visible .dashboard-status-chart-slice {
+  stroke-width: 19;
+  opacity: 0.92;
+}
+
+.dashboard-status-chart-hole {
+  fill: var(--tblr-bg-surface);
+}
+
+.dashboard-status-chart-total,
+.dashboard-status-chart-caption {
+  fill: var(--tblr-body-color);
+  text-anchor: middle;
+}
+
+.dashboard-status-chart-total {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.dashboard-status-chart-caption {
+  font-size: .72rem;
+  fill: var(--tblr-muted);
+}
+
+.dashboard-status-chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--tblr-border-color);
+  border-radius: 50%;
+}
+
+.dashboard-status-legend {
+  display: grid;
+  gap: .5rem;
+}
+
+.dashboard-status-legend-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: .75rem;
+  align-items: center;
+  padding: .75rem .875rem;
+  color: inherit;
+  background: var(--tblr-bg-surface);
+  border: 1px solid var(--tblr-border-color);
+  border-radius: var(--tblr-border-radius);
+  text-decoration: none;
+}
+
+.dashboard-status-legend-item:hover,
+.dashboard-status-legend-item:focus {
+  color: inherit;
+  background: var(--tblr-bg-surface-secondary);
+  text-decoration: none;
+}
+
+.dashboard-status-legend-swatch {
+  width: .75rem;
+  height: .75rem;
+  background: var(--dashboard-status-color);
+  border-radius: 50%;
+}
+
+.dashboard-status-legend-label {
+  font-weight: 600;
+}
+
+.dashboard-status-legend-count {
+  color: var(--tblr-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-attention-groups {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.dashboard-attention-group {
+  display: grid;
+  gap: .75rem;
+}
+
+.dashboard-attention-group-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.dashboard-attention-group-title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+@media (max-width: 991.98px) {
+  .dashboard-work-overview {
+    grid-template-columns: 1fr;
+  }
+}
