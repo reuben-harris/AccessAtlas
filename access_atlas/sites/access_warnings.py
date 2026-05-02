@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from .access_record_snapshots import AccessRecordSnapshot
 from .access_records import AccessRecordGeoJSONError, parse_access_record_geojson
-from .models import AccessRecord, Site
+from .models import AccessRecord, AccessRecordStatus, Site
 from .presentation import select_primary_access_start
 
 COORDINATE_TOLERANCE = 1e-5
@@ -23,6 +23,8 @@ def build_site_warnings(
 ) -> list[AccessWarning]:
     warnings: list[AccessWarning] = []
     for access_record in site.access_records.all():
+        if access_record.status != AccessRecordStatus.ACTIVE:
+            continue
         warnings.extend(
             build_access_record_warnings(
                 access_record,

@@ -7,6 +7,7 @@ from django.urls import reverse
 
 from access_atlas.accounts.models import User
 from access_atlas.accounts.preferences import (
+    SITES_MAP_PREFERENCE_KEY,
     get_user_preference,
     list_sort_preference_key,
     set_user_preference,
@@ -366,6 +367,103 @@ def test_site_list_sorts_by_name_and_saves_preference(client):
         user,
         list_sort_preference_key("sites"),
     ) == {"value": "name"}
+
+
+@pytest.mark.django_db
+def test_site_list_links_to_map_view(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.get(reverse("site_list"))
+
+    assert response.status_code == 200
+    assert reverse("site_map") in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_site_map_includes_sites_and_warning_state(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    warning_site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Warning Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    Site.objects.create(
+        source_name="dummy",
+        external_id="002",
+        code="AA-002",
+        name="OK Site",
+        latitude=-42.1,
+        longitude=175.1,
+        sync_status=SiteSyncStatus.STALE,
+    )
+    warning_record = AccessRecord.objects.create(site=warning_site, name="Road access")
+    AccessRecordVersion.objects.create(
+        access_record=warning_record,
+        version_number=1,
+        geojson={
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [174.25, -41.25]},
+                    "properties": {
+                        "access_atlas:type": "site",
+                        "label": "Warning Site",
+                    },
+                }
+            ],
+        },
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+
+    response = client.get(reverse("site_map"))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Warning Site" in content
+    assert "OK Site" in content
+    sites_payload = parse_json_script(content, "site-list-map-data")
+    warning_payload = next(site for site in sites_payload if site["code"] == "AA-001")
+    stale_payload = next(site for site in sites_payload if site["code"] == "AA-002")
+    assert warning_payload["hasWarnings"] is True
+    assert stale_payload["syncStatus"] == "stale"
+
+
+@pytest.mark.django_db
+def test_site_map_uses_saved_viewport_preference(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    set_user_preference(
+        user,
+        SITES_MAP_PREFERENCE_KEY,
+        {"viewport": {"lat": -40.5, "lng": 175.1, "zoom": 7}},
+    )
+
+    response = client.get(reverse("site_map"))
+
+    assert response.status_code == 200
+    preference_payload = parse_json_script(
+        response.content.decode(), "site-list-map-preference"
+    )
+    assert preference_payload["value"]["viewport"] == {
+        "lat": -40.5,
+        "lng": 175.1,
+        "zoom": 7,
+    }
 
 
 @pytest.mark.django_db
@@ -1370,6 +1468,49 @@ def test_access_warning_helpers_include_site_point_mismatch():
         == "Road access: Site coordinates differ from source-of-truth values."
         for warning in site_warnings
     )
+
+
+@pytest.mark.django_db
+def test_retired_access_records_do_not_contribute_site_warnings():
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    access_record = AccessRecord.objects.create(
+        site=site,
+        name="Road access",
+        status=AccessRecordStatus.RETIRED,
+    )
+    AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=1,
+        geojson={
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [174.4, -41.4]},
+                    "properties": {
+                        "access_atlas:type": "site",
+                        "name": "Site",
+                    },
+                }
+            ],
+        },
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+
+    record_warnings = build_access_record_warnings(access_record)
+    site_warnings = build_site_warnings(site)
+
+    assert record_warnings
+    assert site_warnings == []
 
 
 @pytest.mark.django_db
