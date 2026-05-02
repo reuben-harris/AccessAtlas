@@ -2,15 +2,17 @@
 
 ## What It Is
 
-Access Atlas is a field work planning application for teams that organise trips, site visits, and jobs against sites managed in an external source of truth.
+Access Atlas is a field work planning application for teams that organise trips, site visits, jobs, and site access information against sites managed in an external source of truth.
 
-The application owns planning data such as trips, site visits, jobs, job templates, requirements, notes, and history. Site identity and site coordinates stay read-only and are synced from a configured external feed.
+The application owns planning data such as trips, site visits, jobs, job templates, requirements, access records, notes, and history. Site identity and site coordinates stay read-only and are synced from a configured external feed. Access Atlas extends that synced site data with site-specific access records and revisions stored locally.
 
 ## Domain Model
 
 Core objects:
 
 - `Site`: a synced reference to a real-world site from an external system
+- `Access Record`: a named site-access route or method, such as general road access or emergency boat access
+- `Access Record Revision`: a versioned GeoJSON record for an Access Record
 - `Trip`: a planned field deployment
 - `Site Visit`: a planned attendance at one site during a trip
 - `Job`: a unit of work for a site, either unassigned or assigned to a site visit
@@ -19,6 +21,8 @@ Core objects:
 
 ```mermaid
 erDiagram
+    SITE ||--o{ ACCESS_RECORD : has
+    ACCESS_RECORD ||--o{ ACCESS_RECORD_REVISION : versions
     SITE ||--o{ JOB : has
     SITE ||--o{ SITE_VISIT : is_visited_in
     TRIP ||--o{ SITE_VISIT : contains
