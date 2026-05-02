@@ -159,8 +159,9 @@ would reasonably be useful without reverting the other, the changes belong in
 separate commits.
 
 After modifying Python files, run the Python lint/check pass before finishing
-the change. At minimum, run `ruff check` against the touched Python scope; run
-broader project checks when the change reaches shared behavior.
+the change. At minimum, run both `ruff check` and `ruff format --check`
+against the touched Python scope; run broader project checks when the change
+reaches shared behavior.
 
 ## Planning Workflow
 
