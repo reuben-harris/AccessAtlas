@@ -32,6 +32,18 @@
     return `trip-gantt-status-badge trip-gantt-status-badge--${status || "draft"}`;
   }
 
+  function timeBadge(task) {
+    if (task.record_type !== "site_visit") {
+      return "";
+    }
+
+    if (task.has_explicit_time) {
+      return `<span class="badge trip-gantt-time-badge">${escapeHtml(task.time_label)}</span>`;
+    }
+
+    return '<span class="badge trip-gantt-time-badge trip-gantt-time-badge--date-only">Time not set</span>';
+  }
+
   function buildTasks() {
     const tasks = [];
 
@@ -93,8 +105,8 @@
         <div class="trip-gantt-popup-code"><a href="${escapeHtml(task.url)}">${escapeHtml(task.site_code)}</a></div>
         <div class="trip-gantt-popup-name">${escapeHtml(task.site_name)}</div>
         <div class="trip-gantt-popup-trip">${escapeHtml(task.trip_name)}</div>
-        <div class="trip-gantt-popup-time">Time: ${escapeHtml(task.time_label || "Not set")}</div>
         <div class="trip-gantt-popup-meta">
+          ${timeBadge(task)}
           ${typeBadge(task)}
           <span class="badge ${badgeClass(task.status)}">${escapeHtml(task.status_label)}</span>
           ${
