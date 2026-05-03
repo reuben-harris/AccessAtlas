@@ -119,6 +119,69 @@ def test_job_form_marks_site_select_as_searchable():
 
 
 @pytest.mark.django_db
+def test_editing_assigned_job_on_approved_trip_requires_confirmation_and_resubmits(
+    client,
+):
+    from access_atlas.trips.models import TripApproval, TripStatus
+
+    leader = User.objects.create_user(email="leader@example.com")
+    approver = User.objects.create_user(email="approver@example.com")
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=leader,
+        status=TripStatus.APPROVED,
+        approval_round=1,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Site job")
+    assign_job_to_site_visit(site_visit, job)
+    TripApproval.objects.create(trip=trip, approver=approver, approval_round=1)
+    client.force_login(leader)
+
+    initial_response = client.post(
+        reverse("job_update", kwargs={"pk": job.pk}),
+        {
+            "site": site.pk,
+            "template": "",
+            "title": "Updated title",
+            "description": "",
+            "estimated_duration_minutes": "",
+            "priority": "normal",
+            "status": JobStatus.PLANNED,
+            "notes": "",
+        },
+    )
+
+    assert initial_response.status_code == 200
+    assert b"Approval reset" in initial_response.content
+
+    response = client.post(
+        reverse("job_update", kwargs={"pk": job.pk}),
+        {
+            "site": site.pk,
+            "template": "",
+            "title": "Updated title",
+            "description": "",
+            "estimated_duration_minutes": "",
+            "priority": "normal",
+            "status": JobStatus.PLANNED,
+            "notes": "",
+            "confirm_trip_approval_reset": "on",
+        },
+    )
+
+    assert response.status_code == 302
+    trip.refresh_from_db()
+    job.refresh_from_db()
+    assert job.title == "Updated title"
+    assert trip.status == TripStatus.SUBMITTED
+    assert trip.approval_round == 2
+
+
+@pytest.mark.django_db
 def test_job_from_template_form_marks_site_select_as_searchable():
     site = create_site()
 

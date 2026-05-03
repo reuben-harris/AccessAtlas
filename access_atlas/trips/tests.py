@@ -508,6 +508,119 @@ def test_assigning_job_to_approved_trip_requires_confirmation_and_resubmits(clie
 
 
 @pytest.mark.django_db
+def test_updating_site_visit_on_approved_trip_requires_confirmation_and_resubmits(
+    client,
+):
+    leader = User.objects.create_user(email="leader@example.com")
+    approver = User.objects.create_user(email="approver@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=leader,
+        status=TripStatus.APPROVED,
+        approval_round=1,
+    )
+    TripApproval.objects.create(trip=trip, approver=approver, approval_round=1)
+    site_visit = SiteVisit.objects.create(
+        trip=trip,
+        site=site,
+        planned_day=date(2026, 4, 21),
+    )
+    client.force_login(leader)
+
+    initial_response = client.post(
+        reverse("site_visit_update", kwargs={"pk": site_visit.pk}),
+        {
+            "site": site.pk,
+            "planned_day": "2026-04-22",
+            "planned_start_time": "",
+            "planned_end_time": "",
+            "status": SiteVisitStatus.PLANNED,
+            "notes": "Updated note",
+        },
+    )
+
+    assert initial_response.status_code == 200
+    assert b"Approval reset" in initial_response.content
+
+    response = client.post(
+        reverse("site_visit_update", kwargs={"pk": site_visit.pk}),
+        {
+            "site": site.pk,
+            "planned_day": "2026-04-22",
+            "planned_start_time": "",
+            "planned_end_time": "",
+            "status": SiteVisitStatus.PLANNED,
+            "notes": "Updated note",
+            "confirm_trip_approval_reset": "on",
+        },
+    )
+
+    assert response.status_code == 302
+    trip.refresh_from_db()
+    site_visit.refresh_from_db()
+    assert site_visit.planned_day == date(2026, 4, 22)
+    assert trip.status == TripStatus.SUBMITTED
+    assert trip.approval_round == 2
+
+
+@pytest.mark.django_db
+def test_unassigning_job_from_approved_trip_requires_confirmation_and_resubmits(client):
+    leader = User.objects.create_user(email="leader@example.com")
+    approver = User.objects.create_user(email="approver@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=leader,
+        status=TripStatus.APPROVED,
+        approval_round=1,
+    )
+    TripApproval.objects.create(trip=trip, approver=approver, approval_round=1)
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Site job")
+    assignment = assign_job_to_site_visit(site_visit, job)
+    client.force_login(leader)
+
+    initial_response = client.post(
+        reverse("unassign_job", kwargs={"pk": assignment.pk}),
+    )
+
+    assert initial_response.status_code == 200
+    assert b"Approval reset" in initial_response.content
+
+    response = client.post(
+        reverse("unassign_job", kwargs={"pk": assignment.pk}),
+        {"confirm_trip_approval_reset": "1"},
+    )
+
+    assert response.status_code == 302
+    trip.refresh_from_db()
+    job.refresh_from_db()
+    assert not SiteVisitJob.objects.filter(pk=assignment.pk).exists()
+    assert trip.status == TripStatus.SUBMITTED
+    assert trip.approval_round == 2
+    assert job.status == JobStatus.UNASSIGNED
+
+
+@pytest.mark.django_db
 def test_invalid_trip_date_edit_shows_error_summary_and_stable_cancel(client):
     user = User.objects.create_user(email="user@example.com")
     trip = Trip.objects.create(
@@ -1131,6 +1244,60 @@ def test_approved_trip_site_visit_form_shows_approval_reset_checkbox(client):
     )
     assert 'name="confirm_trip_approval_reset"' in content
     assert "I understand this change will send the trip back for approval." in content
+
+
+@pytest.mark.django_db
+def test_trip_history_accepts_custom_per_page(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    client.force_login(user)
+    for index in range(12):
+        trip.name = f"Trip {index}"
+        trip.save()
+
+    response = client.get(
+        reverse("trip_history", kwargs={"pk": trip.pk}),
+        {"per_page": 10},
+    )
+
+    assert response.status_code == 200
+    assert response.context["per_page"] == 10
+    assert response.context["paginator"].num_pages == 2
+
+
+@pytest.mark.django_db
+def test_site_visit_history_defaults_to_25_entries_per_page(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    client.force_login(user)
+    for index in range(30):
+        site_visit.notes = f"History {index}"
+        site_visit.save()
+
+    response = client.get(reverse("site_visit_history", kwargs={"pk": site_visit.pk}))
+
+    assert response.status_code == 200
+    assert response.context["per_page"] == 25
+    assert response.context["paginator"].num_pages == 2
 
 
 @pytest.mark.django_db

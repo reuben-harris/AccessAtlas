@@ -1514,6 +1514,67 @@ def test_retired_access_records_do_not_contribute_site_warnings():
 
 
 @pytest.mark.django_db
+def test_site_warnings_ignore_retired_records_when_active_record_is_clean():
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    retired_record = AccessRecord.objects.create(
+        site=site,
+        name="Old road access",
+        status=AccessRecordStatus.RETIRED,
+    )
+    active_record = AccessRecord.objects.create(site=site, name="Current road access")
+    AccessRecordVersion.objects.create(
+        access_record=retired_record,
+        version_number=1,
+        geojson={
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [174.4, -41.4]},
+                    "properties": {
+                        "access_atlas:type": "site",
+                        "name": "Site",
+                    },
+                }
+            ],
+        },
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+    AccessRecordVersion.objects.create(
+        access_record=active_record,
+        version_number=1,
+        geojson={
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [174.1, -41.1]},
+                    "properties": {
+                        "access_atlas:type": "site",
+                        "name": "Site",
+                    },
+                }
+            ],
+        },
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+
+    site_warnings = build_site_warnings(site)
+
+    assert site_warnings == []
+
+
+@pytest.mark.django_db
 def test_access_record_downloads_return_current_version_data(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)

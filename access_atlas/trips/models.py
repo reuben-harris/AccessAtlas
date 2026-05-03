@@ -4,11 +4,18 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
-from django.utils import timezone
 from simple_history.models import HistoricalRecords
 
 from access_atlas.jobs.models import Job
 from access_atlas.sites.models import Site
+
+from .scheduling import (
+    infer_planned_day,
+    validate_site_visit_schedule,
+)
+from .scheduling import (
+    planned_date as scheduled_planned_date,
+)
 
 
 class TripStatus(models.TextChoices):
@@ -126,11 +133,11 @@ class SiteVisit(models.Model):
         return f"{self.trip} - {self.site}"
 
     def save(self, *args, **kwargs):
-        if not self.planned_day:
-            if self.planned_start:
-                self.planned_day = self.planned_date(self.planned_start)
-            elif self.planned_end:
-                self.planned_day = self.planned_date(self.planned_end)
+        self.planned_day = infer_planned_day(
+            self.planned_day,
+            self.planned_start,
+            self.planned_end,
+        )
         return super().save(*args, **kwargs)
 
     def get_absolute_url(self) -> str:
@@ -141,50 +148,15 @@ class SiteVisit(models.Model):
 
     @staticmethod
     def planned_date(value):
-        if timezone.is_aware(value):
-            return timezone.localtime(value).date()
-        return value.date()
+        return scheduled_planned_date(value)
 
     def clean(self) -> None:
-        errors = {}
-        if not self.planned_day:
-            if self.planned_start:
-                self.planned_day = self.planned_date(self.planned_start)
-            elif self.planned_end:
-                self.planned_day = self.planned_date(self.planned_end)
-        if not self.planned_day:
-            errors["planned_day"] = "Choose a trip day."
-        if self.planned_end and not self.planned_start:
-            errors["planned_start"] = "A planned end requires a planned start."
-        if (
-            self.planned_start
-            and self.planned_end
-            and self.planned_end <= self.planned_start
-        ):
-            errors["planned_end"] = "Planned end must be after planned start."
-        if errors or not self.trip_id:
-            if errors:
-                raise ValidationError(errors)
-            return
-
-        trip_start = self.trip.start_date
-        trip_end = self.trip.end_date
-        trip_date_message = f"Must be between {trip_start} and {trip_end}."
-        if self.planned_day:
-            if self.planned_day < trip_start or self.planned_day > trip_end:
-                errors["planned_day"] = trip_date_message
-        if self.planned_start:
-            planned_start_date = self.planned_date(self.planned_start)
-            if self.planned_day and planned_start_date != self.planned_day:
-                errors["planned_start"] = "Start time must be on the selected trip day."
-            elif planned_start_date < trip_start or planned_start_date > trip_end:
-                errors["planned_start"] = trip_date_message
-        if self.planned_end:
-            planned_end_date = self.planned_date(self.planned_end)
-            if self.planned_day and planned_end_date != self.planned_day:
-                errors["planned_end"] = "End time must be on the selected trip day."
-            elif planned_end_date < trip_start or planned_end_date > trip_end:
-                errors["planned_end"] = trip_date_message
+        self.planned_day, errors = validate_site_visit_schedule(
+            trip=self.trip if self.trip_id else None,
+            planned_day=self.planned_day,
+            planned_start=self.planned_start,
+            planned_end=self.planned_end,
+        )
         if errors:
             raise ValidationError(errors)
 

@@ -124,6 +124,9 @@ def test_dashboard_shows_actionable_sections(logged_in_client, user):
     assert stale_site.code in content
     assert 'href="/jobs/?status=unassigned"' in content
     assert 'href="/jobs/?status=planned"' in content
+    assert f'href="{active_trip.get_absolute_url()}"' in content
+    assert f'href="{warning_site.get_access_records_url()}"' in content
+    assert f'href="{stale_site.get_absolute_url()}"' in content
 
 
 @pytest.mark.django_db

@@ -7,6 +7,7 @@ from django.utils import timezone
 from access_atlas.jobs.models import Job, JobStatus
 
 from .models import SiteVisit, SiteVisitStatus, Trip
+from .scheduling import validate_site_visit_schedule
 from .services import (
     JOB_OUTCOME_CANCELLED,
     JOB_OUTCOME_COMPLETED,
@@ -145,27 +146,31 @@ class SiteVisitForm(forms.ModelForm):
         if not trip:
             return cleaned_data
 
-        trip_date_message = f"Must be between {trip.start_date} and {trip.end_date}."
-        if planned_day and (
-            planned_day < trip.start_date or planned_day > trip.end_date
-        ):
-            self.add_error("planned_day", trip_date_message)
-
-        if planned_end_time and not planned_start_time:
-            self.add_error("planned_start_time", "An end time requires a start time.")
-        if (
-            planned_start_time
-            and planned_end_time
-            and planned_end_time <= planned_start_time
-        ):
-            self.add_error("planned_end_time", "End time must be after start time.")
-
         planned_start = None
         planned_end = None
         if planned_day and planned_start_time:
             planned_start = self.combine_day_and_time(planned_day, planned_start_time)
         if planned_day and planned_end_time:
             planned_end = self.combine_day_and_time(planned_day, planned_end_time)
+
+        planned_day, schedule_errors = validate_site_visit_schedule(
+            trip=trip,
+            planned_day=planned_day,
+            planned_start=planned_start,
+            planned_end=planned_end,
+            message_overrides={
+                "planned_start_required_for_end": (
+                    "An end time requires a start time."
+                ),
+                "planned_end_after_start": "End time must be after start time.",
+            },
+        )
+        field_map = {
+            "planned_start": "planned_start_time",
+            "planned_end": "planned_end_time",
+        }
+        for field_name, error in schedule_errors.items():
+            self.add_error(field_map.get(field_name, field_name), error)
 
         cleaned_data["planned_day"] = planned_day
         cleaned_data["planned_start"] = planned_start
@@ -181,10 +186,6 @@ class SiteVisitForm(forms.ModelForm):
             self.instance.clean()
         except forms.ValidationError as exc:
             if hasattr(exc, "message_dict"):
-                field_map = {
-                    "planned_start": "planned_start_time",
-                    "planned_end": "planned_end_time",
-                }
                 for field_name, errors in exc.message_dict.items():
                     target_field = field_map.get(field_name, field_name)
                     for error in errors:
