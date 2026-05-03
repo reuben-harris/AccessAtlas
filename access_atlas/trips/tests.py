@@ -706,10 +706,10 @@ def test_trip_form_does_not_offer_status_field():
 def test_site_visit_form_marks_site_select_as_searchable():
     form = SiteVisitForm()
 
-    attrs = form.fields["site"].widget.attrs
+    widget = form.fields["site"].widget
 
-    assert attrs["data-searchable-select"] == "true"
-    assert attrs["data-search-placeholder"] == "Search sites"
+    assert widget.url == "autocomplete_sites"
+    assert widget.label_field == "label"
 
 
 @pytest.mark.django_db
@@ -743,10 +743,47 @@ def test_assign_job_form_marks_job_select_as_searchable():
     )
 
     form = AssignJobForm(site=site)
-    attrs = form.fields["job"].widget.attrs
+    widget = form.fields["job"].widget
 
-    assert attrs["data-searchable-select"] == "true"
-    assert attrs["data-search-placeholder"] == "Search jobs"
+    assert widget.url == "autocomplete_unassigned_jobs"
+    assert widget.label_field == "label"
+
+
+@pytest.mark.django_db
+def test_trip_create_includes_tomselect_media(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.get(reverse("trip_create"))
+
+    assert response.status_code == 200
+    assert b"django_tomselect/js/django-tomselect.js" in response.content
+
+
+@pytest.mark.django_db
+def test_site_visit_detail_includes_tomselect_media(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+
+    response = client.get(reverse("site_visit_detail", kwargs={"pk": site_visit.pk}))
+
+    assert response.status_code == 200
+    assert b"django_tomselect/js/django-tomselect.js" in response.content
 
 
 @pytest.mark.django_db

@@ -248,3 +248,53 @@ def test_dummy_feed_requires_bearer_token(client, settings):
     )
     assert response.status_code == 200
     assert response.json()["schema_version"] == "1.0"
+
+
+@pytest.mark.django_db
+def test_site_autocomplete_returns_code_and_name(logged_in_client):
+    Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Example Ridge Station",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+
+    response = logged_in_client.get(reverse("autocomplete_sites"), {"q": "Ridge"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["results"][0]["label"] == "AA-001 - Example Ridge Station"
+
+
+@pytest.mark.django_db
+def test_team_member_autocomplete_prefers_display_name(logged_in_client):
+    User.objects.create_user(email="alpha@example.com", display_name="Alpha User")
+    User.objects.create_user(email="bravo@example.com")
+
+    response = logged_in_client.get(
+        reverse("autocomplete_team_members"),
+        {"q": "alpha"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["results"][0]["label"] == "Alpha User"
+
+
+@pytest.mark.django_db
+def test_job_template_autocomplete_only_returns_active_templates(logged_in_client):
+    JobTemplate.objects.create(title="Active Template", is_active=True)
+    JobTemplate.objects.create(title="Inactive Template", is_active=False)
+
+    response = logged_in_client.get(
+        reverse("autocomplete_job_templates"),
+        {"q": "Template"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    labels = [item["title"] for item in payload["results"]]
+    assert "Active Template" in labels
+    assert "Inactive Template" not in labels

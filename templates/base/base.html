@@ -21,6 +21,7 @@
         }
       })();
     </script>
+    {% block head %}{% endblock %}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.1/dist/tabler-icons.min.css">
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
@@ -28,7 +29,7 @@
     <script src="{% static 'js/csrf.js' %}"></script>
     <script src="{% static 'js/map_base.js' %}"></script>
     <script src="{% static 'js/theme.js' %}" defer></script>
-    {% block head %}{% endblock %}
+    {% block head_after_app %}{% endblock %}
   </head>
   <body{% if request.user.is_authenticated %} data-authenticated-user="true"{% endif %}>
     <div class="page">

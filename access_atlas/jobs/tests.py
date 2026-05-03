@@ -112,10 +112,10 @@ def test_job_form_does_not_offer_planned_status():
 def test_job_form_marks_site_select_as_searchable():
     form = JobForm()
 
-    attrs = form.fields["site"].widget.attrs
+    widget = form.fields["site"].widget
 
-    assert attrs["data-searchable-select"] == "true"
-    assert attrs["data-search-placeholder"] == "Search sites"
+    assert widget.url == "autocomplete_sites"
+    assert widget.label_field == "label"
 
 
 @pytest.mark.django_db
@@ -186,13 +186,24 @@ def test_job_from_template_form_marks_site_select_as_searchable():
     site = create_site()
 
     form = JobFromTemplateForm(site_queryset=Site.objects.filter(pk=site.pk))
-    site_attrs = form.fields["site"].widget.attrs
-    template_attrs = form.fields["template"].widget.attrs
+    site_widget = form.fields["site"].widget
+    template_widget = form.fields["template"].widget
 
-    assert site_attrs["data-searchable-select"] == "true"
-    assert site_attrs["data-search-placeholder"] == "Search sites"
-    assert template_attrs["data-searchable-select"] == "true"
-    assert template_attrs["data-search-placeholder"] == "Search templates"
+    assert site_widget.url == "autocomplete_sites"
+    assert site_widget.label_field == "label"
+    assert template_widget.url == "autocomplete_job_templates"
+    assert template_widget.label_field == "title"
+
+
+@pytest.mark.django_db
+def test_job_from_template_page_includes_tomselect_media(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.get(reverse("job_create_from_template"))
+
+    assert response.status_code == 200
+    assert b"django_tomselect/js/django-tomselect.js" in response.content
 
 
 @pytest.mark.django_db

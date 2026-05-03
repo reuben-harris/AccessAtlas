@@ -3,8 +3,13 @@ from datetime import datetime, timedelta
 from django import forms
 from django.forms.models import construct_instance
 from django.utils import timezone
+from django_tomselect.app_settings import Const, PluginRemoveButton, TomSelectConfig
+from django_tomselect.forms import (
+    TomSelectModelChoiceField,
+    TomSelectModelMultipleChoiceField,
+)
 
-from access_atlas.jobs.models import Job, JobStatus
+from access_atlas.jobs.models import JobStatus
 
 from .models import SiteVisit, SiteVisitStatus, Trip
 from .scheduling import validate_site_visit_schedule
@@ -14,6 +19,41 @@ from .services import (
     JOB_OUTCOME_RETURN,
     get_trip_assignments,
 )
+
+
+def _site_tomselect_config(*, placeholder: str) -> TomSelectConfig:
+    return TomSelectConfig(
+        url="autocomplete_sites",
+        css_framework="bootstrap5",
+        label_field="label",
+        placeholder=placeholder,
+        minimum_query_length=0,
+        preload="focus",
+    )
+
+
+def _team_members_tomselect_config() -> TomSelectConfig:
+    return TomSelectConfig(
+        url="autocomplete_team_members",
+        css_framework="bootstrap5",
+        label_field="label",
+        placeholder="Select team members",
+        minimum_query_length=0,
+        preload="focus",
+        plugin_remove_button=PluginRemoveButton(),
+    )
+
+
+def _assignable_jobs_tomselect_config(site_id: int) -> TomSelectConfig:
+    return TomSelectConfig(
+        url="autocomplete_unassigned_jobs",
+        css_framework="bootstrap5",
+        label_field="label",
+        placeholder="Search jobs",
+        minimum_query_length=0,
+        preload="focus",
+        filter_by=[Const(str(site_id), "site_id")],
+    )
 
 
 class TripCloseoutJobOutcome:
@@ -29,6 +69,11 @@ class TripCloseoutJobOutcome:
 
 
 class TripForm(forms.ModelForm):
+    team_members = TomSelectModelMultipleChoiceField(
+        required=False,
+        config=_team_members_tomselect_config(),
+    )
+
     class Meta:
         model = Trip
         fields = [
@@ -42,9 +87,6 @@ class TripForm(forms.ModelForm):
         widgets = {
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "end_date": forms.DateInput(attrs={"type": "date"}),
-            "team_members": forms.CheckboxSelectMultiple(
-                attrs={"class": "form-selectgroup-input"}
-            ),
         }
 
 
@@ -54,6 +96,9 @@ class TripDayChoiceField(forms.ChoiceField):
 
 
 class SiteVisitForm(forms.ModelForm):
+    site = TomSelectModelChoiceField(
+        config=_site_tomselect_config(placeholder="Search sites"),
+    )
     planned_day = TripDayChoiceField(
         label="Visit day",
         widget=forms.RadioSelect,
@@ -74,12 +119,6 @@ class SiteVisitForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         trip = kwargs.pop("trip", None)
         super().__init__(*args, **kwargs)
-        self.fields["site"].widget.attrs.update(
-            {
-                "data-searchable-select": "true",
-                "data-search-placeholder": "Search sites",
-            }
-        )
         if trip is not None:
             self.instance.trip = trip
         trip = getattr(self.instance, "trip", None) if self.instance.trip_id else trip
@@ -223,22 +262,14 @@ class SiteVisitForm(forms.ModelForm):
 
 
 class AssignJobForm(forms.Form):
-    job = forms.ModelChoiceField(queryset=Job.objects.none())
+    job = TomSelectModelChoiceField(required=True)
 
     def __init__(self, *args, **kwargs):
         site = kwargs.pop("site")
         super().__init__(*args, **kwargs)
-        self.fields["job"].queryset = Job.objects.filter(
-            site=site,
-            status=JobStatus.UNASSIGNED,
-            site_visit_assignment__isnull=True,
-        )
-        self.fields["job"].widget.attrs.update(
-            {
-                "class": "form-select",
-                "data-searchable-select": "true",
-                "data-search-placeholder": "Search jobs",
-            }
+        self.fields["job"] = TomSelectModelChoiceField(
+            label="Job",
+            config=_assignable_jobs_tomselect_config(site.pk),
         )
 
 

@@ -2,6 +2,10 @@
 {% load status_badges %}
 
 {% block title %}{{ object.site.code }} Visit - Access Atlas{% endblock %}
+{% block head %}
+  {{ block.super }}
+  {{ assign_form.media }}
+{% endblock %}
 
 {% block content %}
 <div class="page-header d-print-none">

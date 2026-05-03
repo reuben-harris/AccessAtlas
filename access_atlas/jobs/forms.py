@@ -1,6 +1,30 @@
 from django import forms
+from django_tomselect.app_settings import TomSelectConfig
+from django_tomselect.forms import TomSelectModelChoiceField
 
 from .models import Job, JobStatus, JobTemplate, Requirement, TemplateRequirement
+
+
+def _site_tomselect_config() -> TomSelectConfig:
+    return TomSelectConfig(
+        url="autocomplete_sites",
+        css_framework="bootstrap5",
+        label_field="label",
+        placeholder="Search sites",
+        minimum_query_length=0,
+        preload="focus",
+    )
+
+
+def _template_tomselect_config() -> TomSelectConfig:
+    return TomSelectConfig(
+        url="autocomplete_job_templates",
+        css_framework="bootstrap5",
+        label_field="title",
+        placeholder="Search templates",
+        minimum_query_length=0,
+        preload="focus",
+    )
 
 
 class JobTemplateForm(forms.ModelForm):
@@ -23,14 +47,10 @@ class TemplateRequirementForm(forms.ModelForm):
 
 
 class JobForm(forms.ModelForm):
+    site = TomSelectModelChoiceField(config=_site_tomselect_config())
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["site"].widget.attrs.update(
-            {
-                "data-searchable-select": "true",
-                "data-search-placeholder": "Search sites",
-            }
-        )
         if self.instance.pk and self.instance.is_assigned:
             return
         choices = [
@@ -55,27 +75,12 @@ class JobForm(forms.ModelForm):
 
 
 class JobFromTemplateForm(forms.Form):
-    site = forms.ModelChoiceField(queryset=None)
-    template = forms.ModelChoiceField(
-        queryset=JobTemplate.objects.filter(is_active=True)
-    )
+    site = TomSelectModelChoiceField(config=_site_tomselect_config())
+    template = TomSelectModelChoiceField(config=_template_tomselect_config())
 
     def __init__(self, *args, **kwargs):
-        site_queryset = kwargs.pop("site_queryset")
+        kwargs.pop("site_queryset")
         super().__init__(*args, **kwargs)
-        self.fields["site"].queryset = site_queryset
-        self.fields["site"].widget.attrs.update(
-            {
-                "data-searchable-select": "true",
-                "data-search-placeholder": "Search sites",
-            }
-        )
-        self.fields["template"].widget.attrs.update(
-            {
-                "data-searchable-select": "true",
-                "data-search-placeholder": "Search templates",
-            }
-        )
 
 
 class JobImportUploadForm(forms.Form):

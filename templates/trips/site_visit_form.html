@@ -2,6 +2,10 @@
 {% load form_extras %}
 
 {% block title %}{{ form_title|default:"Edit" }} - Access Atlas{% endblock %}
+{% block head %}
+  {{ block.super }}
+  {{ form.media }}
+{% endblock %}
 
 {% block content %}
 <div class="page-header">

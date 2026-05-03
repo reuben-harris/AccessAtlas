@@ -1,6 +1,10 @@
 {% extends "base/base.html" %}
 
 {% block title %}Create Job From Template - Access Atlas{% endblock %}
+{% block head %}
+  {{ block.super }}
+  {{ form.media }}
+{% endblock %}
 
 {% block content %}
 <h2 class="page-title">Create Job From Template</h2>

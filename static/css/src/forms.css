@@ -43,8 +43,214 @@ input[type="time"].form-control.is-invalid {
   text-align: left;
 }
 
-.searchable-select-input {
-  margin-bottom: .5rem;
+/* Tom Select now replaces the old custom searchable-select pattern. Keep these
+   overrides narrow: align it with Tabler inputs, make selected chips legible,
+   and ensure the dropdown remains readable in dark mode. */
+.ts-wrapper {
+  width: 100%;
+}
+
+.ts-wrapper.form-select,
+.ts-wrapper.form-control {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ts-control {
+  min-height: 2.625rem;
+  padding: .3125rem .75rem;
+  border: 1px solid var(--tblr-border-color);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45), 0 1px 2px
+    rgba(15, 23, 42, 0.04);
+  border-radius: var(--tblr-border-radius);
+  background: var(--tblr-bg-forms) !important;
+  color: var(--tblr-body-color);
+}
+
+.ts-wrapper.single .ts-control,
+.ts-wrapper.multi .ts-control,
+.ts-wrapper.single.input-active .ts-control {
+  border: 1px solid var(--tblr-border-color) !important;
+  background: var(--tblr-bg-forms) !important;
+}
+
+.ts-wrapper.multi .ts-control {
+  align-items: center;
+  gap: .25rem;
+}
+
+.ts-wrapper.multi.has-items .ts-control {
+  padding: .3125rem;
+}
+
+.ts-wrapper.focus .ts-control {
+  border-color: rgba(var(--tblr-primary-rgb), 0.48);
+  box-shadow: 0 0 0 .125rem rgba(var(--tblr-primary-rgb), 0.18);
+}
+
+.ts-control > input {
+  color: inherit;
+}
+
+.has-items .ts-control > input {
+  margin: 0 !important;
+}
+
+.ts-wrapper.multi:not(.has-items) .ts-control > input {
+  margin-left: .25rem !important;
+}
+
+.ts-control > input::placeholder {
+  color: var(--tblr-secondary-color);
+}
+
+.ts-wrapper.multi .ts-control > div {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  min-height: 1.5rem;
+  margin: 0;
+  padding: .125rem .5rem;
+  border: 1px solid rgba(var(--tblr-primary-rgb), 0.18);
+  border-radius: calc(var(--tblr-border-radius) - 2px);
+  background: rgba(var(--tblr-primary-rgb), 0.08);
+  color: var(--tblr-body-color);
+}
+
+.ts-wrapper.multi .ts-control > div.active {
+  border-color: rgba(var(--tblr-primary-rgb), 0.7);
+  background: rgba(var(--tblr-primary-rgb), 0.92);
+  color: #fff;
+}
+
+.ts-wrapper.plugin-remove_button:not(.rtl) .item .remove {
+  border-left-color: rgba(var(--tblr-primary-rgb), 0.18);
+}
+
+.ts-wrapper.plugin-remove_button .item .remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.125rem;
+  line-height: 1;
+}
+
+.ts-wrapper.multi .ts-control > div.active .remove {
+  color: inherit;
+}
+
+.ts-wrapper.plugin-remove_button .item .remove:hover {
+  background: rgba(var(--tblr-primary-rgb), 0.12);
+}
+
+.ts-dropdown {
+  margin-top: .25rem;
+  border: 1px solid var(--tblr-border-color);
+  border-top: 1px solid var(--tblr-border-color);
+  border-radius: var(--tblr-border-radius);
+  background: var(--tblr-bg-surface);
+  color: var(--tblr-body-color);
+  box-shadow: 0 .5rem 1rem rgba(0, 0, 0, 0.12);
+}
+
+.ts-dropdown .option,
+.ts-dropdown .optgroup-header,
+.ts-dropdown .no-results,
+.ts-dropdown .create {
+  padding: .4375rem .75rem;
+}
+
+.ts-dropdown .option,
+.ts-dropdown [data-selectable].option,
+.ts-dropdown .create,
+.ts-dropdown .no-results {
+  color: var(--tblr-body-color);
+}
+
+.ts-dropdown .active {
+  background: rgba(var(--tblr-primary-rgb), 0.12);
+  color: var(--tblr-emphasis-color);
+}
+
+.ts-dropdown .optgroup-header {
+  color: var(--tblr-secondary-color);
+  background: var(--tblr-bg-surface);
+}
+
+.ts-dropdown .create,
+.ts-dropdown .no-results {
+  color: var(--tblr-secondary-color);
+}
+
+[data-bs-theme="dark"] .ts-control,
+[data-bs-theme="dark"] .ts-wrapper.single .ts-control,
+[data-bs-theme="dark"] .ts-wrapper.multi .ts-control,
+[data-bs-theme="dark"] .ts-wrapper.single.input-active .ts-control {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03), 0 1px 2px rgba(0, 0, 0, 0.18);
+  background: #151c2c !important;
+  color: #eff3f8;
+}
+
+[data-bs-theme="dark"] .ts-control > input::placeholder {
+  color: rgba(255, 255, 255, 0.46);
+}
+
+[data-bs-theme="dark"] .ts-control > input,
+[data-bs-theme="dark"] .ts-control > input:not(:placeholder-shown) {
+  color: #eff3f8 !important;
+  -webkit-text-fill-color: #eff3f8;
+}
+
+[data-bs-theme="dark"] .ts-wrapper.multi .ts-control > div {
+  border-color: rgba(114, 159, 255, 0.28);
+  background: rgba(114, 159, 255, 0.14);
+  color: #eff3f8;
+}
+
+[data-bs-theme="dark"] .ts-wrapper.multi .ts-control > div.active {
+  border-color: rgba(114, 159, 255, 0.54);
+  background: rgba(114, 159, 255, 0.28);
+  color: #fff;
+}
+
+[data-bs-theme="dark"] .ts-wrapper.plugin-remove_button:not(.rtl) .item .remove {
+  border-left-color: rgba(255, 255, 255, 0.14);
+}
+
+[data-bs-theme="dark"] .ts-wrapper.plugin-remove_button .item .remove:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+[data-bs-theme="dark"] .ts-dropdown {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: #1b2436;
+  color: #eff3f8;
+  box-shadow: 0 .75rem 1.5rem rgba(0, 0, 0, 0.35);
+}
+
+[data-bs-theme="dark"] .ts-dropdown .option,
+[data-bs-theme="dark"] .ts-dropdown [data-selectable].option,
+[data-bs-theme="dark"] .ts-dropdown .create,
+[data-bs-theme="dark"] .ts-dropdown .no-results {
+  color: #eff3f8;
+}
+
+[data-bs-theme="dark"] .ts-dropdown .optgroup-header {
+  color: rgba(255, 255, 255, 0.58);
+  background: #1b2436;
+}
+
+[data-bs-theme="dark"] .ts-dropdown .active {
+  background: rgba(114, 159, 255, 0.18);
+  color: #fff;
+}
+
+[data-bs-theme="dark"] .ts-dropdown .create,
+[data-bs-theme="dark"] .ts-dropdown .no-results {
+  color: rgba(255, 255, 255, 0.58);
 }
 
 /* Site-visit day selection is a compact per-trip button group rather than a

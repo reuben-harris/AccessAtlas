@@ -11,6 +11,7 @@ dependencies = [
     { name = "django" },
     { name = "django-allauth", extra = ["socialaccount"] },
     { name = "django-simple-history" },
+    { name = "django-tomselect" },
     { name = "geojson2kml" },
     { name = "gunicorn" },
     { name = "psycopg", extra = ["binary"] },
@@ -29,6 +30,7 @@ requires-dist = [
     { name = "django", specifier = ">=6.0,<6.1" },
     { name = "django-allauth", extras = ["socialaccount"], specifier = ">=65.16.1" },
     { name = "django-simple-history", specifier = ">=3.10.1" },
+    { name = "django-tomselect", specifier = ">=2026.4.1" },
     { name = "geojson2kml", specifier = ">=0.2.0" },
     { name = "gunicorn", specifier = ">=23.0.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2.13" },
@@ -272,6 +274,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a8/11/410049f1454b99a78f719d3403fc89437c2a38ee092e939d5ab8d4846738/django_simple_history-3.11.0.tar.gz", hash = "sha256:2c587479cf2c3071e9aa555d0d11b73676994db4910770958f57659ade2deffe", size = 234862, upload-time = "2025-12-11T13:50:55.022Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6e/c2/e9854a3438cfc80891ab4d3826b7c61a0fe5ba3a4da89104a8f5c9afb5df/django_simple_history-3.11.0-py3-none-any.whl", hash = "sha256:f3c298db49e418ffce7fb709a5e83108452ea2179ec5c4b9232484c25427192a", size = 81868, upload-time = "2025-12-11T13:50:53.71Z" },
+]
+
+[[package]]
+name = "django-tomselect"
+version = "2026.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/33/1a/241c88c83bef52731c61040be7f5fb042e57db54466c965b009395a1cf11/django_tomselect-2026.4.1.tar.gz", hash = "sha256:fa425eb57786ba1936d4283799e876a67e73aba6cde1d4c30831d66f3670b6c2", size = 230621, upload-time = "2026-04-08T20:39:16.387Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/42/c4/ac9f9d74dae53d6260ad27b61a7cb6951b9234a23eaeaa928eb95a484298/django_tomselect-2026.4.1-py3-none-any.whl", hash = "sha256:439114f279b099d2b68e5fa7e5ec31934c3e9ff919cec7e90e38b0e4eac7150f", size = 266531, upload-time = "2026-04-08T20:39:14.098Z" },
 ]
 
 [[package]]
