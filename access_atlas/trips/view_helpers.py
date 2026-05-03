@@ -60,6 +60,8 @@ def site_visit_detail_sections(
 
 
 def trip_action_controls(trip: Trip, user) -> dict[str, object]:
+    """Build the trip action/button state that drives the overview template."""
+
     closed_state = trip.get_status_display().lower()
     submit_disabled_reason = None
     if trip.is_terminal:
@@ -82,9 +84,9 @@ def trip_action_controls(trip: Trip, user) -> dict[str, object]:
     elif trip.trip_leader_id == user.pk:
         approve_disabled_reason = "The trip leader cannot approve this trip."
     elif not user_can_approve_trip(trip, user):
-        approve_disabled_reason = (
-            "You have already approved this trip."
-        )
+        # Approvals are tracked per round. Once a user approves the current
+        # round, the button should explain why they cannot approve again.
+        approve_disabled_reason = "You have already approved this trip."
 
     cancel_disabled_reason = None
     close_disabled_reason = None
@@ -110,6 +112,7 @@ def trip_action_controls(trip: Trip, user) -> dict[str, object]:
 
 
 def trip_approval_summary(trip: Trip) -> dict[str, object]:
+    """Return the current approval round summary for the trip overview card."""
     current_approvals = list(trip.current_approvals().select_related("approver"))
     return {
         "submitted_by": trip.submitted_by,

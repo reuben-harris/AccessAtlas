@@ -107,6 +107,9 @@ class AccessRecordDetailView(LoginRequiredMixin, DetailView):
                     "Latest revision could not be parsed for feature summary."
                 )
             elif snapshot.parsed is not None:
+                # The detail page shows a human summary of the latest parsed
+                # revision rather than raw GeoJSON so the table, warnings, and
+                # map all describe the same interpreted feature set.
                 feature_rows = []
                 for point in snapshot.parsed.points:
                     details = point_details(point) or "-"
@@ -172,6 +175,8 @@ class AccessRecordMapView(LoginRequiredMixin, DetailView):
         context["site_access_map_preference"] = {
             "key": "",
             "value": {
+                # Single-record maps do not persist per-user visibility because
+                # there is nothing meaningful to toggle across visits.
                 "visible_record_ids": [self.object.pk],
                 "animate_tracks": True,
             },

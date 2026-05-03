@@ -78,6 +78,8 @@
   const visibleRecordIds = new Set(
     hasSavedVisibilityPreference ? savedVisibleRecordIds : allRecordIds,
   );
+  // Visibility is per-record rather than per-feature so a user can hide an
+  // entire access record and all of its points/tracks together.
   const hasRecordToggles = toggleButtons.length > 0;
 
   const map = L.map(mapElement).setView([siteLatitude, siteLongitude], 12);
@@ -171,6 +173,8 @@
   function drawFeatures() {
     featureLayer.clearLayers();
     const layers = [];
+    // The server emits a normalized map payload, so the client only concerns
+    // itself with visibility filters and rendering choices.
     for (const point of points) {
       if (
         hasRecordToggles &&
@@ -269,6 +273,8 @@
 
   const TrackAnimationControl = L.Control.extend({
     onAdd() {
+      // Animation is persisted because users tend to have a stable preference
+      // about whether ant-path motion is helpful or distracting.
       const container = L.DomUtil.create("div", "site-map-animation-control");
       const button = L.DomUtil.create("button", "", container);
       button.type = "button";

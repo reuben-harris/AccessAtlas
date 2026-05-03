@@ -21,6 +21,8 @@ from .services import (
 
 
 def hidden_post_fields(post_data) -> list[tuple[str, str]]:
+    # The approval confirmation page needs to replay the original POST without
+    # duplicating CSRF tokens or the confirmation checkbox itself.
     return [
         (key, value)
         for key, value in post_data.items()
@@ -38,6 +40,8 @@ def assign_job(request, pk):
         and site_visit.trip.status == TripStatus.APPROVED
         and request.POST.get(APPROVAL_CONFIRM_FIELD) != "1"
     ):
+        # Assignment changes are planning changes, so approved trips must route
+        # through the same explicit reset confirmation as edit forms.
         return render(
             request,
             "trips/trip_approval_confirm.html",
@@ -55,6 +59,9 @@ def assign_job(request, pk):
         job = form.cleaned_data["job"]
         try:
             with transaction.atomic():
+                # The assignment and approval reset are one state transition.
+                # Keep them in one transaction so we never assign a job without
+                # also moving the trip back to submitted.
                 assign_job_to_site_visit(site_visit, job)
                 invalidate_trip_approval(
                     site_visit.trip,
@@ -81,6 +88,7 @@ def unassign_job(request, pk):
         and site_visit.trip.status == TripStatus.APPROVED
         and request.POST.get(APPROVAL_CONFIRM_FIELD) != "1"
     ):
+        # Unassign follows the same reset flow as assign for consistency.
         return render(
             request,
             "trips/trip_approval_confirm.html",
@@ -143,6 +151,8 @@ def close_trip_view(request, pk):
         return redirect(trip)
     form = TripCloseoutForm(request.POST or None, trip=trip)
     if request.method == "POST" and form.is_valid():
+        # Closeout writes to both the trip and its linked planning objects, so
+        # keep the orchestration inside the service layer.
         close_trip(trip, form.cleaned_data)
         messages.success(request, f"Closed trip: {trip.name}")
         return redirect(trip)

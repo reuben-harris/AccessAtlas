@@ -44,6 +44,8 @@
       .filter((statusLayer) => statusLayer.visible)
       .map((statusLayer) => statusLayer.value),
   );
+  // Visibility is persisted as a user preference so the map can reopen in the
+  // same operational state the user last chose.
 
   const map = L.map(mapElement).setView([-41.2865, 174.7762], 5);
   const markerLayer = L.layerGroup().addTo(map);
@@ -100,6 +102,8 @@
   }
 
   function getDominantStatus(jobs) {
+    // One marker can represent multiple jobs at a site, so use the highest-rank
+    // visible status as the visual summary color for that cluster.
     return jobs
       .map((job) => statusByValue.get(job.statusValue))
       .filter(Boolean)
@@ -217,6 +221,8 @@
   visibleMarkers = drawMarkers();
 
   function applySavedViewport() {
+    // A saved viewport wins over fit-to-data so users can return to the same
+    // planning area they were inspecting previously.
     if (
       savedPreference.viewport &&
       Number.isFinite(Number(savedPreference.viewport.lat)) &&

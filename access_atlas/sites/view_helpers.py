@@ -38,6 +38,8 @@ def build_site_access_map_data(
     access_records: list[AccessRecord],
     snapshots_by_record_id,
 ) -> dict[str, list[dict]]:
+    # Access map payloads are built from parsed snapshots rather than raw
+    # GeoJSON so every view uses the same interpretation of points and tracks.
     points = []
     tracks = []
     for access_record in access_records:
@@ -190,6 +192,9 @@ def map_tile_layer() -> dict[str, object]:
 
 
 def site_warning_site_ids(sites: list[Site]) -> set[int]:
+    # The list/map views only need a boolean warning flag per site, so compute
+    # that once up front instead of repeating full warning rendering in the
+    # template layer.
     warning_site_ids = set()
     for site in sites:
         access_records = list(site.access_records.all())
@@ -209,6 +214,9 @@ class SiteDetailContextMixin:
         if hasattr(self, "_cached_site_detail_data"):
             return self._cached_site_detail_data
 
+        # Site detail, access records, and history all need the same access
+        # record snapshot/warning context. Cache it on the view instance so the
+        # shared detail pages do not rebuild it multiple times per request.
         access_records = list(self.object.access_records.all())
         snapshots_by_record_id = build_access_record_snapshots(access_records)
         site_search_url = google_maps_search_url(
@@ -254,6 +262,8 @@ class SiteDetailContextMixin:
         access_records = data["site_access_records"]
         preference_key = site_access_map_preference_key(self.object.pk)
         default_record_ids = [record.pk for record in access_records]
+        # Keep a permissive default here so newly added records appear on the
+        # map unless the user has explicitly hidden them before.
         map_preference = get_user_preference(
             self.request.user,
             preference_key,

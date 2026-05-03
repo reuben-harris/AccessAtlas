@@ -64,6 +64,9 @@ def is_allowed_preference_key(key: str) -> bool:
 
 
 def validate_preference(key: str, value: object) -> dict[str, Any]:
+    # Preferences are intentionally schema-validated here so the rest of the
+    # app can treat saved view state as trusted input instead of re-checking
+    # every payload at read time.
     if not is_allowed_preference_key(key):
         raise ValidationError("Unknown preference key.")
     if not isinstance(value, dict):
@@ -164,6 +167,9 @@ def get_user_preference(
     key: str,
     default: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    # Invalid persisted values should degrade to defaults rather than breaking
+    # page rendering. Validation happens on writes, but reads still stay
+    # defensive because preferences are user-controlled state.
     try:
         preference = user.preferences.get(key=key)
     except UserPreference.DoesNotExist:

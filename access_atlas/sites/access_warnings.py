@@ -23,6 +23,9 @@ def build_site_warnings(
 ) -> list[AccessWarning]:
     warnings: list[AccessWarning] = []
     for access_record in site.access_records.all():
+        # Site-level warnings only represent currently usable access guidance.
+        # Retired records still show their own issues on the record page, but
+        # they should not keep a site in a warning state.
         if access_record.status != AccessRecordStatus.ACTIVE:
             continue
         warnings.extend(
@@ -55,6 +58,8 @@ def build_access_record_warnings(
         return warnings
 
     if snapshot and snapshot.parse_error:
+        # A parse failure blocks all downstream feature inspection, so report
+        # it once and stop rather than layering misleading secondary warnings.
         warnings.append(
             AccessWarning(
                 f"{prefix}Latest access record revision is invalid and "
@@ -80,6 +85,9 @@ def build_access_record_warnings(
     site_points = [point for point in parsed.points if point.feature_type == "site"]
 
     if access_start.has_multiple:
+        # We currently navigate using the first access-start point. Keep the
+        # warning explicit so humans understand that the map/action is a
+        # fallback, not a resolved ambiguity.
         warnings.append(
             AccessWarning(
                 f"{prefix}Multiple access-start points found in the latest revision. "

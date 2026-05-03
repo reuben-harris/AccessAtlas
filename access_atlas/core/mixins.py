@@ -10,6 +10,8 @@ from access_atlas.accounts.preferences import (
 
 
 class ObjectFormMixin:
+    """Provide consistent form chrome for object create/edit pages."""
+
     def get_cancel_url(self) -> str:
         obj = getattr(self, "object", None)
         if obj and obj.pk and hasattr(obj, "get_absolute_url"):
@@ -29,6 +31,8 @@ class ObjectFormMixin:
 
 
 class SearchablePaginatedListMixin:
+    """Apply URL-driven search and page-size state to queryset-backed lists."""
+
     default_paginate_by = 25
     page_size_options = (25, 50, 100)
     search_param = "q"
@@ -59,6 +63,7 @@ class SearchablePaginatedListMixin:
         return queryset.filter(predicate)
 
     def build_query_items(self, *, exclude: set[str]) -> list[tuple[str, str]]:
+        """Preserve non-target query params across search/pagination form posts."""
         items: list[tuple[str, str]] = []
         for key in self.request.GET:
             if key in exclude:
@@ -95,6 +100,8 @@ class SearchablePaginatedListMixin:
 
 
 class SortableListMixin:
+    """Apply single-column sorting with URL state and saved user fallback."""
+
     sort_param = "sort"
     default_sort = ""
     sort_preference_page_key = ""
@@ -123,6 +130,9 @@ class SortableListMixin:
         if hasattr(self, "_cached_sort_value"):
             return self._cached_sort_value
 
+        # Explicit URL state always wins so links remain shareable and
+        # debuggable. When a user intentionally sorts a page, we also persist
+        # that choice as the next default for visits without a sort param.
         explicit_sort = self.normalize_sort_value(self.request.GET.get(self.sort_param))
         if explicit_sort is not None:
             if self.request.user.is_authenticated:
@@ -161,6 +171,8 @@ class SortableListMixin:
 
 
 class PaginatedObjectHistoryMixin:
+    """Paginate object history pages with the same per-page contract as lists."""
+
     default_paginate_by = 25
     page_size_options = (25, 50, 100)
     page_size_param = "per_page"
@@ -176,6 +188,8 @@ class PaginatedObjectHistoryMixin:
         return self.object.history.all()
 
     def get_history_context(self) -> dict:
+        # History pages are DetailViews, not ListViews, so pagination state is
+        # assembled manually here and then reused by the shared history partial.
         per_page = self.get_history_per_page()
         page_size_options = list(self.page_size_options)
         if per_page not in page_size_options:

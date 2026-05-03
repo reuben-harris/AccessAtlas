@@ -110,6 +110,8 @@ Do not add direct write-back to the source system unless the user explicitly cha
 - Preserve a consistent feel across list, detail, and edit views.
 - Status, history, and planning relationships should be visible without requiring deep navigation.
 - When adding or reorganizing CSS, include concise comments around sections or non-obvious rules so a human can navigate the stylesheet quickly later.
+- When adding or changing non-trivial Python logic, include concise comments or docstrings around workflow-heavy code paths, adapter layers, or policy decisions so a Django engineer can understand why the flow exists without reverse-engineering it from tests.
+- Apply the same standard to JavaScript: add concise comments around non-obvious state flow, third-party library integration points, preference persistence, and rendering adapters. Avoid narrating obvious DOM reads, loops, or event wiring.
 
 ## Active Constraints
 
@@ -167,6 +169,15 @@ When a change touches Python behavior in a way that could affect tests, run
 `uv run pytest` before finishing if the local environment can support it. If
 pytest cannot run because the database or sandbox environment is blocking it,
 note that explicitly instead of implying the test pass is covered.
+
+When modifying existing commented logic, update the comments at the same time.
+Stale comments are worse than no comments. Prefer short orienting comments that
+explain policy or flow over narration of obvious line-by-line behavior.
+
+For helper functions, prefer docstrings when the function defines a reusable
+contract, policy decision, or input/output expectation that an IDE tooltip
+would genuinely help with. Skip docstrings for tiny obvious helpers unless the
+name cannot carry the intent on its own.
 
 ## Planning Workflow
 

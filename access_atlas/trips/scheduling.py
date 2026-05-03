@@ -25,6 +25,9 @@ def validate_site_visit_schedule(
     planned_end,
     message_overrides: dict[str, str] | None = None,
 ) -> tuple[object, dict[str, str]]:
+    # Centralize the scheduling policy so the model and the form stay aligned.
+    # The model uses the default wording, while the form can override messages
+    # to keep browser-facing field errors phrased in UI language.
     errors: dict[str, str] = {}
     message_overrides = message_overrides or {}
     normalized_day = infer_planned_day(planned_day, planned_start, planned_end)

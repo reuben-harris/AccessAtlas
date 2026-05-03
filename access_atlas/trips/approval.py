@@ -25,6 +25,8 @@ class ApprovedTripChangeMixin:
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         if self.trip_requires_approval_reset():
+            # Approved trips are intentionally editable, but every write must
+            # be an explicit resubmission event instead of a silent mutation.
             form.fields[APPROVAL_CONFIRM_FIELD] = forms.BooleanField(
                 label="I understand this change will send the trip back for approval.",
                 required=True,
@@ -42,6 +44,8 @@ class ApprovedTripChangeMixin:
         with transaction.atomic():
             response = super().form_valid(form)
             if trip is not None and trip.status == TripStatus.APPROVED:
+                # Re-read the trip status after the save so we only invalidate
+                # approvals for writes that actually landed.
                 invalidate_trip_approval(
                     trip,
                     self.request.user,

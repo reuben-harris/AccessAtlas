@@ -18,6 +18,8 @@
     }
 
     function apply() {
+      // Recreate the active tile layer when the app theme flips so the base map
+      // follows the same light/dark mode as the surrounding Tabler UI.
       const themeLayer = tileLayerConfig[currentTheme()] || tileLayerConfig.light;
       if (activeTileLayer) {
         map.removeLayer(activeTileLayer);
@@ -56,6 +58,8 @@
 
     const HomeControl = L.Control.extend({
       onAdd() {
+        // Use a shared Leaflet control wrapper so the jobs map, site map, and
+        // access map all inherit one consistent home/reset interaction.
         const container = L.DomUtil.create("div", `leaflet-bar ${controlClassName}`);
         const button = L.DomUtil.create("button", "", container);
         button.type = "button";
@@ -93,6 +97,8 @@
     };
 
     let control = null;
+    // Support both plugin factory shapes because the fullscreen dependency has
+    // changed API surface across versions and build targets.
     if (typeof L.control?.fullscreen === "function") {
       control = L.control.fullscreen(controlOptions);
     } else if (typeof L.Control?.FullScreen === "function") {
