@@ -207,6 +207,48 @@ def test_job_from_template_page_includes_tomselect_media(client):
 
 
 @pytest.mark.django_db
+def test_invalid_job_post_keeps_selected_site(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+
+    response = client.post(
+        reverse("job_create"),
+        {
+            "site": site.pk,
+            "title": "",
+            "description": "",
+            "estimated_duration_minutes": "",
+            "priority": "normal",
+            "status": JobStatus.UNASSIGNED,
+            "cancelled_reason": "",
+            "notes": "",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.context["form"]["site"].value() == str(site.pk)
+
+
+@pytest.mark.django_db
+def test_invalid_job_from_template_post_keeps_selected_values(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+
+    response = client.post(
+        reverse("job_create_from_template"),
+        {
+            "site": site.pk,
+            "template": "",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.context["form"]["site"].value() == str(site.pk)
+
+
+@pytest.mark.django_db
 def test_job_list_links_to_map_view(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)

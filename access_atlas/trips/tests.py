@@ -787,6 +787,28 @@ def test_site_visit_detail_includes_tomselect_media(client):
 
 
 @pytest.mark.django_db
+def test_trip_form_invalid_post_keeps_selected_team_members(client):
+    leader = User.objects.create_user(email="leader@example.com")
+    teammate = User.objects.create_user(email="teammate@example.com")
+    client.force_login(leader)
+
+    response = client.post(
+        reverse("trip_create"),
+        {
+            "name": "Trip",
+            "start_date": "",
+            "end_date": "2026-04-22",
+            "trip_leader": leader.pk,
+            "team_members": [teammate.pk],
+            "notes": "",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.context["form"]["team_members"].value() == [str(teammate.pk)]
+
+
+@pytest.mark.django_db
 def test_trip_detail_shows_assigned_jobs(client):
     user = User.objects.create_user(email="user@example.com")
     site = Site.objects.create(
@@ -1070,6 +1092,41 @@ def test_missing_site_visit_day_shows_single_inline_required_error(client):
 
 
 @pytest.mark.django_db
+def test_invalid_site_visit_post_keeps_selected_site(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    client.force_login(user)
+
+    response = client.post(
+        reverse("site_visit_create", kwargs={"trip_pk": trip.pk}),
+        {
+            "site": site.pk,
+            "planned_day": "",
+            "planned_start_time": "",
+            "planned_end_time": "",
+            "status": SiteVisitStatus.PLANNED,
+            "notes": "",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.context["form"]["site"].value() == str(site.pk)
+
+
+@pytest.mark.django_db
 def test_site_visit_create_allows_blank_times(client):
     user = User.objects.create_user(email="user@example.com")
     site = Site.objects.create(
@@ -1189,6 +1246,63 @@ def test_site_visit_update_moves_visit_day_and_keeps_assignment(client):
     site_visit.refresh_from_db()
     assert site_visit.planned_day == date(2026, 4, 22)
     assert SiteVisitJob.objects.filter(site_visit=site_visit, job=job).exists()
+
+
+@pytest.mark.django_db
+def test_unassigned_job_autocomplete_filters_by_site(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site_a = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    site_b = Site.objects.create(
+        source_name="dummy",
+        external_id="002",
+        code="AA-002",
+        name="Site B",
+        latitude=-42.1,
+        longitude=175.1,
+    )
+    visible_job = Job.objects.create(
+        site=site_a,
+        title="Visible job",
+        status=JobStatus.UNASSIGNED,
+    )
+    hidden_job = Job.objects.create(
+        site=site_b,
+        title="Hidden job",
+        status=JobStatus.UNASSIGNED,
+    )
+    assigned_job = Job.objects.create(
+        site=site_a,
+        title="Assigned job",
+        status=JobStatus.UNASSIGNED,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site_a)
+    assign_job_to_site_visit(site_visit, assigned_job)
+
+    response = client.get(
+        reverse("autocomplete_unassigned_jobs"),
+        {"q": "job", "f": f"__const__site_id={site_a.pk}"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    labels = [item["label"] for item in payload["results"]]
+    assert visible_job.title in labels
+    assert hidden_job.title not in labels
+    assert assigned_job.title not in labels
 
 
 @pytest.mark.django_db

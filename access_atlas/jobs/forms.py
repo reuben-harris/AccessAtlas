@@ -1,30 +1,12 @@
 from django import forms
-from django_tomselect.app_settings import TomSelectConfig
 from django_tomselect.forms import TomSelectModelChoiceField
 
+from access_atlas.core.tomselect import (
+    job_template_tomselect_config,
+    site_tomselect_config,
+)
+
 from .models import Job, JobStatus, JobTemplate, Requirement, TemplateRequirement
-
-
-def _site_tomselect_config() -> TomSelectConfig:
-    return TomSelectConfig(
-        url="autocomplete_sites",
-        css_framework="bootstrap5",
-        label_field="label",
-        placeholder="Search sites",
-        minimum_query_length=0,
-        preload="focus",
-    )
-
-
-def _template_tomselect_config() -> TomSelectConfig:
-    return TomSelectConfig(
-        url="autocomplete_job_templates",
-        css_framework="bootstrap5",
-        label_field="title",
-        placeholder="Search templates",
-        minimum_query_length=0,
-        preload="focus",
-    )
 
 
 class JobTemplateForm(forms.ModelForm):
@@ -47,7 +29,7 @@ class TemplateRequirementForm(forms.ModelForm):
 
 
 class JobForm(forms.ModelForm):
-    site = TomSelectModelChoiceField(config=_site_tomselect_config())
+    site = TomSelectModelChoiceField(config=site_tomselect_config())
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -75,8 +57,8 @@ class JobForm(forms.ModelForm):
 
 
 class JobFromTemplateForm(forms.Form):
-    site = TomSelectModelChoiceField(config=_site_tomselect_config())
-    template = TomSelectModelChoiceField(config=_template_tomselect_config())
+    site = TomSelectModelChoiceField(config=site_tomselect_config())
+    template = TomSelectModelChoiceField(config=job_template_tomselect_config())
 
     def __init__(self, *args, **kwargs):
         kwargs.pop("site_queryset")

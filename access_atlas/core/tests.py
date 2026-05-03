@@ -284,6 +284,20 @@ def test_team_member_autocomplete_prefers_display_name(logged_in_client):
 
 
 @pytest.mark.django_db
+def test_team_member_autocomplete_falls_back_to_email(logged_in_client):
+    User.objects.create_user(email="fallback@example.com")
+
+    response = logged_in_client.get(
+        reverse("autocomplete_team_members"),
+        {"q": "fallback"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["results"][0]["label"] == "fallback@example.com"
+
+
+@pytest.mark.django_db
 def test_job_template_autocomplete_only_returns_active_templates(logged_in_client):
     JobTemplate.objects.create(title="Active Template", is_active=True)
     JobTemplate.objects.create(title="Inactive Template", is_active=False)
