@@ -125,6 +125,14 @@ class SiteVisit(models.Model):
     def __str__(self) -> str:
         return f"{self.trip} - {self.site}"
 
+    def save(self, *args, **kwargs):
+        if not self.planned_day:
+            if self.planned_start:
+                self.planned_day = self.planned_date(self.planned_start)
+            elif self.planned_end:
+                self.planned_day = self.planned_date(self.planned_end)
+        return super().save(*args, **kwargs)
+
     def get_absolute_url(self) -> str:
         return reverse("site_visit_detail", kwargs={"pk": self.pk})
 
@@ -139,6 +147,11 @@ class SiteVisit(models.Model):
 
     def clean(self) -> None:
         errors = {}
+        if not self.planned_day:
+            if self.planned_start:
+                self.planned_day = self.planned_date(self.planned_start)
+            elif self.planned_end:
+                self.planned_day = self.planned_date(self.planned_end)
         if not self.planned_day:
             errors["planned_day"] = "Choose a trip day."
         if self.planned_end and not self.planned_start:

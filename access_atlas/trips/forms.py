@@ -47,8 +47,13 @@ class TripForm(forms.ModelForm):
         }
 
 
+class TripDayChoiceField(forms.ChoiceField):
+    def validate(self, value):
+        forms.Field.validate(self, value)
+
+
 class SiteVisitForm(forms.ModelForm):
-    planned_day = forms.ChoiceField(
+    planned_day = TripDayChoiceField(
         label="Visit day",
         required=False,
         widget=forms.RadioSelect,
@@ -77,7 +82,7 @@ class SiteVisitForm(forms.ModelForm):
         )
         if trip is not None:
             self.instance.trip = trip
-        trip = self.instance.trip
+        trip = getattr(self.instance, "trip", None) if self.instance.trip_id else trip
         if trip and trip.start_date and trip.end_date:
             self.fields["planned_day"].choices = list(self.trip_day_choices(trip))
         else:
