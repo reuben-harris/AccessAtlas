@@ -2,13 +2,13 @@ from django.urls import path
 
 from access_atlas.sites.views import dummy_site_feed
 
+from . import views
 from .autocomplete_views import (
     JobTemplateAutocompleteView,
     SiteAutocompleteView,
     TeamMemberAutocompleteView,
     UnassignedJobAutocompleteView,
 )
-from . import views
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
