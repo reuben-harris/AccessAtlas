@@ -127,6 +127,10 @@ class SiteVisitForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         trip = self.instance.trip
+
+        if "planned_day" in self.errors:
+            return cleaned_data
+
         planned_day_value = cleaned_data.get("planned_day")
         planned_start_time = cleaned_data.get("planned_start_time")
         planned_end_time = cleaned_data.get("planned_end_time")
@@ -137,8 +141,6 @@ class SiteVisitForm(forms.ModelForm):
                 planned_day = datetime.strptime(planned_day_value, "%Y-%m-%d").date()
             except ValueError:
                 self.add_error("planned_day", "Choose a valid trip day.")
-        else:
-            self.add_error("planned_day", "Choose a trip day.")
 
         if not trip:
             return cleaned_data
@@ -171,6 +173,9 @@ class SiteVisitForm(forms.ModelForm):
         self.instance.planned_day = planned_day
         self.instance.planned_start = planned_start
         self.instance.planned_end = planned_end
+
+        if self.errors:
+            return cleaned_data
 
         try:
             self.instance.clean()
