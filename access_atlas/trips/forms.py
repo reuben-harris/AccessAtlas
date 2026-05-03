@@ -55,7 +55,6 @@ class TripDayChoiceField(forms.ChoiceField):
 class SiteVisitForm(forms.ModelForm):
     planned_day = TripDayChoiceField(
         label="Visit day",
-        required=False,
         widget=forms.RadioSelect,
     )
     planned_start_time = forms.TimeField(
@@ -139,8 +138,7 @@ class SiteVisitForm(forms.ModelForm):
             except ValueError:
                 self.add_error("planned_day", "Choose a valid trip day.")
         else:
-            self.add_error("planned_day", "This field is required.")
-            return cleaned_data
+            self.add_error("planned_day", "Choose a trip day.")
 
         if not trip:
             return cleaned_data
@@ -173,9 +171,6 @@ class SiteVisitForm(forms.ModelForm):
         self.instance.planned_day = planned_day
         self.instance.planned_start = planned_start
         self.instance.planned_end = planned_end
-
-        if self.errors:
-            return cleaned_data
 
         try:
             self.instance.clean()

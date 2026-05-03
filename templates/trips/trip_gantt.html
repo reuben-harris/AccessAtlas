@@ -22,6 +22,26 @@
 <div>
   {% include "trips/_trip_view_toolbar.html" %}
 
+  {% if unscheduled_site_visits %}
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="card-title">Unscheduled Site Visits</h3>
+        <div class="card-actions text-secondary">{{ unscheduled_site_visits|length }} omitted from Gantt</div>
+      </div>
+      <div class="card-body py-2">
+        <div class="trip-gantt-unscheduled-list">
+          {% for visit in unscheduled_site_visits %}
+            <a class="trip-gantt-unscheduled-item" href="{{ visit.url }}">
+              <span class="trip-gantt-unscheduled-code">{{ visit.siteCode }}</span>
+              <span class="trip-gantt-unscheduled-name">{{ visit.siteName }}</span>
+              <span class="trip-gantt-unscheduled-trip">{{ visit.tripName }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
   <div class="card trip-gantt-card">
     <div class="card-header">
       <h3 class="card-title">Timeline</h3>

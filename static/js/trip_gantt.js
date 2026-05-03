@@ -60,9 +60,7 @@
           start: siteVisit.start,
           end: siteVisit.end,
           progress: 0,
-          custom_class: siteVisit.hasExplicitTime
-            ? "trip-gantt-site-visit-row"
-            : "trip-gantt-site-visit-row trip-gantt-site-visit-row--date-only",
+          custom_class: "trip-gantt-site-visit-row",
           url: siteVisit.url,
           record_type: "site_visit",
           trip_name: row.tripName,
@@ -70,8 +68,6 @@
           site_name: siteVisit.siteName,
           status: siteVisit.status,
           status_label: siteVisit.statusLabel,
-          has_explicit_time: siteVisit.hasExplicitTime,
-          time_label: siteVisit.timeLabel,
         });
       }
     }
@@ -97,7 +93,6 @@
         <div class="trip-gantt-popup-code"><a href="${escapeHtml(task.url)}">${escapeHtml(task.site_code)}</a></div>
         <div class="trip-gantt-popup-name">${escapeHtml(task.site_name)}</div>
         <div class="trip-gantt-popup-trip">${escapeHtml(task.trip_name)}</div>
-        <div class="trip-gantt-popup-time">Time: ${escapeHtml(task.time_label || "Not set")}</div>
         <div class="trip-gantt-popup-meta">
           ${typeBadge(task)}
           <span class="badge ${badgeClass(task.status)}">${escapeHtml(task.status_label)}</span>
