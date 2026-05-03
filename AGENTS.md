@@ -163,6 +163,11 @@ the change. At minimum, run both `ruff check` and `ruff format --check`
 against the touched Python scope; run broader project checks when the change
 reaches shared behavior.
 
+When a change touches Python behavior in a way that could affect tests, run
+`uv run pytest` before finishing if the local environment can support it. If
+pytest cannot run because the database or sandbox environment is blocking it,
+note that explicitly instead of implying the test pass is covered.
+
 ## Planning Workflow
 
 For larger agreed feature sets, keep an active checklist and update it as work
