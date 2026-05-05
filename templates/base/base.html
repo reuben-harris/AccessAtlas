@@ -49,16 +49,16 @@
           </button>
           <div class="collapse navbar-collapse" id="sidebar-menu">
             <ul class="navbar-nav pt-lg-3">
-              <li class="nav-item">
-                <a class="nav-link" href="{% url 'dashboard' %}">
+              <li class="nav-item{% if active_nav_item == 'dashboard' %} active{% endif %}">
+                <a class="nav-link" href="{% url 'dashboard' %}"{% if active_nav_item == 'dashboard' %} aria-current="page"{% endif %}>
                   <span class="nav-link-icon"><i class="ti ti-layout-dashboard" aria-hidden="true"></i></span>
                   <span class="nav-link-title">Dashboard</span>
                 </a>
               </li>
 
               <li class="nav-section">Planning</li>
-              <li class="nav-item nav-item-with-create">
-                <a class="nav-link" href="{% url 'trip_list' %}">
+              <li class="nav-item nav-item-with-create{% if active_nav_item == 'trips' %} active{% endif %}">
+                <a class="nav-link" href="{% url 'trip_list' %}"{% if active_nav_item == 'trips' %} aria-current="page"{% endif %}>
                   <span class="nav-link-icon"><i class="ti ti-route" aria-hidden="true"></i></span>
                   <span class="nav-link-title">Trips</span>
                 </a>
@@ -66,8 +66,8 @@
                   <i class="ti ti-plus" aria-hidden="true"></i>
                 </a>
               </li>
-              <li class="nav-item nav-item-with-actions">
-                <a class="nav-link" href="{% url 'job_list' %}">
+              <li class="nav-item nav-item-with-actions{% if active_nav_item == 'jobs' %} active{% endif %}">
+                <a class="nav-link" href="{% url 'job_list' %}"{% if active_nav_item == 'jobs' %} aria-current="page"{% endif %}>
                   <span class="nav-link-icon"><i class="ti ti-briefcase" aria-hidden="true"></i></span>
                   <span class="nav-link-title">Jobs</span>
                 </a>
@@ -80,8 +80,8 @@
               </li>
 
               <li class="nav-section">Library</li>
-              <li class="nav-item nav-item-with-create">
-                <a class="nav-link" href="{% url 'job_template_list' %}">
+              <li class="nav-item nav-item-with-create{% if active_nav_item == 'job_templates' %} active{% endif %}">
+                <a class="nav-link" href="{% url 'job_template_list' %}"{% if active_nav_item == 'job_templates' %} aria-current="page"{% endif %}>
                   <span class="nav-link-icon"><i class="ti ti-template" aria-hidden="true"></i></span>
                   <span class="nav-link-title">Job Templates</span>
                 </a>
@@ -91,16 +91,16 @@
               </li>
 
               <li class="nav-section">Reference</li>
-              <li class="nav-item">
-                <a class="nav-link" href="{% url 'site_list' %}">
+              <li class="nav-item{% if active_nav_item == 'sites' %} active{% endif %}">
+                <a class="nav-link" href="{% url 'site_list' %}"{% if active_nav_item == 'sites' %} aria-current="page"{% endif %}>
                   <span class="nav-link-icon"><i class="ti ti-map-pin" aria-hidden="true"></i></span>
                   <span class="nav-link-title">Sites</span>
                 </a>
               </li>
 
               <li class="nav-section">Audit</li>
-              <li class="nav-item">
-                <a class="nav-link" href="{% url 'global_history' %}">
+              <li class="nav-item{% if active_nav_item == 'history' %} active{% endif %}">
+                <a class="nav-link" href="{% url 'global_history' %}"{% if active_nav_item == 'history' %} aria-current="page"{% endif %}>
                   <span class="nav-link-icon"><i class="ti ti-history" aria-hidden="true"></i></span>
                   <span class="nav-link-title">History</span>
                 </a>

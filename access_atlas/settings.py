@@ -115,6 +115,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "access_atlas.accounts.context_processors.theme_preference",
+                "access_atlas.core.context_processors.active_nav_item",
             ],
         },
     },

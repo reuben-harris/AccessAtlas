@@ -30,6 +30,12 @@
   padding-right: 4.75rem;
 }
 
+.navbar-vertical .nav-item.active > .nav-link {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 0;
+}
+
 .nav-create-link {
   position: absolute;
   top: 50%;

@@ -1,4 +1,5 @@
 import re
+from types import SimpleNamespace
 
 import pytest
 from django.urls import reverse
@@ -9,6 +10,7 @@ from access_atlas.accounts.preferences import (
     get_user_preference,
     list_sort_preference_key,
 )
+from access_atlas.core.context_processors import active_nav_item
 from access_atlas.jobs.models import Job, JobTemplate
 from access_atlas.sites.models import (
     AccessRecord,
@@ -73,6 +75,18 @@ def _input_value(content: str, input_id: str) -> str:
     return value_match.group(1) if value_match else ""
 
 
+def _request_for_url_name(url_name: str):
+    return SimpleNamespace(resolver_match=SimpleNamespace(url_name=url_name))
+
+
+def _assert_active_nav_link(content: str, href: str) -> None:
+    pattern = (
+        r'<li class="nav-item[^"]*\bactive\b[^"]*">\s*'
+        rf'<a class="nav-link" href="{re.escape(href)}" aria-current="page">'
+    )
+    assert re.search(pattern, content, re.DOTALL)
+
+
 @pytest.mark.django_db
 def test_dashboard_renders(logged_in_client):
     response = logged_in_client.get(reverse("dashboard"))
@@ -84,6 +98,46 @@ def test_dashboard_renders(logged_in_client):
     assert b"Data Attention" in response.content
     assert b'href="/static/css/app.css"' in response.content
     assert b'src="/static/js/theme.js"' in response.content
+
+
+def test_active_nav_item_maps_url_names_to_sidebar_sections():
+    cases = {
+        "dashboard": "dashboard",
+        "trip_detail": "trips",
+        "site_visit_update": "trips",
+        "job_list": "jobs",
+        "requirement_create": "jobs",
+        "job_template_detail": "job_templates",
+        "template_requirement_update": "job_templates",
+        "site_detail": "sites",
+        "access_record_revisions": "sites",
+        "global_history": "history",
+        "search": "",
+    }
+
+    for url_name, expected_nav_item in cases.items():
+        assert active_nav_item(_request_for_url_name(url_name)) == {
+            "active_nav_item": expected_nav_item
+        }
+
+
+@pytest.mark.django_db
+def test_sidebar_highlights_current_top_level_page(logged_in_client):
+    cases = [
+        ("dashboard", reverse("dashboard")),
+        ("trips", reverse("trip_list")),
+        ("jobs", reverse("job_list")),
+        ("job_templates", reverse("job_template_list")),
+        ("sites", reverse("site_list")),
+        ("history", reverse("global_history")),
+    ]
+
+    for expected_nav_item, url in cases:
+        response = logged_in_client.get(url)
+
+        assert response.status_code == 200
+        assert response.context["active_nav_item"] == expected_nav_item
+        _assert_active_nav_link(response.content.decode(), url)
 
 
 @pytest.mark.django_db
