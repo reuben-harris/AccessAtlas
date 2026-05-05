@@ -16,10 +16,11 @@
 
 .ts-control {
   min-height: 2.625rem;
-  padding: .3125rem .75rem;
+  padding: 0.3125rem 0.75rem;
   border: 1px solid var(--tblr-border-color);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45), 0 1px 2px
-    rgba(15, 23, 42, 0.04);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.45),
+    0 1px 2px rgba(15, 23, 42, 0.04);
   border-radius: var(--tblr-border-radius);
   background: var(--tblr-bg-forms) !important;
   color: var(--tblr-body-color);
@@ -34,16 +35,16 @@
 
 .ts-wrapper.multi .ts-control {
   align-items: center;
-  gap: .25rem;
+  gap: 0.25rem;
 }
 
 .ts-wrapper.multi.has-items .ts-control {
-  padding: .3125rem;
+  padding: 0.3125rem;
 }
 
 .ts-wrapper.focus .ts-control {
   border-color: rgba(var(--tblr-primary-rgb), 0.48);
-  box-shadow: 0 0 0 .125rem rgba(var(--tblr-primary-rgb), 0.18);
+  box-shadow: 0 0 0 0.125rem rgba(var(--tblr-primary-rgb), 0.18);
 }
 
 .ts-control > input {
@@ -55,7 +56,7 @@
 }
 
 .ts-wrapper.multi:not(.has-items) .ts-control > input {
-  margin-left: .25rem !important;
+  margin-left: 0.25rem !important;
 }
 
 .ts-control > input::placeholder {
@@ -65,10 +66,10 @@
 .ts-wrapper.multi .ts-control > div {
   display: inline-flex;
   align-items: center;
-  gap: .25rem;
+  gap: 0.25rem;
   min-height: 1.5rem;
   margin: 0;
-  padding: .125rem .5rem;
+  padding: 0.125rem 0.5rem;
   border: 1px solid rgba(var(--tblr-primary-rgb), 0.18);
   border-radius: calc(var(--tblr-border-radius) - 2px);
   background: rgba(var(--tblr-primary-rgb), 0.08);
@@ -102,20 +103,20 @@
 }
 
 .ts-dropdown {
-  margin-top: .25rem;
+  margin-top: 0.25rem;
   border: 1px solid var(--tblr-border-color);
   border-top: 1px solid var(--tblr-border-color);
   border-radius: var(--tblr-border-radius);
   background: var(--tblr-bg-surface);
   color: var(--tblr-body-color);
-  box-shadow: 0 .5rem 1rem rgba(0, 0, 0, 0.12);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.12);
 }
 
 .ts-dropdown .option,
 .ts-dropdown .optgroup-header,
 .ts-dropdown .no-results,
 .ts-dropdown .create {
-  padding: .4375rem .75rem;
+  padding: 0.4375rem 0.75rem;
 }
 
 .ts-dropdown .option,
@@ -145,7 +146,9 @@
 [data-bs-theme="dark"] .ts-wrapper.multi .ts-control,
 [data-bs-theme="dark"] .ts-wrapper.single.input-active .ts-control {
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03), 0 1px 2px rgba(0, 0, 0, 0.18);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 1px 2px rgba(0, 0, 0, 0.18);
   background: #151c2c !important;
   color: #eff3f8;
 }
@@ -184,7 +187,7 @@
   border-color: rgba(255, 255, 255, 0.12);
   background: #1b2436;
   color: #eff3f8;
-  box-shadow: 0 .75rem 1.5rem rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.35);
 }
 
 [data-bs-theme="dark"] .ts-dropdown .option,
