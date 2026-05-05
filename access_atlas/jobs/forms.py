@@ -20,6 +20,9 @@ class JobTemplateForm(forms.ModelForm):
             "notes",
             "is_active",
         ]
+        labels = {
+            "priority": "Default Priority",
+        }
 
 
 class TemplateRequirementForm(forms.ModelForm):
