@@ -765,6 +765,43 @@ def test_trip_form_does_not_offer_status_field():
     assert "status" not in form.fields
 
 
+@pytest.mark.django_db
+def test_trip_form_rejects_trips_longer_than_one_year():
+    user = User.objects.create_user(email="user@example.com")
+
+    form = TripForm(
+        data={
+            "name": "Long Trip",
+            "start_date": "2026-04-21",
+            "end_date": "2027-04-22",
+            "trip_leader": user.pk,
+            "team_members": [],
+            "notes": "",
+        }
+    )
+
+    assert form.is_valid() is False
+    assert form.errors["end_date"] == ["Trips cannot be longer than one year."]
+
+
+@pytest.mark.django_db
+def test_trip_form_allows_one_year_trip():
+    user = User.objects.create_user(email="user@example.com")
+
+    form = TripForm(
+        data={
+            "name": "One Year Trip",
+            "start_date": "2026-04-21",
+            "end_date": "2027-04-21",
+            "trip_leader": user.pk,
+            "team_members": [],
+            "notes": "",
+        }
+    )
+
+    assert form.is_valid() is True
+
+
 def test_site_visit_form_marks_site_select_as_searchable():
     form = SiteVisitForm()
 

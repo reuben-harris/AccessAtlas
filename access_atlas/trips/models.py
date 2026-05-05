@@ -18,6 +18,15 @@ from .scheduling import (
 )
 
 
+def one_calendar_year_after(value):
+    """Return the same calendar day one year later, clamping leap day."""
+
+    try:
+        return value.replace(year=value.year + 1)
+    except ValueError:
+        return value.replace(year=value.year + 1, day=28)
+
+
 class TripStatus(models.TextChoices):
     DRAFT = "draft", "Draft"
     SUBMITTED = "submitted", "Submitted"
@@ -94,6 +103,12 @@ class Trip(models.Model):
             raise ValidationError(
                 {"end_date": "End date must be on or after the start date."}
             )
+        if (
+            self.start_date
+            and self.end_date
+            and self.end_date > one_calendar_year_after(self.start_date)
+        ):
+            raise ValidationError({"end_date": "Trips cannot be longer than one year."})
 
 
 class SiteVisit(models.Model):
