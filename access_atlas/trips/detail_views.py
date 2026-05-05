@@ -106,7 +106,8 @@ class SiteVisitDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["assign_form"] = AssignJobForm(site=self.object.site)
+        if not self.object.trip.is_terminal:
+            context["assign_form"] = AssignJobForm(site=self.object.site)
         context["detail_sections"] = site_visit_detail_sections(self.object, "overview")
         context["detail_navigation_label"] = "Site visit sections"
         return context

@@ -4,7 +4,9 @@
 {% block title %}{{ object.site.code }} Visit - Access Atlas{% endblock %}
 {% block head %}
   {{ block.super }}
-  {{ assign_form.media }}
+  {% if assign_form %}
+    {{ assign_form.media }}
+  {% endif %}
 {% endblock %}
 
 {% block content %}
@@ -54,10 +56,12 @@
               <a class="btn btn-icon btn-warning row-edit-button" href="{% url 'job_update' assignment.job.pk %}" aria-label="Edit {{ assignment.job.title }}" title="Edit {{ assignment.job.title }}">
                 <i class="ti ti-pencil" aria-hidden="true"></i>
               </a>
-              <form class="d-inline" method="post" action="{% url 'unassign_job' assignment.pk %}">
-                {% csrf_token %}
-                <button class="btn btn-outline-danger row-unassign-button" type="submit">Unassign</button>
-              </form>
+              {% if not object.trip.is_terminal %}
+                <form class="d-inline" method="post" action="{% url 'unassign_job' assignment.pk %}">
+                  {% csrf_token %}
+                  <button class="btn btn-outline-danger row-unassign-button" type="submit">Unassign</button>
+                </form>
+              {% endif %}
             </td>
           </tr>
         {% empty %}
@@ -67,14 +71,20 @@
     </table>
   </div>
 </div>
-<div class="card mt-3">
-  <div class="card-header"><h3 class="card-title">Assign Job</h3></div>
-  <div class="card-body">
-    <form method="post" action="{% url 'assign_job' object.pk %}">
-      {% csrf_token %}
-      {{ assign_form.as_p }}
-      <button class="btn btn-primary" type="submit">Assign</button>
-    </form>
+{% if assign_form %}
+  <div class="card mt-3">
+    <div class="card-header"><h3 class="card-title">Assign Job</h3></div>
+    <div class="card-body">
+      <form method="post" action="{% url 'assign_job' object.pk %}">
+        {% csrf_token %}
+        {{ assign_form.as_p }}
+        <button class="btn btn-primary" type="submit">Assign</button>
+      </form>
+    </div>
   </div>
-</div>
+{% else %}
+  <div class="alert alert-info mt-3" role="status">
+    Jobs cannot be assigned to site visits on completed or cancelled trips.
+  </div>
+{% endif %}
 {% endblock %}

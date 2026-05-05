@@ -107,6 +107,68 @@ def test_direct_assignment_create_does_not_change_job_status():
 
 
 @pytest.mark.django_db
+def test_job_assignment_requires_non_terminal_trip():
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+        status=TripStatus.COMPLETED,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Site job")
+
+    with pytest.raises(ValidationError, match="completed or cancelled trips"):
+        assign_job_to_site_visit(site_visit, job)
+
+    assert not SiteVisitJob.objects.filter(site_visit=site_visit, job=job).exists()
+    job.refresh_from_db()
+    assert job.status == JobStatus.UNASSIGNED
+
+
+@pytest.mark.django_db
+def test_terminal_trip_site_visit_detail_hides_assignment_controls(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+        status=TripStatus.COMPLETED,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    client.force_login(user)
+
+    response = client.get(reverse("site_visit_detail", kwargs={"pk": site_visit.pk}))
+
+    assert response.status_code == 200
+    assert b"Assign Job" not in response.content
+    assign_url = reverse("assign_job", kwargs={"pk": site_visit.pk}).encode()
+    assert assign_url not in response.content
+    assert (
+        b"Jobs cannot be assigned to site visits on completed or cancelled trips."
+        in response.content
+    )
+
+
+@pytest.mark.django_db
 def test_job_assignment_rolls_back_if_status_update_fails(monkeypatch):
     user = User.objects.create_user(email="user@example.com")
     site = Site.objects.create(

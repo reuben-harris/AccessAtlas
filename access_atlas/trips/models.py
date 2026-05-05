@@ -184,6 +184,11 @@ class SiteVisitJob(models.Model):
     def clean(self) -> None:
         if self.job.site_id != self.site_visit.site_id:
             raise ValidationError("Job site must match the site visit site.")
+        if self.site_visit.trip.status in {TripStatus.COMPLETED, TripStatus.CANCELLED}:
+            raise ValidationError(
+                "Jobs cannot be assigned to site visits on completed or "
+                "cancelled trips."
+            )
 
 
 class TripApproval(models.Model):
