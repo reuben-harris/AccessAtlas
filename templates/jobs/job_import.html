@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load form_extras %}
 
 {% block title %}Import Jobs - Access Atlas{% endblock %}
 
@@ -25,7 +26,14 @@
       <div class="card-body">
         <form method="post" enctype="multipart/form-data">
           {% csrf_token %}
-          {{ form.as_p }}
+          {% for field in form.visible_fields %}
+            <div class="mb-3">
+              <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field|render_form_field }}
+              {% if field.help_text %}<div class="form-hint">{{ field.help_text }}</div>{% endif %}
+              {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+          {% endfor %}
           <button class="btn btn-primary" type="submit">Review import</button>
         </form>
       </div>
