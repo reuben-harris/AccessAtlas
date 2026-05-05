@@ -2,7 +2,6 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic import (
     CreateView,
@@ -18,13 +17,18 @@ from access_atlas.accounts.preferences import (
     get_user_preference,
 )
 from access_atlas.core.history import HistoryReasonMixin
+from access_atlas.core.imports import (
+    clear_import_rows,
+    import_review_context,
+    load_import_rows,
+    store_import_rows,
+)
 from access_atlas.core.mixins import (
     ObjectFormMixin,
     PaginatedObjectHistoryMixin,
     SearchablePaginatedListMixin,
     SortableListMixin,
 )
-from access_atlas.core.search import normalize_per_page, page_size_options_for
 from access_atlas.sites.models import Site
 from access_atlas.trips.approval import ApprovedTripChangeMixin
 
@@ -178,37 +182,27 @@ def import_job_templates_view(request):
     rows = None
     if request.method == "POST" and form.is_valid():
         rows = parse_job_template_import_csv(form.cleaned_data["csv_file"])
-        request.session[JOB_TEMPLATE_IMPORT_SESSION_KEY] = [
-            row.as_session_data() for row in rows
-        ]
-        request.session.modified = True
+        store_import_rows(
+            request,
+            session_key=JOB_TEMPLATE_IMPORT_SESSION_KEY,
+            rows=rows,
+        )
     elif request.method == "GET":
-        session_rows = request.session.get(JOB_TEMPLATE_IMPORT_SESSION_KEY)
-        if session_rows:
-            rows = template_rows_from_session(session_rows)
-
-    per_page = normalize_per_page(request.GET.get("per_page"))
-    page_size_options = page_size_options_for(per_page)
-    paginator = Paginator(rows or [], per_page)
-    page_obj = paginator.get_page(request.GET.get("page"))
+        rows = load_import_rows(
+            request,
+            session_key=JOB_TEMPLATE_IMPORT_SESSION_KEY,
+            row_loader=template_rows_from_session,
+        )
 
     return render(
         request,
         "jobs/job_template_import.html",
         {
             "form": form,
-            "rows": page_obj.object_list,
-            "has_errors": has_template_import_errors(rows)
-            if rows is not None
-            else False,
-            "is_paginated": page_obj.has_other_pages(),
-            "page_obj": page_obj,
-            "paginator": paginator,
-            "page_range": paginator.get_elided_page_range(number=page_obj.number),
-            "per_page": per_page,
-            "page_size_param": "per_page",
-            "page_size_options": page_size_options,
-            "per_page_preserved_query_items": [],
+            "example_path": "docs/examples/job-template-test-import.csv",
+            "confirm_url_name": "job_template_import_confirm",
+            "confirm_button_label": "Create job templates",
+            **import_review_context(request, rows=rows),
         },
     )
 
@@ -234,8 +228,7 @@ def confirm_job_templates_import_view(request):
         )
         return redirect("job_template_import")
     templates = create_job_templates_from_import_rows(rows)
-    request.session.pop(JOB_TEMPLATE_IMPORT_SESSION_KEY, None)
-    request.session.modified = True
+    clear_import_rows(request, session_key=JOB_TEMPLATE_IMPORT_SESSION_KEY)
     messages.success(request, f"Imported {len(templates)} job templates.")
     return redirect("job_template_list")
 
@@ -500,35 +493,23 @@ def import_jobs_view(request):
     rows = None
     if request.method == "POST" and form.is_valid():
         rows = parse_job_import_csv(form.cleaned_data["csv_file"])
-        request.session[JOB_IMPORT_SESSION_KEY] = [
-            row.as_session_data() for row in rows
-        ]
-        request.session.modified = True
+        store_import_rows(request, session_key=JOB_IMPORT_SESSION_KEY, rows=rows)
     elif request.method == "GET":
-        session_rows = request.session.get(JOB_IMPORT_SESSION_KEY)
-        if session_rows:
-            rows = rows_from_session(session_rows)
-
-    per_page = normalize_per_page(request.GET.get("per_page"))
-    page_size_options = page_size_options_for(per_page)
-    paginator = Paginator(rows or [], per_page)
-    page_obj = paginator.get_page(request.GET.get("page"))
+        rows = load_import_rows(
+            request,
+            session_key=JOB_IMPORT_SESSION_KEY,
+            row_loader=rows_from_session,
+        )
 
     return render(
         request,
         "jobs/job_import.html",
         {
             "form": form,
-            "rows": page_obj.object_list,
-            "has_errors": has_import_errors(rows) if rows is not None else False,
-            "is_paginated": page_obj.has_other_pages(),
-            "page_obj": page_obj,
-            "paginator": paginator,
-            "page_range": paginator.get_elided_page_range(number=page_obj.number),
-            "per_page": per_page,
-            "page_size_param": "per_page",
-            "page_size_options": page_size_options,
-            "per_page_preserved_query_items": [],
+            "example_path": "docs/examples/job-test-import.csv",
+            "confirm_url_name": "job_import_confirm",
+            "confirm_button_label": "Create jobs",
+            **import_review_context(request, rows=rows),
         },
     )
 
@@ -548,8 +529,7 @@ def confirm_jobs_import_view(request):
         messages.error(request, "Upload and review a valid jobs CSV before importing.")
         return redirect("job_import")
     jobs = create_jobs_from_import_rows(rows)
-    request.session.pop(JOB_IMPORT_SESSION_KEY, None)
-    request.session.modified = True
+    clear_import_rows(request, session_key=JOB_IMPORT_SESSION_KEY)
     messages.success(request, f"Imported {len(jobs)} jobs.")
     return redirect("job_list")
 

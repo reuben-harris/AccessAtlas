@@ -1,4 +1,6 @@
 title,description,estimated_duration_minutes,default_priority,notes,is_active
+Asset Renewal Alloy,Replace ageing alloy fittings on site assets,120,high,Check current asset records before ordering parts,true
+GDSP SIM swap,Swap the GDSP modem SIM and confirm carrier registration,45,normal,Record the new ICCID in the closeout note,true
 Battery Bank Inspection,Inspect cabinet battery bank and terminals,60,normal,Photograph corrosion or swelling,true
 Microwave Dish Alignment,Verify dish alignment and received signal level,90,high,Requires two technicians,true
 Generator Fuel Check,Check generator fuel level and run status,30,low,Only required for sites with standby generator,true

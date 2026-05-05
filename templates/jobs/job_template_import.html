@@ -1,6 +1,4 @@
 {% extends "base/base.html" %}
-{% load form_extras %}
-
 {% block title %}Import Job Templates - Access Atlas{% endblock %}
 
 {% block content %}
@@ -14,25 +12,7 @@
 
 <div class="row row-cards">
   <div class="col-lg-5">
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title">Upload CSV</h3>
-      </div>
-      <div class="card-body">
-        <form method="post" enctype="multipart/form-data">
-          {% csrf_token %}
-          {% for field in form.visible_fields %}
-            <div class="mb-3">
-              <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-              {{ field|render_form_field }}
-              {% if field.help_text %}<div class="form-hint">{{ field.help_text }}</div>{% endif %}
-              {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
-          {% endfor %}
-          <button class="btn btn-primary" type="submit">Review import</button>
-        </form>
-      </div>
-    </div>
+    {% include "includes/import_upload_card.html" %}
   </div>
   <div class="col-lg-7">
     <div class="card">
@@ -43,6 +23,7 @@
         <p>The CSV must include <code>title</code>. It can also include <code>description</code>, <code>estimated_duration_minutes</code>, <code>default_priority</code>, <code>notes</code>, and <code>is_active</code>.</p>
         <pre class="mb-3"><code>title,description,estimated_duration_minutes,default_priority,notes,is_active</code></pre>
         <p>Titles must be unique and cannot already exist. Default priority can be <code>low</code>, <code>normal</code>, <code>high</code>, or <code>urgent</code>.</p>
+        <p>Example CSV: <code>{{ example_path }}</code></p>
         <pre class="mb-0"><code>title,description,estimated_duration_minutes,default_priority,notes,is_active
 Asset Renewal Alloy,Replace ageing alloy fittings,120,high,Check current asset records,true
 GDSP SIM swap,Swap GDSP modem SIM,45,normal,,true</code></pre>
@@ -55,22 +36,7 @@ GDSP SIM swap,Swap GDSP modem SIM,45,normal,,true</code></pre>
   <div class="card mt-3">
     <div class="card-header">
       <h3 class="card-title">Review Import</h3>
-      {% if page_size_options %}
-        <div class="card-actions">
-          <form method="get" class="d-flex align-items-center gap-2">
-            {% for key, value in per_page_preserved_query_items %}
-              <input type="hidden" name="{{ key }}" value="{{ value }}">
-            {% endfor %}
-            <label class="form-label mb-0 text-secondary text-nowrap" for="template-import-per-page">Per page</label>
-            <select id="template-import-per-page" class="form-select form-select-sm" name="{{ page_size_param }}">
-              {% for option in page_size_options %}
-                <option value="{{ option }}"{% if option == per_page %} selected{% endif %}>{{ option }}</option>
-              {% endfor %}
-            </select>
-            <button class="btn btn-sm btn-outline-primary" type="submit">Apply</button>
-          </form>
-        </div>
-      {% endif %}
+      {% include "includes/import_review_actions.html" with per_page_control_id="template-import-per-page" %}
     </div>
     <div class="table-responsive">
       <table class="table table-vcenter">
@@ -105,14 +71,7 @@ GDSP SIM swap,Swap GDSP modem SIM,45,normal,,true</code></pre>
       </table>
     </div>
     <div class="card-footer">
-      {% if has_errors %}
-        <span class="text-secondary">Fix the CSV and upload it again before importing.</span>
-      {% else %}
-        <form method="post" action="{% url 'job_template_import_confirm' %}">
-          {% csrf_token %}
-          <button class="btn btn-primary" type="submit">Create job templates</button>
-        </form>
-      {% endif %}
+      {% include "includes/import_review_footer.html" %}
     </div>
   </div>
   {% include "includes/pagination_footer.html" %}

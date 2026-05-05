@@ -1,0 +1,16 @@
+{% if page_size_options %}
+  <div class="card-actions">
+    <form method="get" class="d-flex align-items-center gap-2">
+      {% for key, value in per_page_preserved_query_items %}
+        <input type="hidden" name="{{ key }}" value="{{ value }}">
+      {% endfor %}
+      <label class="form-label mb-0 text-secondary text-nowrap" for="{{ per_page_control_id }}">Per page</label>
+      <select id="{{ per_page_control_id }}" class="form-select form-select-sm" name="{{ page_size_param }}">
+        {% for option in page_size_options %}
+          <option value="{{ option }}"{% if option == per_page %} selected{% endif %}>{{ option }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-sm btn-outline-primary" type="submit">Apply</button>
+    </form>
+  </div>
+{% endif %}

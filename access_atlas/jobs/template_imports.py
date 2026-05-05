@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import csv
 from dataclasses import dataclass
-from io import StringIO
 
 from django.db import transaction
+
+from access_atlas.core.imports import has_import_row_errors, read_uploaded_csv_rows
 
 from .models import JobTemplate, Priority
 
@@ -16,7 +16,6 @@ OPTIONAL_HEADERS = [
     "notes",
     "is_active",
 ]
-SUPPORTED_HEADERS = REQUIRED_HEADERS + OPTIONAL_HEADERS
 SESSION_KEY = "job_template_import_rows"
 TRUTHY_VALUES = {"1", "true", "yes", "y", "on"}
 FALSY_VALUES = {"0", "false", "no", "n", "off"}
@@ -86,36 +85,20 @@ def parse_optional_bool(value: str) -> tuple[bool, str]:
 
 
 def parse_job_template_import_csv(uploaded_file) -> list[JobTemplateImportRow]:
-    content = uploaded_file.read()
-    try:
-        text = content.decode("utf-8-sig")
-    except UnicodeDecodeError:
+    rows, error = read_uploaded_csv_rows(
+        uploaded_file,
+        required_headers=REQUIRED_HEADERS,
+        optional_headers=OPTIONAL_HEADERS,
+    )
+    if error:
         return [
             JobTemplateImportRow(
                 row_number=0,
                 title="",
-                error="CSV file must be UTF-8 encoded.",
+                error=error,
             )
         ]
 
-    reader = csv.DictReader(StringIO(text))
-    headers = reader.fieldnames or []
-    if any(header not in SUPPORTED_HEADERS for header in headers) or any(
-        header not in headers for header in REQUIRED_HEADERS
-    ):
-        return [
-            JobTemplateImportRow(
-                row_number=0,
-                title="",
-                error=(
-                    "CSV headers must include title and may also include "
-                    "description,estimated_duration_minutes,default_priority,"
-                    "notes,is_active."
-                ),
-            )
-        ]
-
-    rows = list(reader)
     existing_titles = {
         title.casefold()
         for title in JobTemplate.objects.values_list("title", flat=True)
@@ -176,7 +159,7 @@ def parse_job_template_import_csv(uploaded_file) -> list[JobTemplateImportRow]:
 
 
 def has_template_import_errors(rows: list[JobTemplateImportRow]) -> bool:
-    return any(not row.is_valid for row in rows)
+    return has_import_row_errors(rows)
 
 
 def template_rows_from_session(

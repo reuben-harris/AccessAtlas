@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import csv
 from dataclasses import dataclass
-from io import StringIO
 
 from django.db import transaction
 
+from access_atlas.core.imports import has_import_row_errors, read_uploaded_csv_rows
 from access_atlas.sites.models import Site
 
 from .models import Job, JobStatus, JobTemplate
@@ -13,7 +12,6 @@ from .services import create_job_from_template
 
 REQUIRED_HEADERS = ["site_code", "template_title"]
 OPTIONAL_HEADERS = ["status", "closeout_note"]
-SUPPORTED_HEADERS = REQUIRED_HEADERS + OPTIONAL_HEADERS
 IMPORTABLE_STATUSES = {
     JobStatus.UNASSIGNED,
     JobStatus.COMPLETED,
@@ -63,37 +61,21 @@ def normalize_import_status(value: str) -> str:
 
 
 def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
-    content = uploaded_file.read()
-    try:
-        text = content.decode("utf-8-sig")
-    except UnicodeDecodeError:
+    rows, error = read_uploaded_csv_rows(
+        uploaded_file,
+        required_headers=REQUIRED_HEADERS,
+        optional_headers=OPTIONAL_HEADERS,
+    )
+    if error:
         return [
             JobImportRow(
                 row_number=0,
                 site_code="",
                 template_title="",
-                error="CSV file must be UTF-8 encoded.",
+                error=error,
             )
         ]
 
-    reader = csv.DictReader(StringIO(text))
-    headers = reader.fieldnames or []
-    if any(header not in SUPPORTED_HEADERS for header in headers) or any(
-        header not in headers for header in REQUIRED_HEADERS
-    ):
-        return [
-            JobImportRow(
-                row_number=0,
-                site_code="",
-                template_title="",
-                error=(
-                    "CSV headers must include site_code,template_title and may "
-                    "also include status,closeout_note."
-                ),
-            )
-        ]
-
-    rows = list(reader)
     result = []
     for index, row in enumerate(rows, start=2):
         site_code = (row.get("site_code") or "").strip()
@@ -231,7 +213,7 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
 
 
 def has_import_errors(rows: list[JobImportRow]) -> bool:
-    return any(not row.is_valid for row in rows)
+    return has_import_row_errors(rows)
 
 
 def rows_from_session(session_rows: list[dict[str, object]]) -> list[JobImportRow]:

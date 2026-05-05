@@ -12,6 +12,7 @@ from access_atlas.accounts.preferences import (
 )
 from access_atlas.core.test_utils import parse_json_script
 from access_atlas.jobs.forms import JobForm, JobFromTemplateForm
+from access_atlas.jobs.imports import parse_job_import_csv
 from access_atlas.jobs.models import (
     Job,
     JobStatus,
@@ -21,6 +22,7 @@ from access_atlas.jobs.models import (
     TemplateRequirement,
 )
 from access_atlas.jobs.services import create_job_from_template
+from access_atlas.jobs.template_imports import parse_job_template_import_csv
 from access_atlas.sites.models import Site
 from access_atlas.trips.models import SiteVisit, Trip
 from access_atlas.trips.services import assign_job_to_site_visit
@@ -537,6 +539,126 @@ def test_job_import_upload_reviews_valid_csv_without_creating_jobs(client):
     assert Job.objects.count() == 0
 
 
+def test_job_import_parser_rejects_unsupported_headers():
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        b"site_code,template_title,unexpected\nAA-001,Replace sensor,value\n",
+        content_type="text/csv",
+    )
+
+    rows = parse_job_import_csv(csv_file)
+
+    assert rows[0].error == (
+        "CSV headers must include site_code,template_title and may also include "
+        "status,closeout_note."
+    )
+
+
+def test_job_import_parser_rejects_missing_required_headers():
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        b"site_code,status\nAA-001,unassigned\n",
+        content_type="text/csv",
+    )
+
+    rows = parse_job_import_csv(csv_file)
+
+    assert rows[0].error == (
+        "CSV headers must include site_code,template_title and may also include "
+        "status,closeout_note."
+    )
+
+
+def test_job_import_parser_rejects_non_utf8_csv():
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        b"\xff\xfe\x00",
+        content_type="text/csv",
+    )
+
+    rows = parse_job_import_csv(csv_file)
+
+    assert rows[0].error == "CSV file must be UTF-8 encoded."
+
+
+def test_job_import_parser_rejects_empty_csv():
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        b"site_code,template_title\n",
+        content_type="text/csv",
+    )
+
+    rows = parse_job_import_csv(csv_file)
+
+    assert rows[0].error == "CSV file does not contain any job rows."
+
+
+@pytest.mark.django_db
+def test_job_import_get_reloads_reviewed_rows_from_session(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    create_site()
+    JobTemplate.objects.create(title="Replace sensor", is_active=True)
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        b"site_code,template_title\nAA-001,Replace sensor\n",
+        content_type="text/csv",
+    )
+    client.post(reverse("job_import"), {"csv_file": csv_file})
+
+    response = client.get(reverse("job_import"))
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Ready" in content
+    assert "AA-001" in content
+
+
+@pytest.mark.django_db
+def test_job_import_confirm_without_session_redirects_without_creating_jobs(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.post(reverse("job_import_confirm"))
+
+    assert response.status_code == 302
+    assert response.url == reverse("job_import")
+    assert Job.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_job_import_confirm_refuses_review_rows_with_errors(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    JobTemplate.objects.create(title="Replace sensor", is_active=True)
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        b"site_code,template_title\nBAD-001,Replace sensor\n",
+        content_type="text/csv",
+    )
+    client.post(reverse("job_import"), {"csv_file": csv_file})
+
+    response = client.post(reverse("job_import_confirm"))
+
+    assert response.status_code == 302
+    assert response.url == reverse("job_import")
+    assert Job.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_job_import_page_includes_specification_and_example_path(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.get(reverse("job_import"))
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "site_code,template_title,status,closeout_note" in content
+    assert "docs/examples/job-test-import.csv" in content
+    assert "Create jobs" not in content
+
+
 @pytest.mark.django_db
 def test_job_import_confirm_creates_jobs_from_reviewed_rows(client):
     user = User.objects.create_user(email="user@example.com")
@@ -713,6 +835,130 @@ def test_job_template_import_upload_reviews_valid_csv_without_creating_templates
     assert "Ready" in content
     assert "Asset Renewal Alloy" in content
     assert JobTemplate.objects.count() == 0
+
+
+def test_job_template_import_parser_rejects_unsupported_headers():
+    csv_file = SimpleUploadedFile(
+        "job_templates.csv",
+        b"title,unexpected\nAsset Renewal Alloy,value\n",
+        content_type="text/csv",
+    )
+
+    rows = parse_job_template_import_csv(csv_file)
+
+    assert rows[0].error == (
+        "CSV headers must include title and may also include "
+        "description,estimated_duration_minutes,default_priority,notes,is_active."
+    )
+
+
+def test_job_template_import_parser_rejects_missing_required_headers():
+    csv_file = SimpleUploadedFile(
+        "job_templates.csv",
+        b"description\nReplace fittings\n",
+        content_type="text/csv",
+    )
+
+    rows = parse_job_template_import_csv(csv_file)
+
+    assert rows[0].error == (
+        "CSV headers must include title and may also include "
+        "description,estimated_duration_minutes,default_priority,notes,is_active."
+    )
+
+
+def test_job_template_import_parser_rejects_non_utf8_csv():
+    csv_file = SimpleUploadedFile(
+        "job_templates.csv",
+        b"\xff\xfe\x00",
+        content_type="text/csv",
+    )
+
+    rows = parse_job_template_import_csv(csv_file)
+
+    assert rows[0].error == "CSV file must be UTF-8 encoded."
+
+
+@pytest.mark.django_db
+def test_job_template_import_parser_rejects_empty_csv():
+    csv_file = SimpleUploadedFile(
+        "job_templates.csv",
+        b"title\n",
+        content_type="text/csv",
+    )
+
+    rows = parse_job_template_import_csv(csv_file)
+
+    assert rows[0].error == "CSV file does not contain any job template rows."
+
+
+@pytest.mark.django_db
+def test_job_template_import_get_reloads_reviewed_rows_from_session(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    csv_file = SimpleUploadedFile(
+        "job_templates.csv",
+        b"title\nAsset Renewal Alloy\n",
+        content_type="text/csv",
+    )
+    client.post(reverse("job_template_import"), {"csv_file": csv_file})
+
+    response = client.get(reverse("job_template_import"))
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Ready" in content
+    assert "Asset Renewal Alloy" in content
+
+
+@pytest.mark.django_db
+def test_job_template_import_confirm_without_session_redirects_empty(
+    client,
+):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.post(reverse("job_template_import_confirm"))
+
+    assert response.status_code == 302
+    assert response.url == reverse("job_template_import")
+    assert JobTemplate.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_job_template_import_confirm_refuses_review_rows_with_errors(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    JobTemplate.objects.create(title="Asset Renewal Alloy")
+    csv_file = SimpleUploadedFile(
+        "job_templates.csv",
+        b"title\nasset renewal alloy\n",
+        content_type="text/csv",
+    )
+    client.post(reverse("job_template_import"), {"csv_file": csv_file})
+
+    response = client.post(reverse("job_template_import_confirm"))
+
+    assert response.status_code == 302
+    assert response.url == reverse("job_template_import")
+    assert JobTemplate.objects.count() == 1
+
+
+@pytest.mark.django_db
+def test_job_template_import_page_includes_specification_and_example_path(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.get(reverse("job_template_import"))
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert (
+        "title,description,estimated_duration_minutes,default_priority,notes,is_active"
+        in content
+    )
+    assert "docs/examples/job-template-test-import.csv" in content
+    assert "Create job templates" not in content
 
 
 @pytest.mark.django_db

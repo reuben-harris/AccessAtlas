@@ -1,0 +1,9 @@
+{% if has_errors %}
+  <span class="text-secondary">Fix the CSV and upload it again before importing.</span>
+{% else %}
+  {% url confirm_url_name as confirm_url %}
+  <form method="post" action="{{ confirm_url }}">
+    {% csrf_token %}
+    <button class="btn btn-primary" type="submit">{{ confirm_button_label }}</button>
+  </form>
+{% endif %}

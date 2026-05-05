@@ -1,6 +1,4 @@
 {% extends "base/base.html" %}
-{% load form_extras %}
-
 {% block title %}Import Jobs - Access Atlas{% endblock %}
 
 {% block content %}
@@ -14,25 +12,7 @@
 
 <div class="row row-cards">
   <div class="col-lg-5">
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title">Upload CSV</h3>
-      </div>
-      <div class="card-body">
-        <form method="post" enctype="multipart/form-data">
-          {% csrf_token %}
-          {% for field in form.visible_fields %}
-            <div class="mb-3">
-              <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-              {{ field|render_form_field }}
-              {% if field.help_text %}<div class="form-hint">{{ field.help_text }}</div>{% endif %}
-              {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
-          {% endfor %}
-          <button class="btn btn-primary" type="submit">Review import</button>
-        </form>
-      </div>
-    </div>
+    {% include "includes/import_upload_card.html" %}
   </div>
   <div class="col-lg-7">
     <div class="card">
@@ -43,6 +23,7 @@
         <p>The CSV must include <code>site_code</code> and <code>template_title</code>. It can also include <code>status</code> and <code>closeout_note</code>.</p>
         <pre class="mb-3"><code>site_code,template_title,status,closeout_note</code></pre>
         <p>Each row creates a job by copying an active job template for a synced site. Status can be <code>unassigned</code>, <code>completed</code>, or <code>cancelled</code>. Completed and cancelled jobs require a closeout note.</p>
+        <p>Example CSV: <code>{{ example_path }}</code></p>
         <pre class="mb-0"><code>site_code,template_title,status,closeout_note
 AA-001,Replace sensor,unassigned,
 AA-002,Inspect cabinet,completed,Imported from existing completed work log</code></pre>
@@ -55,22 +36,7 @@ AA-002,Inspect cabinet,completed,Imported from existing completed work log</code
   <div class="card mt-3">
     <div class="card-header">
       <h3 class="card-title">Review Import</h3>
-      {% if page_size_options %}
-        <div class="card-actions">
-          <form method="get" class="d-flex align-items-center gap-2">
-            {% for key, value in per_page_preserved_query_items %}
-              <input type="hidden" name="{{ key }}" value="{{ value }}">
-            {% endfor %}
-            <label class="form-label mb-0 text-secondary text-nowrap" for="import-per-page">Per page</label>
-            <select id="import-per-page" class="form-select form-select-sm" name="{{ page_size_param }}">
-              {% for option in page_size_options %}
-                <option value="{{ option }}"{% if option == per_page %} selected{% endif %}>{{ option }}</option>
-              {% endfor %}
-            </select>
-            <button class="btn btn-sm btn-outline-primary" type="submit">Apply</button>
-          </form>
-        </div>
-      {% endif %}
+      {% include "includes/import_review_actions.html" with per_page_control_id="import-per-page" %}
     </div>
     <div class="table-responsive">
       <table class="table table-vcenter">
@@ -105,14 +71,7 @@ AA-002,Inspect cabinet,completed,Imported from existing completed work log</code
       </table>
     </div>
     <div class="card-footer">
-      {% if has_errors %}
-        <span class="text-secondary">Fix the CSV and upload it again before importing.</span>
-      {% else %}
-        <form method="post" action="{% url 'job_import_confirm' %}">
-          {% csrf_token %}
-          <button class="btn btn-primary" type="submit">Create jobs</button>
-        </form>
-      {% endif %}
+      {% include "includes/import_review_footer.html" %}
     </div>
   </div>
   {% include "includes/pagination_footer.html" %}
