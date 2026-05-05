@@ -42,6 +42,9 @@
   const tileLayer = JSON.parse(tileLayerElement.textContent);
   const defaultCenter = [-41.2865, 174.7762];
   const defaultZoom = 5;
+  // Site access-record pages provide site coordinates, so the shared Home
+  // control returns to the site when there are no visible access features.
+  // The global Access Records map omits them and falls back to the NZ overview.
   const hasSiteCenter = siteLatitudeElement && siteLongitudeElement;
   const siteLatitude = hasSiteCenter
     ? Number(JSON.parse(siteLatitudeElement.textContent))
