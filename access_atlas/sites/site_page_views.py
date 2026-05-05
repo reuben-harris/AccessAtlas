@@ -20,7 +20,11 @@ from access_atlas.core.mixins import (
 
 from .forms import SitePhotoUploadForm
 from .models import Site, SitePhoto
-from .services import create_site_photo, group_visible_site_photos, hide_site_photo
+from .photo_services import (
+    create_site_photo,
+    group_visible_site_photos,
+    hide_site_photo,
+)
 from .view_helpers import (
     SiteDetailContextMixin,
     build_site_list_map_data,

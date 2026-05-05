@@ -10,6 +10,11 @@ from access_atlas.core.mixins import (
     SortableListMixin,
 )
 
+from .access_record_services import (
+    create_access_record_from_upload,
+    create_access_record_upload_draft,
+    create_access_record_version_from_upload,
+)
 from .access_record_snapshots import build_access_record_snapshots
 from .access_warnings import build_access_record_warnings
 from .forms import (
@@ -23,11 +28,6 @@ from .presentation import (
     POINT_TYPE_DISPLAY,
     TRACK_SUITABILITY_DISPLAY,
     point_details,
-)
-from .services import (
-    create_access_record_from_upload,
-    create_access_record_upload_draft,
-    create_access_record_version_from_upload,
 )
 from .view_helpers import (
     access_record_detail_sections,

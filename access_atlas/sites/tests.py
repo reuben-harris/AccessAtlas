@@ -37,7 +37,7 @@ from access_atlas.sites.models import (
     SitePhoto,
     SiteSyncStatus,
 )
-from access_atlas.sites.services import extract_taken_date
+from access_atlas.sites.photo_services import extract_taken_date
 
 
 @pytest.mark.django_db
