@@ -3,7 +3,8 @@
 .login-page {
   min-height: 100vh;
   overflow: hidden;
-  background: radial-gradient(
+  background:
+    radial-gradient(
       circle at 58% 32%,
       rgba(var(--tblr-success-rgb), 0.12),
       transparent 22rem
@@ -12,7 +13,8 @@
       circle at 82% 58%,
       rgba(var(--tblr-orange-rgb), 0.14),
       transparent 24rem
-    ), var(--tblr-body-bg);
+    ),
+    var(--tblr-body-bg);
 }
 
 .login-globe {
