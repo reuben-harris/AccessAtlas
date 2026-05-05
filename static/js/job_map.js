@@ -102,8 +102,9 @@
   }
 
   function getDominantStatus(jobs) {
-    // One marker can represent multiple jobs at a site, so use the highest-rank
-    // visible status as the visual summary color for that cluster.
+    // One marker can represent multiple jobs at a site. Rank is the product
+    // decision for the marker summary: open work should visually outrank
+    // terminal work, so unassigned wins before assigned, completed, cancelled.
     return jobs
       .map((job) => statusByValue.get(job.statusValue))
       .filter(Boolean)

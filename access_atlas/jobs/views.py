@@ -309,7 +309,7 @@ class JobMapView(LoginRequiredMixin, ListView):
                 "value": JobStatus.UNASSIGNED,
                 "label": JobStatus.UNASSIGNED.label,
                 "color": "#667382",
-                "rank": 20,
+                "rank": 40,
                 "visible": JobStatus.UNASSIGNED in visible_statuses,
             },
             {
@@ -323,14 +323,14 @@ class JobMapView(LoginRequiredMixin, ListView):
                 "value": JobStatus.COMPLETED,
                 "label": JobStatus.COMPLETED.label,
                 "color": "#2fb344",
-                "rank": 10,
+                "rank": 20,
                 "visible": JobStatus.COMPLETED in visible_statuses,
             },
             {
                 "value": JobStatus.CANCELLED,
                 "label": JobStatus.CANCELLED.label,
                 "color": "#d63939",
-                "rank": 40,
+                "rank": 10,
                 "visible": JobStatus.CANCELLED in visible_statuses,
             },
         ]

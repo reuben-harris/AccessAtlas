@@ -415,6 +415,24 @@ def test_job_map_includes_jobs_and_status_layers(client):
 
 
 @pytest.mark.django_db
+def test_job_map_status_layers_prioritize_open_work_for_marker_color(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.get(reverse("job_map"))
+
+    assert response.status_code == 200
+    status_layers = parse_json_script(
+        response.content.decode(),
+        "job-map-status-layers",
+    )
+    ranks = {layer["value"]: layer["rank"] for layer in status_layers}
+    assert ranks[JobStatus.UNASSIGNED] > ranks[JobStatus.ASSIGNED]
+    assert ranks[JobStatus.ASSIGNED] > ranks[JobStatus.COMPLETED]
+    assert ranks[JobStatus.COMPLETED] > ranks[JobStatus.CANCELLED]
+
+
+@pytest.mark.django_db
 def test_job_map_uses_saved_status_preference(client):
     user = User.objects.create_user(email="user@example.com")
     set_user_preference(
