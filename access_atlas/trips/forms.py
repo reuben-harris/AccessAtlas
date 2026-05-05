@@ -272,7 +272,7 @@ class TripCloseoutForm(forms.Form):
                 widget=forms.Select(attrs={"class": "form-select"}),
             )
             self.fields[self.job_reason_field(assignment)] = forms.CharField(
-                label=f"{assignment.job} cancellation reason",
+                label=f"{assignment.job} closeout note",
                 required=False,
                 widget=forms.Textarea(attrs={"class": "form-control", "rows": 2}),
             )
@@ -287,7 +287,7 @@ class TripCloseoutForm(forms.Form):
 
     @staticmethod
     def job_reason_field(assignment) -> str:
-        return f"job_{assignment.pk}_cancelled_reason"
+        return f"job_{assignment.pk}_closeout_note"
 
     def clean(self):
         cleaned_data = super().clean()
@@ -300,10 +300,17 @@ class TripCloseoutForm(forms.Form):
         for assignment in assignments:
             outcome = cleaned_data.get(self.job_outcome_field(assignment))
             reason = cleaned_data.get(self.job_reason_field(assignment), "").strip()
-            if outcome == TripCloseoutJobOutcome.CANCELLED and not reason:
+            if (
+                outcome
+                in {
+                    TripCloseoutJobOutcome.COMPLETED,
+                    TripCloseoutJobOutcome.CANCELLED,
+                }
+                and not reason
+            ):
                 self.add_error(
                     self.job_reason_field(assignment),
-                    "A cancelled job requires a reason.",
+                    "A closeout note is required for completed or cancelled jobs.",
                 )
             if (
                 site_visit_outcomes.get(assignment.site_visit_id)

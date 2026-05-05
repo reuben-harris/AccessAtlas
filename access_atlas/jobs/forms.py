@@ -54,9 +54,12 @@ class JobForm(forms.ModelForm):
             "estimated_duration_minutes",
             "priority",
             "status",
-            "cancelled_reason",
+            "closeout_note",
             "notes",
         ]
+        labels = {
+            "closeout_note": "Closeout note",
+        }
 
 
 class JobFromTemplateForm(forms.Form):

@@ -89,14 +89,18 @@ def test_job_cannot_be_manually_set_to_assigned_without_assignment():
 
 
 @pytest.mark.django_db
-def test_cancelled_job_requires_reason():
+def test_terminal_job_requires_closeout_note():
     site = create_site()
     job = Job(site=site, title="Inspect cabinet", status="cancelled")
 
     with pytest.raises(ValidationError):
         job.full_clean()
 
-    job.cancelled_reason = "No longer required."
+    job.status = JobStatus.COMPLETED
+    with pytest.raises(ValidationError):
+        job.full_clean()
+
+    job.closeout_note = "Work completed during historical import."
     job.full_clean()
 
 
@@ -221,7 +225,7 @@ def test_invalid_job_post_keeps_selected_site(client):
             "estimated_duration_minutes": "",
             "priority": "normal",
             "status": JobStatus.UNASSIGNED,
-            "cancelled_reason": "",
+            "closeout_note": "",
             "notes": "",
         },
     )
@@ -326,6 +330,7 @@ def test_job_list_filters_any_supported_status(client):
         site=site,
         title="Visible completed job",
         status=JobStatus.COMPLETED,
+        closeout_note="Completed in the field.",
     )
 
     response = client.get(reverse("job_list"), {"status": JobStatus.ASSIGNED})
@@ -383,12 +388,17 @@ def test_job_map_includes_jobs_and_status_layers(client):
     client.force_login(user)
     site = create_site()
     Job.objects.create(site=site, title="Inspect cabinet")
-    Job.objects.create(site=site, title="Closed work", status=JobStatus.COMPLETED)
+    Job.objects.create(
+        site=site,
+        title="Closed work",
+        status=JobStatus.COMPLETED,
+        closeout_note="Completed in the field.",
+    )
     Job.objects.create(
         site=site,
         title="Cancelled work",
         status=JobStatus.CANCELLED,
-        cancelled_reason="No longer required.",
+        closeout_note="No longer required.",
     )
 
     response = client.get(reverse("job_map"))
@@ -484,6 +494,34 @@ def test_job_import_confirm_creates_jobs_from_reviewed_rows(client):
 
 
 @pytest.mark.django_db
+def test_job_import_confirm_creates_terminal_jobs_from_status_column(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    create_site()
+    JobTemplate.objects.create(title="Replace sensor", is_active=True)
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        (
+            b"site_code,template_title,status,closeout_note\n"
+            b"AA-001,Replace sensor,completed,Completed before import\n"
+            b"AA-001,Replace sensor,cancelled,Cancelled before import\n"
+        ),
+        content_type="text/csv",
+    )
+    client.post(reverse("job_import"), {"csv_file": csv_file})
+
+    response = client.post(reverse("job_import_confirm"))
+
+    assert response.status_code == 302
+    jobs = list(Job.objects.order_by("pk"))
+    assert [job.status for job in jobs] == [JobStatus.COMPLETED, JobStatus.CANCELLED]
+    assert [job.closeout_note for job in jobs] == [
+        "Completed before import",
+        "Cancelled before import",
+    ]
+
+
+@pytest.mark.django_db
 def test_job_import_rejects_unknown_site(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -503,7 +541,7 @@ def test_job_import_rejects_unknown_site(client):
 
 
 @pytest.mark.django_db
-def test_job_import_rejects_duplicate_rows(client):
+def test_job_import_allows_duplicate_site_template_rows(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
     create_site()
@@ -518,8 +556,69 @@ def test_job_import_rejects_duplicate_rows(client):
 
     content = response.content.decode()
     assert response.status_code == 200
-    assert "Duplicate site_code/template_title row" in content
+    assert content.count("Ready") == 2
+    assert "Create jobs" in content
+
+
+@pytest.mark.django_db
+def test_job_import_rejects_assigned_status(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    create_site()
+    JobTemplate.objects.create(title="Replace sensor", is_active=True)
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        b"site_code,template_title,status\nAA-001,Replace sensor,assigned\n",
+        content_type="text/csv",
+    )
+
+    response = client.post(reverse("job_import"), {"csv_file": csv_file})
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Assigned jobs must be planned through a site visit." in content
     assert "Create jobs" not in content
+
+
+@pytest.mark.django_db
+def test_job_import_requires_closeout_note_for_terminal_status(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    create_site()
+    JobTemplate.objects.create(title="Replace sensor", is_active=True)
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        b"site_code,template_title,status\nAA-001,Replace sensor,completed\n",
+        content_type="text/csv",
+    )
+
+    response = client.post(reverse("job_import"), {"csv_file": csv_file})
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "closeout_note is required for completed or cancelled jobs." in content
+    assert "Create jobs" not in content
+
+
+@pytest.mark.django_db
+def test_job_import_review_paginates_rows(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    create_site()
+    JobTemplate.objects.create(title="Replace sensor", is_active=True)
+    rows = "\n".join("AA-001,Replace sensor" for _index in range(30))
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        f"site_code,template_title\n{rows}\n".encode(),
+        content_type="text/csv",
+    )
+
+    response = client.post(reverse("job_import"), {"csv_file": csv_file})
+
+    assert response.status_code == 200
+    assert len(response.context["rows"]) == 25
+    assert response.context["paginator"].num_pages == 2
+    assert response.context["per_page"] == 25
 
 
 @pytest.mark.django_db

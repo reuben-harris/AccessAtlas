@@ -38,7 +38,7 @@
           <label class="form-label" for="{{ group.outcome.id_for_label }}">Outcome</label>
           {{ group.outcome }}
           {% for error in group.outcome.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-          <label class="form-label mt-2" for="{{ group.reason.id_for_label }}">Cancellation reason</label>
+          <label class="form-label mt-2" for="{{ group.reason.id_for_label }}">Closeout note</label>
           {{ group.reason }}
           {% for error in group.reason.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
         </div>

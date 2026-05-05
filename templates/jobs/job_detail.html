@@ -34,8 +34,8 @@
       <dt class="col-sm-3">Priority</dt><dd class="col-sm-9">{{ object.get_priority_display }}</dd>
       <dt class="col-sm-3">Estimate</dt><dd class="col-sm-9">{{ object.estimated_duration_minutes|default:"-" }} min</dd>
       <dt class="col-sm-3">Template</dt><dd class="col-sm-9">{{ object.template|default:"-" }}</dd>
-      {% if object.cancelled_reason %}
-        <dt class="col-sm-3">Cancelled Reason</dt><dd class="col-sm-9">{{ object.cancelled_reason|linebreaksbr }}</dd>
+      {% if object.closeout_note %}
+        <dt class="col-sm-3">Closeout Note</dt><dd class="col-sm-9">{{ object.closeout_note|linebreaksbr }}</dd>
       {% endif %}
       <dt class="col-sm-3">Notes</dt><dd class="col-sm-9">{{ object.notes|linebreaksbr }}</dd>
     </dl>

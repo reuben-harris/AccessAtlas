@@ -9,11 +9,6 @@
     <div class="col">
       <h2 class="page-title">Import Jobs</h2>
     </div>
-    <div class="col-auto ms-auto">
-      <div class="btn-list">
-        <a class="btn btn-outline-secondary" href="{% url 'job_list' %}">Cancel</a>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -45,12 +40,12 @@
         <h3 class="card-title">CSV Specification</h3>
       </div>
       <div class="card-body">
-        <p>The CSV must contain exactly these headers:</p>
-        <pre class="mb-3"><code>site_code,template_title</code></pre>
-        <p>Each row creates one unassigned job by copying an active job template for a synced site.</p>
-        <pre class="mb-0"><code>site_code,template_title
-AA-001,Replace sensor
-AA-002,Inspect cabinet</code></pre>
+        <p>The CSV must include <code>site_code</code> and <code>template_title</code>. It can also include <code>status</code> and <code>closeout_note</code>.</p>
+        <pre class="mb-3"><code>site_code,template_title,status,closeout_note</code></pre>
+        <p>Each row creates a job by copying an active job template for a synced site. Status can be <code>unassigned</code>, <code>completed</code>, or <code>cancelled</code>. Completed and cancelled jobs require a closeout note.</p>
+        <pre class="mb-0"><code>site_code,template_title,status,closeout_note
+AA-001,Replace sensor,unassigned,
+AA-002,Inspect cabinet,completed,Imported from existing completed work log</code></pre>
       </div>
     </div>
   </div>
@@ -60,6 +55,22 @@ AA-002,Inspect cabinet</code></pre>
   <div class="card mt-3">
     <div class="card-header">
       <h3 class="card-title">Review Import</h3>
+      {% if page_size_options %}
+        <div class="card-actions">
+          <form method="get" class="d-flex align-items-center gap-2">
+            {% for key, value in per_page_preserved_query_items %}
+              <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endfor %}
+            <label class="form-label mb-0 text-secondary text-nowrap" for="import-per-page">Per page</label>
+            <select id="import-per-page" class="form-select form-select-sm" name="{{ page_size_param }}">
+              {% for option in page_size_options %}
+                <option value="{{ option }}"{% if option == per_page %} selected{% endif %}>{{ option }}</option>
+              {% endfor %}
+            </select>
+            <button class="btn btn-sm btn-outline-primary" type="submit">Apply</button>
+          </form>
+        </div>
+      {% endif %}
     </div>
     <div class="table-responsive">
       <table class="table table-vcenter">
@@ -68,6 +79,8 @@ AA-002,Inspect cabinet</code></pre>
             <th>Row</th>
             <th>Site Code</th>
             <th>Template Title</th>
+            <th>Status</th>
+            <th>Closeout Note</th>
             <th>Result</th>
           </tr>
         </thead>
@@ -77,6 +90,8 @@ AA-002,Inspect cabinet</code></pre>
               <td>{{ row.row_number|default:"-" }}</td>
               <td>{{ row.site_code|default:"-" }}</td>
               <td>{{ row.template_title|default:"-" }}</td>
+              <td>{{ row.status_label|default:"-" }}</td>
+              <td>{{ row.closeout_note|default:"-" }}</td>
               <td>
                 {% if row.is_valid %}
                   <span class="badge bg-green-lt">Ready</span>
@@ -100,5 +115,6 @@ AA-002,Inspect cabinet</code></pre>
       {% endif %}
     </div>
   </div>
+  {% include "includes/pagination_footer.html" %}
 {% endif %}
 {% endblock %}

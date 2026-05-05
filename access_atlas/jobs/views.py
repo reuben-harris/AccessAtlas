@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic import (
     CreateView,
@@ -23,6 +24,7 @@ from access_atlas.core.mixins import (
     SearchablePaginatedListMixin,
     SortableListMixin,
 )
+from access_atlas.core.search import normalize_per_page, page_size_options_for
 from access_atlas.sites.models import Site
 from access_atlas.trips.approval import ApprovedTripChangeMixin
 
@@ -420,22 +422,35 @@ def import_jobs_view(request):
     rows = None
     if request.method == "POST" and form.is_valid():
         rows = parse_job_import_csv(form.cleaned_data["csv_file"])
-        if not has_import_errors(rows):
-            request.session[JOB_IMPORT_SESSION_KEY] = [
-                row.as_session_data() for row in rows
-            ]
-            request.session.modified = True
-        else:
-            request.session.pop(JOB_IMPORT_SESSION_KEY, None)
-            request.session.modified = True
+        request.session[JOB_IMPORT_SESSION_KEY] = [
+            row.as_session_data() for row in rows
+        ]
+        request.session.modified = True
+    elif request.method == "GET":
+        session_rows = request.session.get(JOB_IMPORT_SESSION_KEY)
+        if session_rows:
+            rows = rows_from_session(session_rows)
+
+    per_page = normalize_per_page(request.GET.get("per_page"))
+    page_size_options = page_size_options_for(per_page)
+    paginator = Paginator(rows or [], per_page)
+    page_obj = paginator.get_page(request.GET.get("page"))
 
     return render(
         request,
         "jobs/job_import.html",
         {
             "form": form,
-            "rows": rows,
+            "rows": page_obj.object_list,
             "has_errors": has_import_errors(rows) if rows is not None else False,
+            "is_paginated": page_obj.has_other_pages(),
+            "page_obj": page_obj,
+            "paginator": paginator,
+            "page_range": paginator.get_elided_page_range(number=page_obj.number),
+            "per_page": per_page,
+            "page_size_param": "per_page",
+            "page_size_options": page_size_options,
+            "per_page_preserved_query_items": [],
         },
     )
 
@@ -451,6 +466,9 @@ def confirm_jobs_import_view(request):
         return redirect("job_import")
 
     rows = rows_from_session(session_rows)
+    if has_import_errors(rows):
+        messages.error(request, "Upload and review a valid jobs CSV before importing.")
+        return redirect("job_import")
     jobs = create_jobs_from_import_rows(rows)
     request.session.pop(JOB_IMPORT_SESSION_KEY, None)
     request.session.modified = True

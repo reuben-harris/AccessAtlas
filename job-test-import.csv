@@ -1,3 +1,101 @@
-site_code,template_title
-AA-001,GDSP SIM swap
-AA-002,GDSP SIM swap
+site_code,template_title,status,closeout_note
+AA-001,Asset Renewal Alloy,unassigned,
+AA-002,GDSP SIM swap,completed,Completed before Access Atlas import
+AA-003,Asset Renewal Alloy,cancelled,Cancelled before Access Atlas import
+AA-004,GDSP SIM swap,unassigned,
+AA-001,Asset Renewal Alloy,completed,Completed before Access Atlas import
+AA-002,GDSP SIM swap,cancelled,Cancelled before Access Atlas import
+AA-003,Asset Renewal Alloy,unassigned,
+AA-004,GDSP SIM swap,completed,Completed before Access Atlas import
+AA-001,Asset Renewal Alloy,cancelled,Cancelled before Access Atlas import
+AA-002,GDSP SIM swap,unassigned,
+AA-003,Asset Renewal Alloy,completed,Completed before Access Atlas import
+AA-004,GDSP SIM swap,cancelled,Cancelled before Access Atlas import
+AA-001,Asset Renewal Alloy,unassigned,
+AA-002,GDSP SIM swap,completed,Completed before Access Atlas import
+AA-003,Asset Renewal Alloy,cancelled,Cancelled before Access Atlas import
+AA-004,GDSP SIM swap,unassigned,
+AA-001,Asset Renewal Alloy,completed,Completed before Access Atlas import
+AA-002,GDSP SIM swap,cancelled,Cancelled before Access Atlas import
+AA-003,Asset Renewal Alloy,unassigned,
+AA-004,GDSP SIM swap,completed,Completed before Access Atlas import
+AA-001,Asset Renewal Alloy,cancelled,Cancelled before Access Atlas import
+AA-002,GDSP SIM swap,unassigned,
+AA-003,Asset Renewal Alloy,completed,Completed before Access Atlas import
+AA-004,GDSP SIM swap,cancelled,Cancelled before Access Atlas import
+AA-001,Asset Renewal Alloy,unassigned,
+AA-002,GDSP SIM swap,completed,Completed before Access Atlas import
+AA-003,Asset Renewal Alloy,cancelled,Cancelled before Access Atlas import
+AA-004,GDSP SIM swap,unassigned,
+AA-001,Asset Renewal Alloy,completed,Completed before Access Atlas import
+AA-002,GDSP SIM swap,cancelled,Cancelled before Access Atlas import
+AA-003,Asset Renewal Alloy,unassigned,
+AA-004,GDSP SIM swap,completed,Completed before Access Atlas import
+AA-001,Asset Renewal Alloy,cancelled,Cancelled before Access Atlas import
+AA-002,GDSP SIM swap,unassigned,
+AA-003,Asset Renewal Alloy,completed,Completed before Access Atlas import
+AA-004,GDSP SIM swap,cancelled,Cancelled before Access Atlas import
+AA-001,Asset Renewal Alloy,unassigned,
+AA-002,GDSP SIM swap,completed,Completed before Access Atlas import
+AA-003,Asset Renewal Alloy,cancelled,Cancelled before Access Atlas import
+AA-004,GDSP SIM swap,unassigned,
+AA-001,Asset Renewal Alloy,completed,Completed before Access Atlas import
+AA-002,GDSP SIM swap,cancelled,Cancelled before Access Atlas import
+AA-003,Asset Renewal Alloy,unassigned,
+AA-004,GDSP SIM swap,completed,Completed before Access Atlas import
+AA-001,Asset Renewal Alloy,cancelled,Cancelled before Access Atlas import
+AA-002,GDSP SIM swap,unassigned,
+AA-003,Asset Renewal Alloy,completed,Completed before Access Atlas import
+AA-004,GDSP SIM swap,cancelled,Cancelled before Access Atlas import
+AA-001,Asset Renewal Alloy,unassigned,
+AA-002,GDSP SIM swap,completed,Completed before Access Atlas import
+AA-003,Asset Renewal Alloy,cancelled,Cancelled before Access Atlas import
+AA-004,GDSP SIM swap,unassigned,
+AA-001,Asset Renewal Alloy,completed,Completed before Access Atlas import
+AA-002,GDSP SIM swap,cancelled,Cancelled before Access Atlas import
+AA-003,Asset Renewal Alloy,unassigned,
+AA-004,GDSP SIM swap,completed,Completed before Access Atlas import
+AA-001,Asset Renewal Alloy,cancelled,Cancelled before Access Atlas import
+AA-002,GDSP SIM swap,unassigned,
+AA-003,Asset Renewal Alloy,completed,Completed before Access Atlas import
+AA-004,GDSP SIM swap,cancelled,Cancelled before Access Atlas import
+AA-001,Asset Renewal Alloy,unassigned,
+AA-002,GDSP SIM swap,completed,Completed before Access Atlas import
+AA-003,Asset Renewal Alloy,cancelled,Cancelled before Access Atlas import
+AA-004,GDSP SIM swap,unassigned,
+AA-001,Asset Renewal Alloy,completed,Completed before Access Atlas import
+AA-002,GDSP SIM swap,cancelled,Cancelled before Access Atlas import
+AA-003,Asset Renewal Alloy,unassigned,
+AA-004,GDSP SIM swap,completed,Completed before Access Atlas import
+AA-001,Asset Renewal Alloy,cancelled,Cancelled before Access Atlas import
+AA-002,GDSP SIM swap,unassigned,
+AA-003,Asset Renewal Alloy,completed,Completed before Access Atlas import
+AA-004,GDSP SIM swap,cancelled,Cancelled before Access Atlas import
+AA-001,Asset Renewal Alloy,unassigned,
+AA-002,GDSP SIM swap,completed,Completed before Access Atlas import
+AA-003,Asset Renewal Alloy,cancelled,Cancelled before Access Atlas import
+AA-004,GDSP SIM swap,unassigned,
+AA-001,Asset Renewal Alloy,completed,Completed before Access Atlas import
+AA-002,GDSP SIM swap,cancelled,Cancelled before Access Atlas import
+AA-003,Asset Renewal Alloy,unassigned,
+AA-004,GDSP SIM swap,completed,Completed before Access Atlas import
+AA-001,Asset Renewal Alloy,cancelled,Cancelled before Access Atlas import
+AA-002,GDSP SIM swap,unassigned,
+AA-003,Asset Renewal Alloy,completed,Completed before Access Atlas import
+AA-004,GDSP SIM swap,cancelled,Cancelled before Access Atlas import
+AA-001,Asset Renewal Alloy,unassigned,
+AA-002,GDSP SIM swap,completed,Completed before Access Atlas import
+AA-003,Asset Renewal Alloy,cancelled,Cancelled before Access Atlas import
+AA-004,GDSP SIM swap,unassigned,
+AA-001,Asset Renewal Alloy,completed,Completed before Access Atlas import
+AA-002,GDSP SIM swap,cancelled,Cancelled before Access Atlas import
+AA-003,Asset Renewal Alloy,unassigned,
+AA-004,GDSP SIM swap,completed,Completed before Access Atlas import
+AA-001,Asset Renewal Alloy,cancelled,Cancelled before Access Atlas import
+AA-002,GDSP SIM swap,unassigned,
+AA-003,Asset Renewal Alloy,completed,Completed before Access Atlas import
+AA-004,GDSP SIM swap,cancelled,Cancelled before Access Atlas import
+AA-001,Asset Renewal Alloy,unassigned,
+AA-002,GDSP SIM swap,completed,Completed before Access Atlas import
+AA-003,Asset Renewal Alloy,cancelled,Cancelled before Access Atlas import
+AA-004,GDSP SIM swap,unassigned,

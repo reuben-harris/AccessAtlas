@@ -106,7 +106,7 @@ class Job(models.Model):
         choices=JobStatus.choices,
         default=JobStatus.UNASSIGNED,
     )
-    cancelled_reason = models.TextField(blank=True)
+    closeout_note = models.TextField(blank=True)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -135,9 +135,16 @@ class Job(models.Model):
             raise ValidationError(
                 {"status": "A job can only be assigned when linked to a site visit."}
             )
-        if self.status == JobStatus.CANCELLED and not self.cancelled_reason.strip():
+        if (
+            self.status in {JobStatus.COMPLETED, JobStatus.CANCELLED}
+            and not self.closeout_note.strip()
+        ):
             raise ValidationError(
-                {"cancelled_reason": "A cancelled job requires a reason."}
+                {
+                    "closeout_note": (
+                        "A closeout note is required for completed or cancelled jobs."
+                    )
+                }
             )
 
     @property

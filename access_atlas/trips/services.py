@@ -195,22 +195,24 @@ def close_trip(trip: Trip, cleaned_data: dict) -> None:
         outcome = cleaned_data[f"job_{assignment.pk}_outcome"]
         if outcome == JOB_OUTCOME_COMPLETED:
             job.status = JobStatus.COMPLETED
-            job.cancelled_reason = ""
-            job.save(update_fields=["status", "cancelled_reason", "updated_at"])
+            job.closeout_note = cleaned_data[
+                f"job_{assignment.pk}_closeout_note"
+            ].strip()
+            job.save(update_fields=["status", "closeout_note", "updated_at"])
             update_change_reason(job, "Completed during trip closeout")
         elif outcome == JOB_OUTCOME_RETURN:
             assignment._change_reason = "Returned job during trip closeout"
             assignment.delete()
             job.status = JobStatus.UNASSIGNED
-            job.cancelled_reason = ""
-            job.save(update_fields=["status", "cancelled_reason", "updated_at"])
+            job.closeout_note = ""
+            job.save(update_fields=["status", "closeout_note", "updated_at"])
             update_change_reason(job, "Returned to unassigned during trip closeout")
         elif outcome == JOB_OUTCOME_CANCELLED:
             job.status = JobStatus.CANCELLED
-            job.cancelled_reason = cleaned_data[
-                f"job_{assignment.pk}_cancelled_reason"
+            job.closeout_note = cleaned_data[
+                f"job_{assignment.pk}_closeout_note"
             ].strip()
-            job.save(update_fields=["status", "cancelled_reason", "updated_at"])
+            job.save(update_fields=["status", "closeout_note", "updated_at"])
             update_change_reason(job, "Cancelled during trip closeout")
 
     trip.status = TripStatus.COMPLETED

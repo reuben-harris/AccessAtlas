@@ -1634,7 +1634,8 @@ def test_cancel_trip_blocks_when_child_work_has_moved_forward(client):
     job = Job.objects.create(site=site, title="Site job")
     SiteVisitJob.objects.create(site_visit=site_visit, job=job)
     job.status = JobStatus.COMPLETED
-    job.save(update_fields=["status", "updated_at"])
+    job.closeout_note = "Completed before trip cancellation."
+    job.save(update_fields=["status", "closeout_note", "updated_at"])
     client.force_login(user)
 
     response = client.post(reverse("trip_cancel", kwargs={"pk": trip.pk}))
@@ -1689,11 +1690,11 @@ def test_close_trip_resolves_site_visits_and_jobs(client):
             f"site_visit_{returned_visit.pk}": SiteVisitStatus.SKIPPED,
             f"site_visit_{cancelled_visit.pk}": SiteVisitStatus.COMPLETED,
             f"job_{completed_assignment.pk}_outcome": "completed",
-            f"job_{completed_assignment.pk}_cancelled_reason": "",
+            f"job_{completed_assignment.pk}_closeout_note": "Completed on site.",
             f"job_{returned_assignment.pk}_outcome": "return",
-            f"job_{returned_assignment.pk}_cancelled_reason": "",
+            f"job_{returned_assignment.pk}_closeout_note": "",
             f"job_{cancelled_assignment.pk}_outcome": "cancelled",
-            f"job_{cancelled_assignment.pk}_cancelled_reason": "No longer needed.",
+            f"job_{cancelled_assignment.pk}_closeout_note": "No longer needed.",
         },
     )
 
@@ -1708,9 +1709,10 @@ def test_close_trip_resolves_site_visits_and_jobs(client):
     assert completed_visit.status == SiteVisitStatus.COMPLETED
     assert returned_visit.status == SiteVisitStatus.SKIPPED
     assert completed_job.status == JobStatus.COMPLETED
+    assert completed_job.closeout_note == "Completed on site."
     assert returned_job.status == JobStatus.UNASSIGNED
     assert cancelled_job.status == JobStatus.CANCELLED
-    assert cancelled_job.cancelled_reason == "No longer needed."
+    assert cancelled_job.closeout_note == "No longer needed."
     assert not SiteVisitJob.objects.filter(job=returned_job).exists()
     assert trip.history.first().history_change_reason == "Closed trip"
     assert (
@@ -1759,7 +1761,7 @@ def test_close_trip_requires_reason_for_cancelled_jobs(client):
         {
             f"site_visit_{site_visit.pk}": SiteVisitStatus.COMPLETED,
             f"job_{assignment.pk}_outcome": "cancelled",
-            f"job_{assignment.pk}_cancelled_reason": "",
+            f"job_{assignment.pk}_closeout_note": "",
         },
     )
 

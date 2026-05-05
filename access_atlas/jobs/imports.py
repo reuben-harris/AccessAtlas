@@ -8,10 +8,17 @@ from django.db import transaction
 
 from access_atlas.sites.models import Site
 
-from .models import Job, JobTemplate
+from .models import Job, JobStatus, JobTemplate
 from .services import create_job_from_template
 
 REQUIRED_HEADERS = ["site_code", "template_title"]
+OPTIONAL_HEADERS = ["status", "closeout_note"]
+SUPPORTED_HEADERS = REQUIRED_HEADERS + OPTIONAL_HEADERS
+IMPORTABLE_STATUSES = {
+    JobStatus.UNASSIGNED,
+    JobStatus.COMPLETED,
+    JobStatus.CANCELLED,
+}
 SESSION_KEY = "job_import_rows"
 
 
@@ -20,6 +27,8 @@ class JobImportRow:
     row_number: int
     site_code: str
     template_title: str
+    status: str = JobStatus.UNASSIGNED
+    closeout_note: str = ""
     site: Site | None = None
     template: JobTemplate | None = None
     error: str = ""
@@ -35,7 +44,22 @@ class JobImportRow:
             "template_id": self.template.pk if self.template else None,
             "site_code": self.site_code,
             "template_title": self.template_title,
+            "status": self.status,
+            "closeout_note": self.closeout_note,
+            "error": self.error,
         }
+
+    @property
+    def status_label(self) -> str:
+        try:
+            return JobStatus(self.status).label
+        except ValueError:
+            return self.status or "-"
+
+
+def normalize_import_status(value: str) -> str:
+    normalized = value.strip().lower().replace(" ", "_")
+    return normalized or JobStatus.UNASSIGNED
 
 
 def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
@@ -54,28 +78,38 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
 
     reader = csv.DictReader(StringIO(text))
     headers = reader.fieldnames or []
-    if headers != REQUIRED_HEADERS:
+    if any(header not in SUPPORTED_HEADERS for header in headers) or any(
+        header not in headers for header in REQUIRED_HEADERS
+    ):
         return [
             JobImportRow(
                 row_number=0,
                 site_code="",
                 template_title="",
-                error="CSV headers must be exactly: site_code,template_title.",
+                error=(
+                    "CSV headers must include site_code,template_title and may "
+                    "also include status,closeout_note."
+                ),
             )
         ]
 
     rows = list(reader)
-    seen_rows: set[tuple[str, str]] = set()
     result = []
     for index, row in enumerate(rows, start=2):
         site_code = (row.get("site_code") or "").strip()
         template_title = (row.get("template_title") or "").strip()
-        key = (site_code.lower(), template_title.lower())
+        status = normalize_import_status(row.get("status") or "")
+        closeout_note = (row.get("closeout_note") or "").strip()
 
         if not site_code:
             result.append(
                 JobImportRow(
-                    index, site_code, template_title, error="Missing site_code."
+                    index,
+                    site_code,
+                    template_title,
+                    status=status,
+                    closeout_note=closeout_note,
+                    error="Missing site_code.",
                 )
             )
             continue
@@ -85,22 +119,48 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
                     index,
                     site_code,
                     template_title,
+                    status=status,
+                    closeout_note=closeout_note,
                     error="Missing template_title.",
                 )
             )
             continue
-        if key in seen_rows:
+        if status == JobStatus.ASSIGNED:
             result.append(
                 JobImportRow(
                     index,
                     site_code,
                     template_title,
-                    error="Duplicate site_code/template_title row in this file.",
+                    status=status,
+                    closeout_note=closeout_note,
+                    error="Assigned jobs must be planned through a site visit.",
                 )
             )
             continue
-        seen_rows.add(key)
-
+        if status not in IMPORTABLE_STATUSES:
+            result.append(
+                JobImportRow(
+                    index,
+                    site_code,
+                    template_title,
+                    status=status,
+                    closeout_note=closeout_note,
+                    error="Unknown status.",
+                )
+            )
+            continue
+        if status in {JobStatus.COMPLETED, JobStatus.CANCELLED} and not closeout_note:
+            result.append(
+                JobImportRow(
+                    index,
+                    site_code,
+                    template_title,
+                    status=status,
+                    closeout_note=closeout_note,
+                    error="closeout_note is required for completed or cancelled jobs.",
+                )
+            )
+            continue
         site = Site.objects.filter(code__iexact=site_code).first()
         if site is None:
             result.append(
@@ -108,6 +168,8 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
                     index,
                     site_code,
                     template_title,
+                    status=status,
+                    closeout_note=closeout_note,
                     error="Unknown site_code.",
                 )
             )
@@ -124,6 +186,8 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
                     index,
                     site_code,
                     template_title,
+                    status=status,
+                    closeout_note=closeout_note,
                     error="Unknown active template_title.",
                 )
             )
@@ -134,6 +198,8 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
                     index,
                     site_code,
                     template_title,
+                    status=status,
+                    closeout_note=closeout_note,
                     error="template_title matches more than one active job template.",
                 )
             )
@@ -144,6 +210,8 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
                 row_number=index,
                 site_code=site_code,
                 template_title=template_title,
+                status=status,
+                closeout_note=closeout_note,
                 site=site,
                 template=templates.get(),
             )
@@ -169,15 +237,22 @@ def has_import_errors(rows: list[JobImportRow]) -> bool:
 def rows_from_session(session_rows: list[dict[str, object]]) -> list[JobImportRow]:
     rows = []
     for row in session_rows:
-        site = Site.objects.get(pk=row["site_id"])
-        template = JobTemplate.objects.get(pk=row["template_id"])
+        site_id = row.get("site_id")
+        template_id = row.get("template_id")
+        site = Site.objects.filter(pk=site_id).first() if site_id else None
+        template = (
+            JobTemplate.objects.filter(pk=template_id).first() if template_id else None
+        )
         rows.append(
             JobImportRow(
                 row_number=int(row["row_number"]),
                 site_code=str(row["site_code"]),
                 template_title=str(row["template_title"]),
+                status=str(row.get("status") or JobStatus.UNASSIGNED),
+                closeout_note=str(row.get("closeout_note") or ""),
                 site=site,
                 template=template,
+                error=str(row.get("error") or ""),
             )
         )
     return rows
@@ -194,5 +269,10 @@ def create_jobs_from_import_rows(rows: list[JobImportRow]) -> list[Job]:
             template=row.template,
             change_reason="Imported from CSV using job template",
         )
+        if row.status != JobStatus.UNASSIGNED or row.closeout_note:
+            job.status = row.status
+            job.closeout_note = row.closeout_note
+            job._change_reason = "Imported from CSV using job template"
+            job.save(update_fields=["status", "closeout_note", "updated_at"])
         jobs.append(job)
     return jobs
