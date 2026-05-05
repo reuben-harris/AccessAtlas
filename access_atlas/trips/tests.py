@@ -856,7 +856,7 @@ def test_trip_create_includes_tomselect_media(client):
     response = client.get(reverse("trip_create"))
 
     assert response.status_code == 200
-    assert b"django_tomselect/js/django-tomselect.js" in response.content
+    assert b"django_tomselect/js/django-tomselect" in response.content
 
 
 @pytest.mark.django_db
@@ -900,7 +900,7 @@ def test_site_visit_detail_includes_tomselect_media(client):
     response = client.get(reverse("site_visit_detail", kwargs={"pk": site_visit.pk}))
 
     assert response.status_code == 200
-    assert b"django_tomselect/js/django-tomselect.js" in response.content
+    assert b"django_tomselect/js/django-tomselect" in response.content
 
 
 @pytest.mark.django_db

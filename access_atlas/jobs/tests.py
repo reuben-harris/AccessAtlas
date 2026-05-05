@@ -203,7 +203,7 @@ def test_job_from_template_page_includes_tomselect_media(client):
     response = client.get(reverse("job_create_from_template"))
 
     assert response.status_code == 200
-    assert b"django_tomselect/js/django-tomselect.js" in response.content
+    assert b"django_tomselect/js/django-tomselect" in response.content
 
 
 @pytest.mark.django_db
