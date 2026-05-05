@@ -55,7 +55,7 @@ def test_job_assignment_requires_matching_site():
 
 
 @pytest.mark.django_db
-def test_assigning_job_sets_status_to_planned():
+def test_assigning_job_sets_status_to_assigned():
     user = User.objects.create_user(email="user@example.com")
     site = Site.objects.create(
         source_name="dummy",
@@ -77,7 +77,7 @@ def test_assigning_job_sets_status_to_planned():
     assign_job_to_site_visit(site_visit, job)
 
     job.refresh_from_db()
-    assert job.status == "planned"
+    assert job.status == "assigned"
 
 
 @pytest.mark.django_db
@@ -127,12 +127,12 @@ def test_job_assignment_rolls_back_if_status_update_fails(monkeypatch):
     job = Job.objects.create(site=site, title="Site job")
     original_save = Job.save
 
-    def fail_planned_save(self, *args, **kwargs):
-        if self.pk == job.pk and self.status == JobStatus.PLANNED:
+    def fail_assigned_save(self, *args, **kwargs):
+        if self.pk == job.pk and self.status == JobStatus.ASSIGNED:
             raise RuntimeError("status update failed")
         return original_save(self, *args, **kwargs)
 
-    monkeypatch.setattr(Job, "save", fail_planned_save)
+    monkeypatch.setattr(Job, "save", fail_assigned_save)
 
     with pytest.raises(RuntimeError):
         assign_job_to_site_visit(site_visit, job)
@@ -143,7 +143,7 @@ def test_job_assignment_rolls_back_if_status_update_fails(monkeypatch):
 
 
 @pytest.mark.django_db
-def test_unassigning_planned_job_sets_status_to_unassigned(client):
+def test_unassigning_assigned_job_sets_status_to_unassigned(client):
     user = User.objects.create_user(email="user@example.com")
     site = Site.objects.create(
         source_name="dummy",
@@ -203,7 +203,7 @@ def test_assigning_job_records_history_reason(client):
 
     assert response.status_code == 302
     job.refresh_from_db()
-    assert job.status == JobStatus.PLANNED
+    assert job.status == JobStatus.ASSIGNED
     assert job.history.first().history_change_reason == "Assigned to site visit"
     assert (
         SiteVisitJob.history.first().history_change_reason
@@ -504,7 +504,7 @@ def test_assigning_job_to_approved_trip_requires_confirmation_and_resubmits(clie
     job.refresh_from_db()
     assert trip.status == TripStatus.SUBMITTED
     assert trip.approval_round == 2
-    assert job.status == JobStatus.PLANNED
+    assert job.status == JobStatus.ASSIGNED
 
 
 @pytest.mark.django_db
@@ -1452,7 +1452,7 @@ def test_site_visit_history_defaults_to_25_entries_per_page(client):
 
 
 @pytest.mark.django_db
-def test_cancel_trip_returns_planned_jobs_and_skips_site_visits(client):
+def test_cancel_trip_returns_assigned_jobs_and_skips_site_visits(client):
     user = User.objects.create_user(email="user@example.com")
     site = Site.objects.create(
         source_name="dummy",
@@ -1650,7 +1650,7 @@ def test_close_trip_requires_reason_for_cancelled_jobs(client):
     trip.refresh_from_db()
     job.refresh_from_db()
     assert trip.status == TripStatus.SUBMITTED
-    assert job.status == JobStatus.PLANNED
+    assert job.status == JobStatus.ASSIGNED
 
 
 @pytest.mark.django_db

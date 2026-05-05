@@ -8,6 +8,7 @@ STATUS_BADGE_CLASSES = {
     "draft": "bg-secondary-lt",
     "submitted": "bg-blue-lt",
     "approved": "bg-green-lt",
+    "assigned": "bg-blue-lt",
     "skipped": "bg-yellow-lt",
     "unassigned": "bg-secondary-lt",
 }

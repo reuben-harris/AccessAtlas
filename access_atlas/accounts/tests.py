@@ -113,7 +113,7 @@ def test_preference_view_saves_allowed_preference(client):
         {
             "key": JOBS_MAP_PREFERENCE_KEY,
             "value": {
-                "visible_statuses": ["planned", "completed", "planned"],
+                "visible_statuses": ["assigned", "completed", "assigned"],
                 "viewport": {"lat": -41.2, "lng": 174.7, "zoom": 8},
             },
         },
@@ -123,7 +123,7 @@ def test_preference_view_saves_allowed_preference(client):
     assert response.status_code == 200
     preference = UserPreference.objects.get(user=user, key=JOBS_MAP_PREFERENCE_KEY)
     assert preference.value == {
-        "visible_statuses": ["planned", "completed"],
+        "visible_statuses": ["assigned", "completed"],
         "viewport": {"lat": -41.2, "lng": 174.7, "zoom": 8},
     }
 
@@ -152,7 +152,7 @@ def test_preference_view_rejects_unknown_job_status(client):
         reverse("account_preference"),
         {
             "key": JOBS_MAP_PREFERENCE_KEY,
-            "value": {"visible_statuses": ["planned", "unknown"]},
+            "value": {"visible_statuses": ["assigned", "unknown"]},
         },
         content_type="application/json",
     )
@@ -171,7 +171,7 @@ def test_preference_view_rejects_invalid_map_viewport(client):
         {
             "key": JOBS_MAP_PREFERENCE_KEY,
             "value": {
-                "visible_statuses": ["planned"],
+                "visible_statuses": ["assigned"],
                 "viewport": {"lat": -100, "lng": 174.7, "zoom": 8},
             },
         },

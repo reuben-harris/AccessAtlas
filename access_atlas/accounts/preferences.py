@@ -32,7 +32,7 @@ ALLOWED_THEME_MODES = {"system", "light", "dark"}
 
 
 def default_jobs_map_preference() -> dict[str, Any]:
-    return {"visible_statuses": [JobStatus.UNASSIGNED, JobStatus.PLANNED]}
+    return {"visible_statuses": [JobStatus.UNASSIGNED, JobStatus.ASSIGNED]}
 
 
 def default_sites_map_preference() -> dict[str, Any]:

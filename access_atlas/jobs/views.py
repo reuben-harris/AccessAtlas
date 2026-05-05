@@ -311,11 +311,11 @@ class JobMapView(LoginRequiredMixin, ListView):
                 "visible": JobStatus.UNASSIGNED in visible_statuses,
             },
             {
-                "value": JobStatus.PLANNED,
-                "label": JobStatus.PLANNED.label,
+                "value": JobStatus.ASSIGNED,
+                "label": JobStatus.ASSIGNED.label,
                 "color": "#206bc4",
                 "rank": 30,
-                "visible": JobStatus.PLANNED in visible_statuses,
+                "visible": JobStatus.ASSIGNED in visible_statuses,
             },
             {
                 "value": JobStatus.COMPLETED,

@@ -38,7 +38,7 @@ class JobForm(forms.ModelForm):
         choices = [
             (value, label)
             for value, label in self.fields["status"].choices
-            if value != JobStatus.PLANNED
+            if value != JobStatus.ASSIGNED
         ]
         self.fields["status"].choices = choices
 

@@ -34,11 +34,11 @@ def get_trip_cancel_summary(trip: Trip) -> TripCancelSummary:
     assignments = get_trip_assignments(trip)
     can_cancel = (
         not site_visits.exclude(status=SiteVisitStatus.PLANNED).exists()
-        and not assignments.exclude(job__status=JobStatus.PLANNED).exists()
+        and not assignments.exclude(job__status=JobStatus.ASSIGNED).exists()
     )
     return TripCancelSummary(
         site_visits_to_skip=site_visits.filter(status=SiteVisitStatus.PLANNED).count(),
-        jobs_to_return=assignments.filter(job__status=JobStatus.PLANNED).count(),
+        jobs_to_return=assignments.filter(job__status=JobStatus.ASSIGNED).count(),
         can_cancel=can_cancel,
     )
 
@@ -136,7 +136,7 @@ def assign_job_to_site_visit(site_visit, job) -> SiteVisitJob:
     assignment._change_reason = "Assigned job to site visit"
     assignment.save()
 
-    job.status = JobStatus.PLANNED
+    job.status = JobStatus.ASSIGNED
     job.save(update_fields=["status", "updated_at"])
     update_change_reason(job, "Assigned to site visit")
     return assignment
@@ -147,7 +147,7 @@ def unassign_site_visit_job(assignment: SiteVisitJob) -> None:
     job = assignment.job
     assignment._change_reason = "Unassigned job from site visit"
     assignment.delete()
-    if job.status == JobStatus.PLANNED:
+    if job.status == JobStatus.ASSIGNED:
         job.status = JobStatus.UNASSIGNED
         job.save(update_fields=["status", "updated_at"])
         update_change_reason(job, "Unassigned from site visit")
@@ -162,7 +162,7 @@ def cancel_trip(trip: Trip) -> TripCancelSummary:
             "Close the trip instead."
         )
 
-    for assignment in get_trip_assignments(trip).filter(job__status=JobStatus.PLANNED):
+    for assignment in get_trip_assignments(trip).filter(job__status=JobStatus.ASSIGNED):
         job = assignment.job
         assignment._change_reason = "Returned job during trip cancellation"
         assignment.delete()
@@ -189,7 +189,7 @@ def close_trip(trip: Trip, cleaned_data: dict) -> None:
         update_change_reason(site_visit, "Resolved during trip closeout")
 
     for assignment in get_trip_assignments(trip).filter(
-        job__status__in=[JobStatus.PLANNED, JobStatus.UNASSIGNED]
+        job__status__in=[JobStatus.ASSIGNED, JobStatus.UNASSIGNED]
     ):
         job = assignment.job
         outcome = cleaned_data[f"job_{assignment.pk}_outcome"]

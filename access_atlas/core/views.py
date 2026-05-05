@@ -58,7 +58,7 @@ HISTORY_MODELS = [
 
 JOB_STATUS_CHART_COLORS = {
     JobStatus.UNASSIGNED: "#667382",
-    JobStatus.PLANNED: "#206bc4",
+    JobStatus.ASSIGNED: "#206bc4",
     JobStatus.COMPLETED: "#2fb344",
     JobStatus.CANCELLED: "#d63939",
 }

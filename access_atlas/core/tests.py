@@ -403,8 +403,8 @@ def test_dashboard_shows_actionable_sections(logged_in_client, user):
         longitude=174.3,
     )
     Job.objects.create(site=site, title="Unassigned Job")
-    planned_job = Job(site=site, title="Planned Job", status="planned")
-    planned_job.save(skip_validation=True)
+    assigned_job = Job(site=site, title="Assigned Job", status="assigned")
+    assigned_job.save(skip_validation=True)
 
     response = logged_in_client.get(reverse("dashboard"))
 
@@ -415,7 +415,7 @@ def test_dashboard_shows_actionable_sections(logged_in_client, user):
     assert warning_site.code in content
     assert stale_site.code in content
     assert 'href="/jobs/?status=unassigned"' in content
-    assert 'href="/jobs/?status=planned"' in content
+    assert 'href="/jobs/?status=assigned"' in content
     assert f'href="{active_trip.get_absolute_url()}"' in content
     assert f'href="{warning_site.get_access_records_url()}"' in content
     assert f'href="{stale_site.get_absolute_url()}"' in content

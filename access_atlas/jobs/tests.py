@@ -80,9 +80,9 @@ def test_job_created_manually_is_unassigned_by_default():
 
 
 @pytest.mark.django_db
-def test_job_cannot_be_manually_set_to_planned_without_assignment():
+def test_job_cannot_be_manually_set_to_assigned_without_assignment():
     site = create_site()
-    job = Job(site=site, title="Inspect cabinet", status="planned")
+    job = Job(site=site, title="Inspect cabinet", status="assigned")
 
     with pytest.raises(ValidationError):
         job.full_clean()
@@ -100,12 +100,12 @@ def test_cancelled_job_requires_reason():
     job.full_clean()
 
 
-def test_job_form_does_not_offer_planned_status():
+def test_job_form_does_not_offer_assigned_status():
     form = JobForm()
 
     status_values = [value for value, _label in form.fields["status"].choices]
 
-    assert "planned" not in status_values
+    assert "assigned" not in status_values
     assert "blocked" not in status_values
 
 
@@ -150,7 +150,7 @@ def test_editing_assigned_job_on_approved_trip_requires_confirmation_and_resubmi
             "description": "",
             "estimated_duration_minutes": "",
             "priority": "normal",
-            "status": JobStatus.PLANNED,
+            "status": JobStatus.ASSIGNED,
             "notes": "",
         },
     )
@@ -167,7 +167,7 @@ def test_editing_assigned_job_on_approved_trip_requires_confirmation_and_resubmi
             "description": "",
             "estimated_duration_minutes": "",
             "priority": "normal",
-            "status": JobStatus.PLANNED,
+            "status": JobStatus.ASSIGNED,
             "notes": "",
             "confirm_trip_approval_reset": "on",
         },
@@ -316,23 +316,23 @@ def test_job_list_filters_any_supported_status(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
     site = create_site()
-    planned_job = Job(
+    assigned_job = Job(
         site=site,
-        title="Visible planned job",
-        status=JobStatus.PLANNED,
+        title="Visible assigned job",
+        status=JobStatus.ASSIGNED,
     )
-    planned_job.save(skip_validation=True)
+    assigned_job.save(skip_validation=True)
     Job.objects.create(
         site=site,
         title="Visible completed job",
         status=JobStatus.COMPLETED,
     )
 
-    response = client.get(reverse("job_list"), {"status": JobStatus.PLANNED})
+    response = client.get(reverse("job_list"), {"status": JobStatus.ASSIGNED})
 
     assert response.status_code == 200
     object_list = list(response.context["object_list"])
-    assert [job.title for job in object_list] == ["Visible planned job"]
+    assert [job.title for job in object_list] == ["Visible assigned job"]
 
 
 @pytest.mark.django_db
@@ -425,11 +425,11 @@ def test_job_map_uses_saved_status_preference(client):
     completed_layer = next(
         layer for layer in status_layers if layer["value"] == JobStatus.COMPLETED
     )
-    planned_layer = next(
-        layer for layer in status_layers if layer["value"] == JobStatus.PLANNED
+    assigned_layer = next(
+        layer for layer in status_layers if layer["value"] == JobStatus.ASSIGNED
     )
     assert completed_layer["visible"] is True
-    assert planned_layer["visible"] is False
+    assert assigned_layer["visible"] is False
     map_preference = parse_json_script(content, "job-map-preference")
     assert map_preference["value"]["viewport"] == {
         "lat": -41.2,

@@ -17,7 +17,7 @@ class Priority(models.TextChoices):
 
 class JobStatus(models.TextChoices):
     UNASSIGNED = "unassigned", "Unassigned"
-    PLANNED = "planned", "Planned"
+    ASSIGNED = "assigned", "Assigned"
     COMPLETED = "completed", "Completed"
     CANCELLED = "cancelled", "Cancelled"
 
@@ -131,9 +131,9 @@ class Job(models.Model):
         return reverse("job_history", kwargs={"pk": self.pk})
 
     def clean(self) -> None:
-        if self.status == JobStatus.PLANNED and (not self.pk or not self.is_assigned):
+        if self.status == JobStatus.ASSIGNED and (not self.pk or not self.is_assigned):
             raise ValidationError(
-                {"status": "A job can only be planned when assigned to a site visit."}
+                {"status": "A job can only be assigned when linked to a site visit."}
             )
         if self.status == JobStatus.CANCELLED and not self.cancelled_reason.strip():
             raise ValidationError(

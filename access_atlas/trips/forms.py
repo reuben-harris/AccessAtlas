@@ -318,7 +318,7 @@ class TripCloseoutForm(forms.Form):
 
     def closeout_assignments(self):
         return get_trip_assignments(self.trip).filter(
-            job__status__in=[JobStatus.PLANNED, JobStatus.UNASSIGNED]
+            job__status__in=[JobStatus.ASSIGNED, JobStatus.UNASSIGNED]
         )
 
     def site_visit_fields(self):
