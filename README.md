@@ -143,3 +143,5 @@ At a high level:
 4. start the web container
 
 The intended deployment shape is a web service or container platform talking to an external PostgreSQL instance.
+
+Set `CSRF_TRUSTED_ORIGINS` to the public HTTPS origin when deploying behind a reverse proxy or container platform, for example `CSRF_TRUSTED_ORIGINS=https://access-atlas.example.com`.
