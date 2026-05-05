@@ -1,3 +1,5 @@
+import PhotoSwipeLightbox from "../vendor/photoswipe/photoswipe-lightbox.esm.min.js";
+
 (() => {
   const selectionForm = document.querySelector("[data-site-photo-selection-form]");
   if (!selectionForm) {
@@ -62,6 +64,30 @@
     }
     refreshSelectionState();
   });
+
+  const lightbox = new PhotoSwipeLightbox({
+    gallery: "[data-site-photo-selection-form]",
+    children: "[data-site-photo-view]",
+    pswpModule: () => import("../vendor/photoswipe/photoswipe.esm.min.js"),
+  });
+  lightbox.on("uiRegister", () => {
+    lightbox.pswp.ui.registerElement({
+      name: "site-photo-date",
+      order: 9,
+      isButton: false,
+      appendTo: "root",
+      html: "",
+      onInit: (element, pswp) => {
+        const updateDate = () => {
+          const photoLink = pswp.currSlide?.data.element;
+          element.textContent = photoLink?.dataset.sitePhotoDate || "";
+        };
+        pswp.on("change", updateDate);
+        updateDate();
+      },
+    });
+  });
+  lightbox.init();
 
   refreshSelectionState();
 })();

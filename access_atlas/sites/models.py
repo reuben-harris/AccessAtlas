@@ -171,6 +171,8 @@ class SitePhoto(models.Model):
         upload_to=site_photo_thumbnail_path,
         blank=True,
     )
+    image_width = models.PositiveIntegerField(null=True, blank=True)
+    image_height = models.PositiveIntegerField(null=True, blank=True)
     taken_date = models.DateField(null=True, blank=True)
     uploaded_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -200,6 +202,18 @@ class SitePhoto(models.Model):
 
     def __str__(self) -> str:
         return f"{self.site} photo {self.pk or 'new'}"
+
+    @property
+    def viewer_width(self) -> int:
+        if self.image_width:
+            return self.image_width
+        return self.image.width if self.image else 1600
+
+    @property
+    def viewer_height(self) -> int:
+        if self.image_height:
+            return self.image_height
+        return self.image.height if self.image else 1200
 
 
 class AccessRecordUploadDraft(models.Model):

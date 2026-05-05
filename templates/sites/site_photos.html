@@ -3,6 +3,10 @@
 
 {% block title %}{{ object.code }} Photos - Access Atlas{% endblock %}
 
+{% block head %}
+  <link rel="stylesheet" href="{% static 'vendor/photoswipe/photoswipe.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="page-header d-print-none">
   <div class="row align-items-center">
@@ -122,6 +126,19 @@
               >
                 <img src="{{ photo.thumbnail.url }}" alt="{{ object.code }} site photo" loading="lazy">
               </button>
+              <a
+                class="site-photo-view-button"
+                href="{{ photo.image.url }}"
+                data-site-photo-view
+                data-pswp-src="{{ photo.image.url }}"
+                data-pswp-width="{{ photo.viewer_width }}"
+                data-pswp-height="{{ photo.viewer_height }}"
+                data-site-photo-date="{% if photo.taken_date %}{{ photo.taken_date|date:'d M Y' }}{% else %}Unknown date{% endif %}"
+                aria-label="View photo uploaded {{ photo.uploaded_at|date:'d M Y H:i' }}"
+                title="View photo"
+              >
+                <i class="ti ti-arrows-maximize" aria-hidden="true"></i>
+              </a>
             </article>
           {% endfor %}
         </div>
@@ -133,5 +150,5 @@
   </div>
 </form>
 
-<script src="{% static 'js/site_photos.js' %}"></script>
+<script type="module" src="{% static 'js/site_photos.js' %}"></script>
 {% endblock %}

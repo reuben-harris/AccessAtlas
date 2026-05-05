@@ -31,6 +31,13 @@ class SitePhotoGroup:
     missing_taken_date: bool = False
 
 
+@dataclass(frozen=True)
+class ThumbnailResult:
+    file: ContentFile
+    width: int
+    height: int
+
+
 @transaction.atomic
 def create_access_record_from_upload(
     *,
@@ -119,12 +126,13 @@ def extract_taken_date(image_file):
     return None
 
 
-def build_thumbnail_file(image_file) -> ContentFile:
-    """Build a JPEG thumbnail from an uploaded image while preserving originals."""
+def build_thumbnail_file(image_file) -> ThumbnailResult:
+    """Build a JPEG thumbnail and capture original dimensions for the viewer."""
 
     image_file.seek(0)
     with Image.open(image_file) as image:
         image = ImageOps.exif_transpose(image)
+        width, height = image.size
         image.thumbnail(THUMBNAIL_SIZE)
         if image.mode not in {"RGB", "L"}:
             image = image.convert("RGB")
@@ -133,7 +141,7 @@ def build_thumbnail_file(image_file) -> ContentFile:
         output.seek(0)
         content = ContentFile(output.read())
     image_file.seek(0)
-    return content
+    return ThumbnailResult(file=content, width=width, height=height)
 
 
 def thumbnail_name_for(filename: str) -> str:
@@ -146,15 +154,17 @@ def create_site_photo(*, site, user, image_file) -> SitePhoto:
     """Create a site photo with metadata and its gallery thumbnail."""
 
     taken_date = extract_taken_date(image_file)
-    thumbnail_file = build_thumbnail_file(image_file)
+    thumbnail = build_thumbnail_file(image_file)
     photo = SitePhoto(
         site=site,
         image=image_file,
+        image_width=thumbnail.width,
+        image_height=thumbnail.height,
         taken_date=taken_date,
         uploaded_by=user,
     )
     photo.thumbnail.save(
-        thumbnail_name_for(image_file.name), thumbnail_file, save=False
+        thumbnail_name_for(image_file.name), thumbnail.file, save=False
     )
     photo._change_reason = "Uploaded site photo"
     photo.save()

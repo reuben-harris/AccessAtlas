@@ -49,3 +49,24 @@ await copyIntoVendor(path.join(vendorRoot, "frappe-gantt"), [
     "frappe-gantt.umd.js",
   ],
 ]);
+
+await copyIntoVendor(path.join(vendorRoot, "photoswipe"), [
+  [
+    path.join(root, "node_modules", "photoswipe", "dist", "photoswipe.css"),
+    "photoswipe.css",
+  ],
+  [
+    path.join(root, "node_modules", "photoswipe", "dist", "photoswipe.esm.min.js"),
+    "photoswipe.esm.min.js",
+  ],
+  [
+    path.join(
+      root,
+      "node_modules",
+      "photoswipe",
+      "dist",
+      "photoswipe-lightbox.esm.min.js",
+    ),
+    "photoswipe-lightbox.esm.min.js",
+  ],
+]);

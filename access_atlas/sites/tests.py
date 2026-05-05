@@ -2097,6 +2097,8 @@ def test_site_photos_upload_creates_photos_and_thumbnails(client):
         "2026-05-01"
     }
     assert all(photo.thumbnail for photo in photos)
+    assert all(photo.image_width == 24 for photo in photos)
+    assert all(photo.image_height == 24 for photo in photos)
     assert all(photo.uploaded_by == user for photo in photos)
     assert photos[0].history.first().history_change_reason == "Uploaded site photo"
 
@@ -2136,6 +2138,13 @@ def test_site_photos_gallery_groups_unknown_dates_after_dated_photos(client):
     assert "data-site-photo-toggle" in content
     assert "data-site-photo-selection-summary" in content
     assert "data-site-photo-selection-clear" in content
+    assert "data-site-photo-view" in content
+    assert 'data-pswp-width="24"' in content
+    assert 'data-pswp-height="24"' in content
+    assert 'data-site-photo-date="01 May 2026"' in content
+    assert 'data-site-photo-date="Unknown date"' in content
+    assert "vendor/photoswipe/photoswipe.css" in content
+    assert 'type="module" src="/static/js/site_photos.js"' in content
 
 
 @pytest.mark.django_db

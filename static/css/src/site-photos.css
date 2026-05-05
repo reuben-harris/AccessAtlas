@@ -100,6 +100,44 @@
   object-fit: cover;
 }
 
+.site-photo-view-button {
+  position: absolute;
+  right: .5rem;
+  bottom: .5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  color: var(--tblr-body-color);
+  background: color-mix(in srgb, var(--tblr-bg-surface) 88%, transparent);
+  border: var(--tblr-border-width) solid var(--tblr-border-color);
+  border-radius: var(--tblr-border-radius);
+  box-shadow: 0 .25rem .75rem rgba(0, 0, 0, 0.18);
+  text-decoration: none;
+}
+
+.site-photo-view-button:hover,
+.site-photo-view-button:focus {
+  color: var(--tblr-primary);
+  background: var(--tblr-bg-surface);
+  text-decoration: none;
+}
+
 .site-photo-toolbar-action {
   gap: .375rem;
+}
+
+.pswp__site-photo-date {
+  position: absolute;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 1;
+  padding: .625rem .875rem;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.62);
+  border-radius: var(--tblr-border-radius);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
 }
