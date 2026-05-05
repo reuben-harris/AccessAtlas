@@ -33,6 +33,16 @@ urlpatterns = [
     ),
     path("templates/", views.JobTemplateListView.as_view(), name="job_template_list"),
     path(
+        "templates/import/",
+        views.import_job_templates_view,
+        name="job_template_import",
+    ),
+    path(
+        "templates/import/confirm/",
+        views.confirm_job_templates_import_view,
+        name="job_template_import_confirm",
+    ),
+    path(
         "templates/new/",
         views.JobTemplateCreateView.as_view(),
         name="job_template_create",

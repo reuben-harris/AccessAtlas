@@ -16,6 +16,7 @@ from access_atlas.jobs.models import (
     Job,
     JobStatus,
     JobTemplate,
+    Priority,
     Requirement,
     TemplateRequirement,
 )
@@ -331,6 +332,17 @@ def test_job_template_list_search_filters_results(client):
     object_list = list(response.context["object_list"])
     assert len(object_list) == 1
     assert object_list[0].title == "Inspect repeater"
+
+
+@pytest.mark.django_db
+def test_job_template_list_links_to_import(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.get(reverse("job_template_list"))
+
+    assert response.status_code == 200
+    assert reverse("job_template_import") in response.content.decode()
 
 
 @pytest.mark.django_db
@@ -672,6 +684,171 @@ def test_job_import_review_paginates_rows(client):
     )
 
     response = client.post(reverse("job_import"), {"csv_file": csv_file})
+
+    assert response.status_code == 200
+    assert len(response.context["rows"]) == 25
+    assert response.context["paginator"].num_pages == 2
+    assert response.context["per_page"] == 25
+
+
+@pytest.mark.django_db
+def test_job_template_import_upload_reviews_valid_csv_without_creating_templates(
+    client,
+):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    csv_file = SimpleUploadedFile(
+        "job_templates.csv",
+        (
+            b"title,description,estimated_duration_minutes,default_priority,notes,is_active\n"
+            b"Asset Renewal Alloy,Replace fittings,120,high,Bring spares,true\n"
+        ),
+        content_type="text/csv",
+    )
+
+    response = client.post(reverse("job_template_import"), {"csv_file": csv_file})
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Ready" in content
+    assert "Asset Renewal Alloy" in content
+    assert JobTemplate.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_job_template_import_confirm_creates_templates_from_reviewed_rows(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    csv_file = SimpleUploadedFile(
+        "job_templates.csv",
+        (
+            b"title,description,estimated_duration_minutes,default_priority,notes,is_active\n"
+            b"Asset Renewal Alloy,Replace fittings,120,high,Bring spares,false\n"
+            b"GDSP SIM swap,Swap SIM,45,normal,,true\n"
+        ),
+        content_type="text/csv",
+    )
+    client.post(reverse("job_template_import"), {"csv_file": csv_file})
+
+    response = client.post(reverse("job_template_import_confirm"))
+
+    assert response.status_code == 302
+    templates = list(JobTemplate.objects.order_by("title"))
+    assert [template.title for template in templates] == [
+        "Asset Renewal Alloy",
+        "GDSP SIM swap",
+    ]
+    assert templates[0].priority == Priority.HIGH
+    assert templates[0].estimated_duration_minutes == 120
+    assert templates[0].is_active is False
+    assert templates[0].history.first().history_change_reason == (
+        "Imported job template from CSV"
+    )
+
+
+@pytest.mark.django_db
+def test_job_template_import_rejects_existing_title(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    JobTemplate.objects.create(title="Asset Renewal Alloy")
+    csv_file = SimpleUploadedFile(
+        "job_templates.csv",
+        b"title\nasset renewal alloy\n",
+        content_type="text/csv",
+    )
+
+    response = client.post(reverse("job_template_import"), {"csv_file": csv_file})
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "A job template with this title already exists." in content
+    assert "Create job templates" not in content
+
+
+@pytest.mark.django_db
+def test_job_template_import_rejects_duplicate_title_in_file(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    csv_file = SimpleUploadedFile(
+        "job_templates.csv",
+        b"title\nAsset Renewal Alloy\nasset renewal alloy\n",
+        content_type="text/csv",
+    )
+
+    response = client.post(reverse("job_template_import"), {"csv_file": csv_file})
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Duplicate title in this file." in content
+    assert "Create job templates" not in content
+
+
+@pytest.mark.django_db
+def test_job_template_import_rejects_invalid_priority(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    csv_file = SimpleUploadedFile(
+        "job_templates.csv",
+        b"title,default_priority\nAsset Renewal Alloy,critical\n",
+        content_type="text/csv",
+    )
+
+    response = client.post(reverse("job_template_import"), {"csv_file": csv_file})
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Unknown default_priority." in content
+    assert "Create job templates" not in content
+
+
+@pytest.mark.django_db
+def test_job_template_import_rejects_invalid_estimate(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    csv_file = SimpleUploadedFile(
+        "job_templates.csv",
+        b"title,estimated_duration_minutes\nAsset Renewal Alloy,0\n",
+        content_type="text/csv",
+    )
+
+    response = client.post(reverse("job_template_import"), {"csv_file": csv_file})
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "estimated_duration_minutes must be a positive integer." in content
+    assert "Create job templates" not in content
+
+
+@pytest.mark.django_db
+def test_job_template_import_rejects_invalid_active_flag(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    csv_file = SimpleUploadedFile(
+        "job_templates.csv",
+        b"title,is_active\nAsset Renewal Alloy,maybe\n",
+        content_type="text/csv",
+    )
+
+    response = client.post(reverse("job_template_import"), {"csv_file": csv_file})
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "is_active must be true or false." in content
+    assert "Create job templates" not in content
+
+
+@pytest.mark.django_db
+def test_job_template_import_review_paginates_rows(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    rows = "\n".join(f"Template {index}" for index in range(30))
+    csv_file = SimpleUploadedFile(
+        "job_templates.csv",
+        f"title\n{rows}\n".encode(),
+        content_type="text/csv",
+    )
+
+    response = client.post(reverse("job_template_import"), {"csv_file": csv_file})
 
     assert response.status_code == 200
     assert len(response.context["rows"]) == 25

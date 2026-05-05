@@ -33,6 +33,7 @@ from .forms import (
     JobFromTemplateForm,
     JobImportUploadForm,
     JobTemplateForm,
+    JobTemplateImportUploadForm,
     RequirementForm,
     TemplateRequirementForm,
 )
@@ -47,6 +48,15 @@ from .imports import (
 )
 from .models import Job, JobStatus, JobTemplate, Requirement, TemplateRequirement
 from .services import create_job_from_template
+from .template_imports import (
+    SESSION_KEY as JOB_TEMPLATE_IMPORT_SESSION_KEY,
+)
+from .template_imports import (
+    create_job_templates_from_import_rows,
+    has_template_import_errors,
+    parse_job_template_import_csv,
+    template_rows_from_session,
+)
 
 
 class JobTemplateListView(
@@ -160,6 +170,74 @@ class JobTemplateUpdateView(
     model = JobTemplate
     form_class = JobTemplateForm
     template_name = "object_form.html"
+
+
+@login_required
+def import_job_templates_view(request):
+    form = JobTemplateImportUploadForm(request.POST or None, request.FILES or None)
+    rows = None
+    if request.method == "POST" and form.is_valid():
+        rows = parse_job_template_import_csv(form.cleaned_data["csv_file"])
+        request.session[JOB_TEMPLATE_IMPORT_SESSION_KEY] = [
+            row.as_session_data() for row in rows
+        ]
+        request.session.modified = True
+    elif request.method == "GET":
+        session_rows = request.session.get(JOB_TEMPLATE_IMPORT_SESSION_KEY)
+        if session_rows:
+            rows = template_rows_from_session(session_rows)
+
+    per_page = normalize_per_page(request.GET.get("per_page"))
+    page_size_options = page_size_options_for(per_page)
+    paginator = Paginator(rows or [], per_page)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    return render(
+        request,
+        "jobs/job_template_import.html",
+        {
+            "form": form,
+            "rows": page_obj.object_list,
+            "has_errors": has_template_import_errors(rows)
+            if rows is not None
+            else False,
+            "is_paginated": page_obj.has_other_pages(),
+            "page_obj": page_obj,
+            "paginator": paginator,
+            "page_range": paginator.get_elided_page_range(number=page_obj.number),
+            "per_page": per_page,
+            "page_size_param": "per_page",
+            "page_size_options": page_size_options,
+            "per_page_preserved_query_items": [],
+        },
+    )
+
+
+@login_required
+def confirm_job_templates_import_view(request):
+    if request.method != "POST":
+        return redirect("job_template_import")
+
+    session_rows = request.session.get(JOB_TEMPLATE_IMPORT_SESSION_KEY)
+    if not session_rows:
+        messages.error(
+            request,
+            "Upload and review a valid job templates CSV before importing.",
+        )
+        return redirect("job_template_import")
+
+    rows = template_rows_from_session(session_rows)
+    if has_template_import_errors(rows):
+        messages.error(
+            request,
+            "Upload and review a valid job templates CSV before importing.",
+        )
+        return redirect("job_template_import")
+    templates = create_job_templates_from_import_rows(rows)
+    request.session.pop(JOB_TEMPLATE_IMPORT_SESSION_KEY, None)
+    request.session.modified = True
+    messages.success(request, f"Imported {len(templates)} job templates.")
+    return redirect("job_template_list")
 
 
 class TemplateRequirementCreateView(

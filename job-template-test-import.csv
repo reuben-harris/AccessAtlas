@@ -1,0 +1,19 @@
+title,description,estimated_duration_minutes,default_priority,notes,is_active
+Battery Bank Inspection,Inspect cabinet battery bank and terminals,60,normal,Photograph corrosion or swelling,true
+Microwave Dish Alignment,Verify dish alignment and received signal level,90,high,Requires two technicians,true
+Generator Fuel Check,Check generator fuel level and run status,30,low,Only required for sites with standby generator,true
+Cabinet Filter Replacement,Replace air intake filters in the equipment cabinet,40,normal,Use standard filter kit,true
+Earthing Continuity Test,Test cabinet and mast earthing continuity,75,high,Attach meter readings to the job notes,true
+Solar Panel Clean,Clean solar panels and inspect mounting hardware,55,low,Skip if unsafe roof access,false
+Antenna Feeder Sweep,Sweep feeder cable and record return loss,110,urgent,Escalate failed sweep results,true
+Firmware Version Audit,Record firmware versions for managed equipment,35,normal,No change work unless separately approved,true
+Security Lock Replacement,Replace damaged or missing site locks,50,high,Confirm key barrel type before visit,true
+Vegetation Clearance Review,Assess vegetation clearance around access path,25,low,Create follow-up work if clearance is required,true
+UPS Runtime Test,Run UPS runtime test and record result,95,high,Coordinate with operations before load test,true
+Cable Label Refresh,Replace faded or missing cable labels,70,normal,Use Access Atlas naming convention,true
+Water Ingress Inspection,Inspect cabinet seals and water ingress points,65,high,Photograph any staining or pooled water,true
+Spare Parts Stocktake,Count critical spares stored at site,30,low,Update inventory notes after visit,false
+Radio Link Health Check,Check radio link counters and alarms,80,normal,Export alarm snapshot if available,true
+Mast Bolt Torque Check,Check accessible mast bolts with torque wrench,100,urgent,Stop if weather conditions are unsafe,true
+Access Track Condition Review,Review access track condition and gate status,35,low,Note if 4WD or contractor support is needed,true
+Environmental Sensor Calibration,Calibrate environmental monitoring sensors,85,high,Bring certified calibration kit,true
