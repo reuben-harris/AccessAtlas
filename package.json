@@ -21,7 +21,7 @@
     "photoswipe": "^5.4.4"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.4.14",
     "postcss": "^8.5.13",
     "postcss-cli": "^11.0.1",
     "postcss-import": "^16.1.1"
