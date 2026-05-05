@@ -45,6 +45,7 @@ def test_sync_sites_from_payload_creates_and_updates_sites():
                 "external_id": "001",
                 "code": "AA-001",
                 "name": "Original",
+                "description": "Original site notes",
                 "latitude": -41.1,
                 "longitude": 174.1,
             }
@@ -57,17 +58,43 @@ def test_sync_sites_from_payload_creates_and_updates_sites():
     site = Site.objects.get(source_name="dummy", external_id="001")
     assert site.code == "AA-001"
     assert site.name == "Original"
+    assert site.description == "Original site notes"
     assert site.sync_status == SiteSyncStatus.ACTIVE
     assert site.history.first().history_change_reason == "Created from site feed"
 
     payload["sites"][0]["name"] = "Updated"
+    payload["sites"][0]["description"] = "Updated site notes"
     result = sync_sites_from_payload(payload)
 
     assert result.updated == 1
     site.refresh_from_db()
     assert site.name == "Updated"
+    assert site.description == "Updated site notes"
     assert site.sync_status == SiteSyncStatus.ACTIVE
     assert site.history.first().history_change_reason == "Updated from site feed"
+
+
+@pytest.mark.django_db
+def test_sync_sites_accepts_missing_description_for_schema_1():
+    payload = {
+        "schema_version": "1.0",
+        "source_name": "dummy",
+        "generated_at": "2026-04-21T00:00:00Z",
+        "sites": [
+            {
+                "external_id": "001",
+                "code": "AA-001",
+                "name": "No Description",
+                "latitude": -41.1,
+                "longitude": 174.1,
+            }
+        ],
+    }
+
+    result = sync_sites_from_payload(payload)
+
+    assert result.created == 1
+    assert Site.objects.get().description == ""
 
 
 @pytest.mark.django_db
@@ -317,6 +344,7 @@ def test_site_list_search_filters_results(client):
         external_id="001",
         code="AA-001",
         name="North Ridge",
+        description="Only reachable from the ridge track.",
         latitude=-41.1,
         longitude=174.1,
     )
@@ -329,7 +357,7 @@ def test_site_list_search_filters_results(client):
         longitude=175.1,
     )
 
-    response = client.get(reverse("site_list"), {"q": "ridge"})
+    response = client.get(reverse("site_list"), {"q": "track"})
 
     assert response.status_code == 200
     object_list = list(response.context["object_list"])
@@ -444,6 +472,7 @@ def test_site_map_uses_saved_viewport_preference(client):
         external_id="001",
         code="AA-001",
         name="Site",
+        description="Site description from the source system.",
         latitude=-41.1,
         longitude=174.1,
     )
@@ -475,6 +504,7 @@ def test_access_record_list_shows_records_and_links_to_map_view(client):
         external_id="001",
         code="AA-001",
         name="Site",
+        description="Site description from the source system.",
         latitude=-41.1,
         longitude=174.1,
     )
@@ -582,6 +612,7 @@ def test_site_detail_renders_site_google_maps_button(client):
         external_id="001",
         code="AA-001",
         name="Site",
+        description="Site description from the source system.",
         latitude=-41.1,
         longitude=174.1,
     )
@@ -592,6 +623,7 @@ def test_site_detail_renders_site_google_maps_button(client):
     content = response.content.decode()
     assert "Open site coordinates in Google Maps" in content
     assert "Sync Status" in content
+    assert "Site description from the source system." in content
     assert "badge bg-blue-lt" in content
     assert (
         "https://www.google.com/maps/search/?api=1&amp;query=-41.100000%2C174.100000"

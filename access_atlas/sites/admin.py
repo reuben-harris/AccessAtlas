@@ -15,12 +15,13 @@ class SiteAdmin(SimpleHistoryAdmin):
         "last_seen_at",
     ]
     list_filter = ["sync_status", "source_name"]
-    search_fields = ["code", "name", "external_id", "source_name"]
+    search_fields = ["code", "name", "description", "external_id", "source_name"]
     readonly_fields = [
         "source_name",
         "external_id",
         "code",
         "name",
+        "description",
         "latitude",
         "longitude",
         "sync_status",

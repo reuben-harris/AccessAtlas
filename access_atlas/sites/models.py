@@ -16,6 +16,7 @@ class Site(models.Model):
     external_id = models.CharField(max_length=255)
     code = models.CharField(max_length=100)
     name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
     sync_status = models.CharField(

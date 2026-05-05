@@ -31,7 +31,7 @@ class SiteListView(
 ):
     model = Site
     template_name = "sites/site_list.html"
-    search_fields = ("code", "name", "external_id", "source_name")
+    search_fields = ("code", "name", "description", "external_id", "source_name")
     search_placeholder = "Search sites"
     sort_preference_page_key = "sites"
     default_sort = "code"

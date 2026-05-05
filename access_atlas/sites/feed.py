@@ -102,6 +102,7 @@ def sync_sites_from_payload(payload: dict[str, Any]) -> SyncResult:
             defaults={
                 "code": str(record["code"]),
                 "name": str(record["name"]),
+                "description": str(record.get("description") or ""),
                 "latitude": latitude,
                 "longitude": longitude,
                 "sync_status": SiteSyncStatus.ACTIVE,

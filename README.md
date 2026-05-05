@@ -4,7 +4,7 @@
 
 Access Atlas is a field work planning application for teams that organise trips, site visits, jobs, and site access information against sites managed in an external source of truth.
 
-The application owns planning data such as trips, site visits, jobs, job templates, requirements, access records, notes, and history. Site identity and site coordinates stay read-only and are synced from a configured external feed. Access Atlas extends that synced site data with site-specific access records and revisions stored locally.
+The application owns planning data such as trips, site visits, jobs, job templates, requirements, access records, notes, and history. Site identity, descriptions, and coordinates stay read-only and are synced from a configured external feed. Access Atlas extends that synced site data with site-specific access records and revisions stored locally.
 
 ## Domain Model
 
@@ -34,7 +34,7 @@ erDiagram
 
 ## Site Sync
 
-Access Atlas does not own canonical site identity, coordinates, or addresses.
+Access Atlas does not own canonical site identity, descriptions, coordinates, or addresses.
 
 It consumes one configured HTTP JSON feed and upserts local site references from that feed. Synced site fields stay read-only in Access Atlas. Access-start coordinates are owned per Access Record revision (GeoJSON), not by the site sync feed. If no external feed is configured, the app can use its own dummy feed for local development and evaluation.
 
@@ -47,6 +47,7 @@ The feed contract is intentionally narrow:
 - one HTTP endpoint
 - bearer-token authentication
 - required identity and site coordinate fields
+- optional site description
 - local upsert of site references
 
 Example feed:
@@ -61,6 +62,7 @@ Example feed:
       "external_id": "12345",
       "code": "SITE-A",
       "name": "Site A",
+      "description": "Primary ridge station with exposed weather conditions.",
       "latitude": -41.12345,
       "longitude": 174.12345
     },
@@ -68,6 +70,7 @@ Example feed:
       "external_id": "67890",
       "code": "SITE-B",
       "name": "Site B",
+      "description": "Valley repeater near the main service road.",
       "latitude": -44.1254,
       "longitude": 169.3521
     }

@@ -62,12 +62,14 @@ def _site(
     external_id: str,
     code: str,
     name: str,
+    description: str = "",
 ) -> Site:
     return Site.objects.create(
         source_name="dummy",
         external_id=external_id,
         code=code,
         name=name,
+        description=description,
         latitude=-41.1,
         longitude=174.1,
     )
@@ -241,6 +243,24 @@ def test_global_search_invalid_regex_shows_error(logged_in_client):
     assert response.context["total_results"] == 0
     assert response.context["search_error"] == "Invalid regular expression."
     assert "Invalid regular expression." in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_global_search_matches_site_description(logged_in_client):
+    _site(
+        external_id="001",
+        code="AA-001",
+        name="Alpha Field",
+        description="Generator hut beside the ridge track.",
+    )
+
+    response = logged_in_client.get(reverse("search"), {"q": "generator"})
+
+    assert response.status_code == 200
+    rows = _global_search_rows(response)
+    assert len(rows) == 1
+    assert rows[0].object_label == "AA-001 - Alpha Field"
+    assert rows[0].value == "Generator hut beside the ridge track."
 
 
 @pytest.mark.django_db

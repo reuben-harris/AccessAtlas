@@ -117,7 +117,11 @@ def build_site_rows(queryset, query: str, lookup_type: str) -> list[SearchResult
     return [
         SearchResultRow(
             object_type="Site",
-            value=first_matching_value(query, [site.code, site.name], lookup_type),
+            value=first_matching_value(
+                query,
+                [site.code, site.name, site.description],
+                lookup_type,
+            ),
             object_label=str(site),
             object_url=site.get_absolute_url(),
         )
@@ -259,7 +263,7 @@ def build_global_search_results(
 
     try:
         site_matches = Site.objects.filter(
-            build_search_predicate(("code", "name"), query, lookup_type)
+            build_search_predicate(("code", "name", "description"), query, lookup_type)
         )
         job_matches = Job.objects.select_related("site").filter(
             build_search_predicate(
