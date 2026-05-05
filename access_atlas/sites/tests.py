@@ -2068,6 +2068,28 @@ def test_extract_taken_date_returns_none_without_metadata():
 
 @pytest.mark.django_db
 @override_settings(MEDIA_ROOT="/tmp/access-atlas-test-media")
+def test_site_photo_viewer_dimensions_fall_back_to_image_file():
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    photo = SitePhoto.objects.create(
+        site=site,
+        image=image_file("fallback.jpg", size=(31, 19)),
+        uploaded_by=user,
+    )
+
+    assert photo.viewer_width == 31
+    assert photo.viewer_height == 19
+
+
+@pytest.mark.django_db
+@override_settings(MEDIA_ROOT="/tmp/access-atlas-test-media")
 def test_site_photos_upload_creates_photos_and_thumbnails(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -2201,20 +2223,86 @@ def test_site_photo_bulk_download_streams_selected_originals(client):
         reverse("site_photos", kwargs={"pk": site.pk}),
         {"photos": [image_file("first.jpg"), image_file("second.jpg")]},
     )
-    selected_photo = SitePhoto.objects.filter(site=site).order_by("id").first()
+    first_photo, second_photo = SitePhoto.objects.filter(site=site).order_by("id")
 
     response = client.post(
         reverse("site_photo_bulk_download", kwargs={"pk": site.pk}),
-        {"photo_ids": [str(selected_photo.pk)]},
+        {"photo_ids": [str(first_photo.pk), str(second_photo.pk)]},
     )
 
     assert response.status_code == 200
     assert response["Content-Type"] == "application/zip"
     with ZipFile(BytesIO(response.content)) as archive:
         names = archive.namelist()
+    assert len(names) == 2
+    assert any(name.startswith(f"{first_photo.pk}-first") for name in names)
+    assert any(name.startswith(f"{second_photo.pk}-second") for name in names)
+    assert all(name.endswith(".jpg") for name in names)
+
+
+@pytest.mark.django_db
+@override_settings(MEDIA_ROOT="/tmp/access-atlas-test-media")
+def test_site_photo_bulk_download_ignores_hidden_selected_photos(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    client.post(
+        reverse("site_photos", kwargs={"pk": site.pk}),
+        {"photos": [image_file("hidden.jpg"), image_file("visible.jpg")]},
+    )
+    hidden_photo, visible_photo = SitePhoto.objects.filter(site=site).order_by("id")
+    hidden_photo.hidden = True
+    hidden_photo.hidden_by = user
+    hidden_photo.save(update_fields=["hidden", "hidden_by"])
+
+    response = client.post(
+        reverse("site_photo_bulk_download", kwargs={"pk": site.pk}),
+        {"photo_ids": [str(hidden_photo.pk), str(visible_photo.pk)]},
+    )
+
+    assert response.status_code == 200
+    with ZipFile(BytesIO(response.content)) as archive:
+        names = archive.namelist()
     assert len(names) == 1
-    assert names[0].startswith(f"{selected_photo.pk}-first")
-    assert names[0].endswith(".jpg")
+    assert names[0].startswith(f"{visible_photo.pk}-visible")
+
+
+@pytest.mark.django_db
+def test_site_photo_upload_rejects_non_image_file(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+
+    response = client.post(
+        reverse("site_photos", kwargs={"pk": site.pk}),
+        {
+            "photos": [
+                SimpleUploadedFile(
+                    "not-a-photo.txt",
+                    b"not image data",
+                    content_type="text/plain",
+                )
+            ]
+        },
+    )
+
+    assert response.status_code == 200
+    assert SitePhoto.objects.count() == 0
+    assert "Upload a valid image" in response.content.decode()
 
 
 def geojson_file(name="access.geojson"):
@@ -2242,9 +2330,14 @@ def geojson_file(name="access.geojson"):
     )
 
 
-def image_file(name="photo.jpg", *, exif_taken_at: str | None = None):
+def image_file(
+    name="photo.jpg",
+    *,
+    exif_taken_at: str | None = None,
+    size: tuple[int, int] = (24, 24),
+):
     buffer = BytesIO()
-    image = Image.new("RGB", (24, 24), color="#206bc4")
+    image = Image.new("RGB", size, color="#206bc4")
     if exif_taken_at:
         exif = Image.Exif()
         exif[36867] = exif_taken_at
