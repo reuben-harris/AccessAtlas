@@ -47,6 +47,9 @@ class Site(models.Model):
     def get_access_records_url(self) -> str:
         return reverse("site_access_records", kwargs={"pk": self.pk})
 
+    def get_photos_url(self) -> str:
+        return reverse("site_photos", kwargs={"pk": self.pk})
+
     def get_history_url(self) -> str:
         return reverse("site_history", kwargs={"pk": self.pk})
 
@@ -147,6 +150,56 @@ class AccessRecordVersion(models.Model):
 
     def __str__(self) -> str:
         return f"{self.access_record} v{self.version_number}"
+
+
+def site_photo_upload_path(instance: SitePhoto, filename: str) -> str:
+    return f"site-photos/{instance.site_id}/originals/{filename}"
+
+
+def site_photo_thumbnail_path(instance: SitePhoto, filename: str) -> str:
+    return f"site-photos/{instance.site_id}/thumbnails/{filename}"
+
+
+class SitePhoto(models.Model):
+    site = models.ForeignKey(
+        Site,
+        related_name="photos",
+        on_delete=models.CASCADE,
+    )
+    image = models.ImageField(upload_to=site_photo_upload_path)
+    thumbnail = models.ImageField(
+        upload_to=site_photo_thumbnail_path,
+        blank=True,
+    )
+    taken_date = models.DateField(null=True, blank=True)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="site_photos",
+        on_delete=models.PROTECT,
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    hidden = models.BooleanField(default=False)
+    hidden_at = models.DateTimeField(null=True, blank=True)
+    hidden_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="hidden_site_photos",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+    )
+    history = HistoricalRecords()
+
+    class Meta:
+        ordering = ["-taken_date", "-uploaded_at", "-id"]
+        indexes = [
+            models.Index(
+                fields=["site", "hidden", "-taken_date", "-uploaded_at"],
+                name="site_photo_gallery_idx",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.site} photo {self.pk or 'new'}"
 
 
 class AccessRecordUploadDraft(models.Model):

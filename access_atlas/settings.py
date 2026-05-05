@@ -86,6 +86,7 @@ INSTALLED_APPS = [
     "allauth.socialaccount.providers.openid_connect",
     "django_tomselect",
     "simple_history",
+    "storages",
     "access_atlas.accounts.apps.AccountsConfig",
     "access_atlas.core.apps.CoreConfig",
     "access_atlas.sites.apps.SitesConfig",
@@ -183,6 +184,33 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+MEDIA_URL = os.getenv("MEDIA_URL", "/media/")
+MEDIA_ROOT = BASE_DIR / os.getenv("MEDIA_ROOT", "media")
+
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
+MEDIA_STORAGE_BACKEND = os.getenv("MEDIA_STORAGE_BACKEND", "local").lower()
+if MEDIA_STORAGE_BACKEND == "s3":
+    AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME", "")
+    if not AWS_STORAGE_BUCKET_NAME:
+        raise ValueError(
+            "MEDIA_STORAGE_BACKEND=s3 requires AWS_STORAGE_BUCKET_NAME to be set."
+        )
+    AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "")
+    AWS_S3_ENDPOINT_URL = os.getenv("AWS_S3_ENDPOINT_URL", "")
+    AWS_S3_CUSTOM_DOMAIN = os.getenv("AWS_S3_CUSTOM_DOMAIN", "")
+    AWS_QUERYSTRING_AUTH = os.getenv("AWS_QUERYSTRING_AUTH", "true").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    AWS_DEFAULT_ACL = None
+    STORAGES["default"] = {"BACKEND": "storages.backends.s3.S3Storage"}
+elif MEDIA_STORAGE_BACKEND != "local":
+    raise ValueError("MEDIA_STORAGE_BACKEND must be either 'local' or 's3'.")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

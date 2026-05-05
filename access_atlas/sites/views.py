@@ -21,6 +21,9 @@ from .site_page_views import (
     SiteHistoryView,
     SiteListView,
     SiteMapView,
+    SitePhotoBulkDownloadView,
+    SitePhotoBulkHideView,
+    SitePhotosView,
 )
 from .sync_views import dummy_site_feed, readonly_site_response, sync_sites_view
 
@@ -29,6 +32,9 @@ __all__ = [
     "SiteMapView",
     "SiteDetailView",
     "SiteAccessRecordsView",
+    "SitePhotosView",
+    "SitePhotoBulkHideView",
+    "SitePhotoBulkDownloadView",
     "SiteHistoryView",
     "AccessRecordCreateView",
     "AccessRecordListView",

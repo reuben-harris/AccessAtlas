@@ -1,7 +1,7 @@
 from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
 
-from .models import AccessRecord, AccessRecordVersion, Site
+from .models import AccessRecord, AccessRecordVersion, Site, SitePhoto
 
 
 @admin.register(Site)
@@ -80,4 +80,27 @@ class AccessRecordVersionAdmin(SimpleHistoryAdmin):
         "change_note",
         "uploaded_by",
         "created_at",
+    ]
+
+
+@admin.register(SitePhoto)
+class SitePhotoAdmin(SimpleHistoryAdmin):
+    list_display = [
+        "site",
+        "taken_date",
+        "uploaded_by",
+        "uploaded_at",
+        "hidden",
+    ]
+    list_filter = ["hidden", "taken_date", "uploaded_at"]
+    search_fields = ["site__code", "site__name", "uploaded_by__email"]
+    readonly_fields = [
+        "site",
+        "image",
+        "thumbnail",
+        "taken_date",
+        "uploaded_by",
+        "uploaded_at",
+        "hidden_at",
+        "hidden_by",
     ]

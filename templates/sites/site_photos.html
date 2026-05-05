@@ -1,0 +1,137 @@
+{% extends "base/base.html" %}
+{% load form_extras static %}
+
+{% block title %}{{ object.code }} Photos - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">{{ object.name }}</h2>
+    </div>
+    <div class="col-auto ms-auto">
+      <a class="btn btn-info d-inline-flex align-items-center gap-1" href="{{ site_search_url }}" target="_blank" rel="noopener noreferrer" title="Open site coordinates in Google Maps">
+        <i class="ti ti-map-search" aria-hidden="true"></i>
+        Site
+      </a>
+    </div>
+  </div>
+</div>
+{% include "includes/detail_section_nav.html" %}
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="card-title">Upload photos</h3>
+  </div>
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.photos.id_for_label }}">{{ form.photos.label }}</label>
+        {{ form.photos|render_form_field }}
+        {% if form.photos.help_text %}<div class="form-hint">{{ form.photos.help_text }}</div>{% endif %}
+        {% for error in form.photos.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+      </div>
+      {% if form.errors %}
+        <div class="alert alert-danger object-form-errors" role="alert">
+          <h4 class="alert-title">Unable to upload photos</h4>
+          <p class="mb-2">Review the highlighted fields and try again.</p>
+          <ul class="mb-0 ps-3">
+            {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+            {% for field in form %}
+              {% for error in field.errors %}<li>{{ field.label }}: {{ error }}</li>{% endfor %}
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+      <button class="btn btn-primary" type="submit">Upload</button>
+    </form>
+  </div>
+</div>
+
+<form method="post" data-site-photo-selection-form>
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Photos</h3>
+      <span class="badge bg-secondary-lt ms-2">{{ photo_count }}</span>
+      <div class="ms-auto btn-list">
+        <button
+          class="site-photo-selection-summary"
+          type="button"
+          hidden
+          data-site-photo-selection-summary
+          data-site-photo-selection-clear
+        >
+          <span data-site-photo-selection-count>Selected 0 photos</span>
+          <span class="site-photo-selection-clear-icon">
+            <i class="ti ti-x" aria-hidden="true"></i>
+          </span>
+        </button>
+        <button
+          class="btn btn-outline-secondary site-photo-toolbar-action"
+          type="submit"
+          formaction="{% url 'site_photo_bulk_download' object.pk %}"
+          disabled
+          data-site-photo-selection-action
+        >
+          <i class="ti ti-download" aria-hidden="true"></i>
+          Download
+        </button>
+        <button
+          class="btn btn-outline-danger site-photo-toolbar-action"
+          type="submit"
+          formaction="{% url 'site_photo_bulk_hide' object.pk %}"
+          disabled
+          data-site-photo-selection-action
+        >
+          <i class="ti ti-eye-off" aria-hidden="true"></i>
+          Hide
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+    {% for group in photo_groups %}
+      <section class="site-photo-group{% if not forloop.first %} mt-4{% endif %}">
+        <div class="site-photo-group-header">
+          <h4 class="site-photo-group-title">{{ group.label }}</h4>
+          {% if group.missing_taken_date %}
+            <span class="badge bg-warning-lt d-inline-flex align-items-center gap-1">
+              <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+              Missing date taken metadata
+            </span>
+          {% endif %}
+        </div>
+        <div class="site-photo-grid">
+          {% for photo in group.photos %}
+            <article class="site-photo-card">
+              <label class="site-photo-select" aria-label="Select photo">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  name="photo_ids"
+                  value="{{ photo.pk }}"
+                  data-site-photo-select
+                >
+              </label>
+              <button
+                class="site-photo-toggle-button"
+                type="button"
+                data-site-photo-toggle
+                aria-label="Select photo uploaded {{ photo.uploaded_at|date:'d M Y H:i' }}"
+              >
+                <img src="{{ photo.thumbnail.url }}" alt="{{ object.code }} site photo" loading="lazy">
+              </button>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+    {% empty %}
+      <p class="text-secondary mb-0">No photos found.</p>
+    {% endfor %}
+    </div>
+  </div>
+</form>
+
+<script src="{% static 'js/site_photos.js' %}"></script>
+{% endblock %}

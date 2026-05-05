@@ -1,0 +1,105 @@
+/* Site photo gallery: keep thumbnails compact while preserving the original image for the lightbox. */
+
+.site-photo-group-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .75rem;
+  margin-bottom: .75rem;
+}
+
+.site-photo-group-title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.site-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 1rem;
+}
+
+.site-photo-selection-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+  min-height: 2.375rem;
+  padding: .4375rem .75rem;
+  color: var(--tblr-warning);
+  background: color-mix(in srgb, var(--tblr-warning) 14%, transparent);
+  border: var(--tblr-border-width) solid
+    color-mix(in srgb, var(--tblr-warning) 34%, transparent);
+  border-radius: var(--tblr-border-radius);
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.4285714286;
+}
+
+.site-photo-selection-summary[hidden] {
+  display: none;
+}
+
+.site-photo-selection-clear-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: var(--tblr-border-radius);
+}
+
+.site-photo-selection-summary:hover .site-photo-selection-clear-icon,
+.site-photo-selection-summary:focus .site-photo-selection-clear-icon {
+  background: color-mix(in srgb, var(--tblr-warning) 22%, transparent);
+}
+
+.site-photo-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--tblr-bg-surface);
+  border: var(--tblr-border-width) solid var(--tblr-border-color);
+  border-radius: var(--tblr-border-radius);
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.site-photo-card.is-selected {
+  border-color: var(--tblr-warning);
+  box-shadow: 0 0 0 .1875rem color-mix(in srgb, var(--tblr-warning) 22%, transparent), 0
+    0 1rem color-mix(in srgb, var(--tblr-warning) 30%, transparent);
+  transform: translateY(-1px);
+}
+
+.site-photo-select {
+  position: absolute;
+  top: .5rem;
+  right: .5rem;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: .25rem;
+  background: color-mix(in srgb, var(--tblr-bg-surface) 86%, transparent);
+  border-radius: var(--tblr-border-radius);
+  box-shadow: 0 .25rem .75rem rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+}
+
+.site-photo-toggle-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.site-photo-toggle-button img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.site-photo-toolbar-action {
+  gap: .375rem;
+}

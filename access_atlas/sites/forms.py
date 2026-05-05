@@ -6,6 +6,29 @@ from .access_records import AccessRecordGeoJSONError, parse_access_record_geojso
 from .models import AccessRecord, AccessRecordUploadDraft, ArrivalMethod
 
 
+class MultipleImageInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleImageField(forms.ImageField):
+    widget = MultipleImageInput
+
+    def clean(self, data, initial=None):
+        files = data if isinstance(data, list | tuple) else [data]
+        if not files or files == [None]:
+            raise forms.ValidationError("Choose at least one photo.")
+        clean_file = super().clean
+        return [clean_file(file, initial) for file in files]
+
+
+class SitePhotoUploadForm(forms.Form):
+    photos = MultipleImageField(
+        label="Photos",
+        widget=MultipleImageInput(attrs={"multiple": True, "accept": "image/*"}),
+        help_text="Upload one or more image files.",
+    )
+
+
 class AccessRecordGeoJSONUploadMixin(forms.Form):
     geojson_file = forms.FileField(label="GeoJSON file", required=False)
     staged_upload_id = forms.CharField(required=False, widget=forms.HiddenInput)

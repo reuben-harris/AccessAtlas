@@ -158,6 +158,12 @@ def site_detail_sections(
             "is_active": active_section == "access-records",
         },
         {
+            "label": "Photos",
+            "icon": "ti-photo",
+            "url": site.get_photos_url(),
+            "is_active": active_section == "photos",
+        },
+        {
             "label": "History",
             "icon": "ti-history",
             "url": site.get_history_url(),

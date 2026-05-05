@@ -1,5 +1,11 @@
+from io import BytesIO
+from zipfile import ZipFile
+
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import DetailView, ListView
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.views.generic import DetailView, ListView, View
 
 from access_atlas.accounts.preferences import (
     SITES_MAP_PREFERENCE_KEY,
@@ -12,7 +18,9 @@ from access_atlas.core.mixins import (
     SortableListMixin,
 )
 
-from .models import Site
+from .forms import SitePhotoUploadForm
+from .models import Site, SitePhoto
+from .services import create_site_photo, group_visible_site_photos, hide_site_photo
 from .view_helpers import (
     SiteDetailContextMixin,
     build_site_list_map_data,
@@ -111,6 +119,38 @@ class SiteAccessRecordsView(SiteDetailContextMixin, LoginRequiredMixin, DetailVi
         return context
 
 
+class SitePhotosView(SiteDetailContextMixin, LoginRequiredMixin, DetailView):
+    template_name = "sites/site_photos.html"
+
+    def get_detail_sections(self) -> list[dict[str, str | bool]]:
+        return site_detail_sections(self.object, "photos")
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        form = SitePhotoUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            for photo_file in form.cleaned_data["photos"]:
+                create_site_photo(
+                    site=self.object,
+                    user=request.user,
+                    image_file=photo_file,
+                )
+            messages.success(request, "Photos uploaded.")
+            return redirect(self.object.get_photos_url())
+        return self.render_to_response(self.get_context_data(form=form))
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(self._site_detail_data())
+        visible_photos = list(
+            self.object.photos.filter(hidden=False).select_related("uploaded_by")
+        )
+        context["form"] = kwargs.get("form") or SitePhotoUploadForm()
+        context["photo_groups"] = group_visible_site_photos(visible_photos)
+        context["photo_count"] = len(visible_photos)
+        return context
+
+
 class SiteHistoryView(
     PaginatedObjectHistoryMixin,
     SiteDetailContextMixin,
@@ -127,3 +167,43 @@ class SiteHistoryView(
         context.update(self._site_detail_data())
         context.update(self.get_history_context())
         return context
+
+
+class SitePhotoBulkHideView(LoginRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        site = get_object_or_404(Site, pk=kwargs["pk"])
+        photo_ids = request.POST.getlist("photo_ids")
+        photos = SitePhoto.objects.filter(site=site, hidden=False, pk__in=photo_ids)
+        hidden_count = 0
+        for photo in photos:
+            hide_site_photo(photo=photo, user=request.user)
+            hidden_count += 1
+        if hidden_count:
+            noun = "photo" if hidden_count == 1 else "photos"
+            messages.success(request, f"{hidden_count} {noun} hidden.")
+        else:
+            messages.info(request, "No photos were selected.")
+        return redirect(site.get_photos_url())
+
+
+class SitePhotoBulkDownloadView(LoginRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        site = get_object_or_404(Site, pk=kwargs["pk"])
+        photo_ids = request.POST.getlist("photo_ids")
+        photos = SitePhoto.objects.filter(site=site, hidden=False, pk__in=photo_ids)
+        if not photos:
+            messages.info(request, "No photos were selected.")
+            return redirect(site.get_photos_url())
+
+        archive = BytesIO()
+        with ZipFile(archive, "w") as zip_file:
+            for photo in photos:
+                with photo.image.open("rb") as image_file:
+                    filename = f"{photo.pk}-{photo.image.name.split('/')[-1]}"
+                    zip_file.writestr(filename, image_file.read())
+        archive.seek(0)
+        response = HttpResponse(archive.getvalue(), content_type="application/zip")
+        response["Content-Disposition"] = (
+            f'attachment; filename="{site.code}-photos.zip"'
+        )
+        return response

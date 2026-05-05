@@ -30,7 +30,7 @@ from access_atlas.jobs.models import (
 )
 from access_atlas.sites.access_record_snapshots import build_access_record_snapshots
 from access_atlas.sites.access_warnings import build_site_warnings
-from access_atlas.sites.models import Site, SiteSyncStatus
+from access_atlas.sites.models import Site, SitePhoto, SiteSyncStatus
 from access_atlas.trips.models import SiteVisit, SiteVisitJob, Trip, TripStatus
 
 
@@ -47,6 +47,7 @@ class HistoryEntry:
 
 HISTORY_MODELS = [
     Site,
+    SitePhoto,
     JobTemplate,
     TemplateRequirement,
     Job,

@@ -10,9 +10,11 @@ dependencies = [
     "django>=6.0,<6.1",
     "django-allauth[socialaccount]>=65.16.1",
     "django-simple-history>=3.10.1",
+    "django-storages[s3]>=1.14.6",
     "django-tomselect>=2026.4.1",
     "geojson2kml>=0.2.0",
     "gunicorn>=23.0.0",
+    "pillow>=12.2.0",
     "psycopg[binary]>=3.2.13",
 ]
 

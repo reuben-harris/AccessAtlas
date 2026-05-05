@@ -1,9 +1,13 @@
 from decimal import Decimal
+from io import BytesIO
+from zipfile import ZipFile
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
+from django.test import override_settings
 from django.urls import reverse
+from PIL import Image
 
 from access_atlas.accounts.models import User
 from access_atlas.accounts.preferences import (
@@ -30,8 +34,10 @@ from access_atlas.sites.models import (
     AccessRecordVersion,
     ArrivalMethod,
     Site,
+    SitePhoto,
     SiteSyncStatus,
 )
+from access_atlas.sites.services import extract_taken_date
 
 
 @pytest.mark.django_db
@@ -2050,6 +2056,158 @@ def test_parse_access_record_geojson_rejects_invalid_data(geojson, message):
         parse_access_record_geojson(geojson)
 
 
+def test_extract_taken_date_reads_exif_datetime_original():
+    photo_file = image_file("dated.jpg", exif_taken_at="2026:05:01 12:30:00")
+
+    assert extract_taken_date(photo_file).isoformat() == "2026-05-01"
+
+
+def test_extract_taken_date_returns_none_without_metadata():
+    assert extract_taken_date(image_file("unknown.jpg")) is None
+
+
+@pytest.mark.django_db
+@override_settings(MEDIA_ROOT="/tmp/access-atlas-test-media")
+def test_site_photos_upload_creates_photos_and_thumbnails(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+
+    response = client.post(
+        reverse("site_photos", kwargs={"pk": site.pk}),
+        {
+            "photos": [
+                image_file("dated.jpg", exif_taken_at="2026:05:01 12:30:00"),
+                image_file("unknown.jpg"),
+            ]
+        },
+    )
+
+    assert response.status_code == 302
+    photos = list(SitePhoto.objects.filter(site=site).order_by("image"))
+    assert len(photos) == 2
+    assert {photo.taken_date.isoformat() for photo in photos if photo.taken_date} == {
+        "2026-05-01"
+    }
+    assert all(photo.thumbnail for photo in photos)
+    assert all(photo.uploaded_by == user for photo in photos)
+    assert photos[0].history.first().history_change_reason == "Uploaded site photo"
+
+
+@pytest.mark.django_db
+@override_settings(MEDIA_ROOT="/tmp/access-atlas-test-media")
+def test_site_photos_gallery_groups_unknown_dates_after_dated_photos(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    client.post(
+        reverse("site_photos", kwargs={"pk": site.pk}),
+        {
+            "photos": [
+                image_file("dated.jpg", exif_taken_at="2026:05:01 12:30:00"),
+                image_file("unknown.jpg"),
+            ]
+        },
+    )
+
+    response = client.get(reverse("site_photos", kwargs={"pk": site.pk}))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert content.index("01 May 2026") < content.index("Unknown date")
+    assert "Missing date taken metadata" in content
+    assert "site-photo-grid" in content
+    assert "site-photo-card-meta" not in content
+    assert "data-site-photo-selection-action" in content
+    assert "data-site-photo-toggle" in content
+    assert "data-site-photo-selection-summary" in content
+    assert "data-site-photo-selection-clear" in content
+
+
+@pytest.mark.django_db
+@override_settings(MEDIA_ROOT="/tmp/access-atlas-test-media")
+def test_site_photo_bulk_hide_hides_selected_photos_only(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    client.post(
+        reverse("site_photos", kwargs={"pk": site.pk}),
+        {"photos": [image_file("first.jpg"), image_file("second.jpg")]},
+    )
+    first_photo, second_photo = SitePhoto.objects.filter(site=site).order_by("id")
+
+    response = client.post(
+        reverse("site_photo_bulk_hide", kwargs={"pk": site.pk}),
+        {"photo_ids": [str(first_photo.pk)]},
+    )
+
+    assert response.status_code == 302
+    first_photo.refresh_from_db()
+    second_photo.refresh_from_db()
+    assert first_photo.hidden is True
+    assert first_photo.hidden_by == user
+    assert first_photo.history.first().history_change_reason == "Hidden site photo"
+    assert second_photo.hidden is False
+    response = client.get(reverse("site_photos", kwargs={"pk": site.pk}))
+    content = response.content.decode()
+    assert f'value="{first_photo.pk}"' not in content
+    assert f'value="{second_photo.pk}"' in content
+
+
+@pytest.mark.django_db
+@override_settings(MEDIA_ROOT="/tmp/access-atlas-test-media")
+def test_site_photo_bulk_download_streams_selected_originals(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    client.post(
+        reverse("site_photos", kwargs={"pk": site.pk}),
+        {"photos": [image_file("first.jpg"), image_file("second.jpg")]},
+    )
+    selected_photo = SitePhoto.objects.filter(site=site).order_by("id").first()
+
+    response = client.post(
+        reverse("site_photo_bulk_download", kwargs={"pk": site.pk}),
+        {"photo_ids": [str(selected_photo.pk)]},
+    )
+
+    assert response.status_code == 200
+    assert response["Content-Type"] == "application/zip"
+    with ZipFile(BytesIO(response.content)) as archive:
+        names = archive.namelist()
+    assert len(names) == 1
+    assert names[0].startswith(f"{selected_photo.pk}-first")
+    assert names[0].endswith(".jpg")
+
+
 def geojson_file(name="access.geojson"):
     return SimpleUploadedFile(
         name,
@@ -2073,3 +2231,15 @@ def geojson_file(name="access.geojson"):
         """,
         content_type="application/geo+json",
     )
+
+
+def image_file(name="photo.jpg", *, exif_taken_at: str | None = None):
+    buffer = BytesIO()
+    image = Image.new("RGB", (24, 24), color="#206bc4")
+    if exif_taken_at:
+        exif = Image.Exif()
+        exif[36867] = exif_taken_at
+        image.save(buffer, format="JPEG", exif=exif)
+    else:
+        image.save(buffer, format="JPEG")
+    return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/jpeg")

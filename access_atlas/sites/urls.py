@@ -22,6 +22,21 @@ urlpatterns = [
         name="site_access_records",
     ),
     path(
+        "<int:pk>/photos/",
+        views.SitePhotosView.as_view(),
+        name="site_photos",
+    ),
+    path(
+        "<int:pk>/photos/hide/",
+        views.SitePhotoBulkHideView.as_view(),
+        name="site_photo_bulk_hide",
+    ),
+    path(
+        "<int:pk>/photos/download/",
+        views.SitePhotoBulkDownloadView.as_view(),
+        name="site_photo_bulk_download",
+    ),
+    path(
         "<int:pk>/history/",
         views.SiteHistoryView.as_view(),
         name="site_history",
