@@ -39,6 +39,12 @@ def test_trip_approval_statuses_use_distinct_badge_colors():
     assert status_badge_class(TripStatus.COMPLETED) == "bg-green-lt"
 
 
+def test_site_and_access_statuses_use_consistent_badge_colors():
+    assert status_badge_class("active") == "bg-blue-lt"
+    assert status_badge_class("stale") == "bg-secondary-lt"
+    assert status_badge_class("retired") == "bg-yellow-lt"
+
+
 @pytest.fixture
 def site(db):
     return Site.objects.create(

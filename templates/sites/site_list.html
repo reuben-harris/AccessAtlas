@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load status_badges %}
 
 {% block title %}Sites - Access Atlas{% endblock %}
 
@@ -47,11 +48,7 @@
             <td>{{ site.source_name }}</td>
             <td>{{ site.latitude }}, {{ site.longitude }}</td>
             <td>
-              {% if site.sync_status == "active" %}
-                <span class="badge bg-green-lt">Active</span>
-              {% else %}
-                <span class="badge bg-yellow-lt">Stale</span>
-              {% endif %}
+              <span class="badge {{ site.sync_status|status_badge_class }}">{{ site.get_sync_status_display }}</span>
             </td>
           </tr>
         {% empty %}

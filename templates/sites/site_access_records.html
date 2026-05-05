@@ -1,5 +1,5 @@
 {% extends "base/base.html" %}
-{% load static %}
+{% load static status_badges %}
 
 {% block title %}{{ object.code }} - Access Atlas{% endblock %}
 
@@ -49,11 +49,7 @@
             <td><a href="{{ access_record.get_absolute_url }}">{{ access_record.name }}</a></td>
             <td>{{ access_record.get_arrival_method_display }}</td>
             <td>
-              {% if access_record.status == "active" %}
-                <span class="badge bg-green-lt">Active</span>
-              {% else %}
-                <span class="badge bg-yellow-lt">Retired</span>
-              {% endif %}
+              <span class="badge {{ access_record.status|status_badge_class }}">{{ access_record.get_status_display }}</span>
             </td>
             <td>
               {% with current_version=access_record.latest_version %}

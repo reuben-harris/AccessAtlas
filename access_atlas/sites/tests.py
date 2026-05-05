@@ -485,7 +485,7 @@ def test_site_detail_renders_site_google_maps_button(client):
     content = response.content.decode()
     assert "Open site coordinates in Google Maps" in content
     assert "Sync Status" in content
-    assert "badge bg-green-lt" in content
+    assert "badge bg-blue-lt" in content
     assert (
         "https://www.google.com/maps/search/?api=1&amp;query=-41.100000%2C174.100000"
         in content

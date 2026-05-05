@@ -57,9 +57,9 @@
 }
 
 .site-list-map-badge-active {
-  color: #166534;
-  background: #dcfce7;
-  border-color: #86efac;
+  color: #174a7c;
+  background: #dbeafe;
+  border-color: #93c5fd;
 }
 
 .site-list-map-badge-stale {
@@ -75,9 +75,9 @@
 }
 
 [data-bs-theme="dark"] .site-list-map-badge-active {
-  color: #bbf7d0;
-  background: rgba(34, 197, 94, 0.18);
-  border-color: rgba(134, 239, 172, 0.45);
+  color: #bfdbfe;
+  background: rgba(32, 107, 196, 0.24);
+  border-color: rgba(147, 197, 253, 0.45);
 }
 
 [data-bs-theme="dark"] .site-list-map-badge-stale {
