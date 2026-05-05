@@ -123,7 +123,7 @@ def test_active_nav_item_maps_url_names_to_sidebar_sections():
         "job_template_detail": "job_templates",
         "template_requirement_update": "job_templates",
         "site_detail": "sites",
-        "access_record_revisions": "sites",
+        "access_record_revisions": "access_records",
         "global_history": "history",
         "search": "",
     }

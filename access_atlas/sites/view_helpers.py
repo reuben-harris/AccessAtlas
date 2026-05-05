@@ -52,6 +52,9 @@ def build_site_access_map_data(
             points.append(
                 {
                     "recordId": access_record.pk,
+                    "siteCode": access_record.site.code,
+                    "siteName": access_record.site.name,
+                    "siteUrl": access_record.site.get_absolute_url(),
                     "latitude": point.latitude,
                     "longitude": point.longitude,
                     "type": point.feature_type,
@@ -116,6 +119,23 @@ def site_list_views(active_view: str) -> list[dict[str, str | bool]]:
             "label": "Map",
             "icon": "ti-map",
             "url": reverse("site_map"),
+            "is_active": active_view == "map",
+        },
+    ]
+
+
+def access_record_list_views(active_view: str) -> list[dict[str, str | bool]]:
+    return [
+        {
+            "label": "Table",
+            "icon": "ti-table",
+            "url": reverse("access_record_list"),
+            "is_active": active_view == "table",
+        },
+        {
+            "label": "Map",
+            "icon": "ti-map",
+            "url": reverse("access_record_global_map"),
             "is_active": active_view == "map",
         },
     ]

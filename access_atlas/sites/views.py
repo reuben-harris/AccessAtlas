@@ -1,7 +1,9 @@
 from .access_record_views import (
     AccessRecordCreateView,
     AccessRecordDetailView,
+    AccessRecordGlobalMapView,
     AccessRecordHistoryView,
+    AccessRecordListView,
     AccessRecordMapView,
     AccessRecordRevisionsView,
     AccessRecordUpdateView,
@@ -29,6 +31,8 @@ __all__ = [
     "SiteAccessRecordsView",
     "SiteHistoryView",
     "AccessRecordCreateView",
+    "AccessRecordListView",
+    "AccessRecordGlobalMapView",
     "AccessRecordVersionCreateView",
     "AccessRecordUpdateView",
     "AccessRecordDetailView",

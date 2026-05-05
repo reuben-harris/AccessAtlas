@@ -16,8 +16,8 @@ PREFIX_NAV_ITEMS = (
     ("template_requirement_", "job_templates"),
     ("job_", "jobs"),
     ("requirement_", "jobs"),
+    ("access_record_", "access_records"),
     ("site_", "sites"),
-    ("access_record_", "sites"),
     ("sync_sites", "sites"),
 )
 

@@ -1,0 +1,56 @@
+{% extends "base/base.html" %}
+{% load status_badges %}
+
+{% block title %}Access Records - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">Access Records</h2>
+    </div>
+  </div>
+</div>
+
+{% include "sites/_access_record_view_toolbar.html" %}
+{% include "includes/list_controls.html" %}
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-vcenter">
+      <thead>
+        <tr>
+          {% include "includes/sortable_th.html" with label="Site" sort_key="site" %}
+          {% include "includes/sortable_th.html" with label="Name" sort_key="name" %}
+          {% include "includes/sortable_th.html" with label="Arrival Method" sort_key="arrival-method" %}
+          {% include "includes/sortable_th.html" with label="Status" sort_key="status" %}
+          {% include "includes/sortable_th.html" with label="Latest Revision" sort_key="latest-revision" %}
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for access_record in object_list %}
+          <tr>
+            <td><a href="{{ access_record.site.get_absolute_url }}">{{ access_record.site.code }}</a></td>
+            <td><a href="{{ access_record.get_absolute_url }}">{{ access_record.name }}</a></td>
+            <td>{{ access_record.get_arrival_method_display }}</td>
+            <td><span class="badge {{ access_record.status|status_badge_class }}">{{ access_record.get_status_display }}</span></td>
+            <td>
+              {% if access_record.latest_version_number %}
+                v{{ access_record.latest_version_number }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            {% url 'access_record_update' access_record.pk as edit_url %}
+            {% include "includes/row_actions.html" with edit_url=edit_url label=access_record.name %}
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-secondary">No access records found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "includes/pagination_footer.html" %}
+{% endblock %}

@@ -7,6 +7,16 @@ urlpatterns = [
     path("map/", views.SiteMapView.as_view(), name="site_map"),
     path("sync/", views.sync_sites_view, name="sync_sites"),
     path(
+        "access-records/",
+        views.AccessRecordListView.as_view(),
+        name="access_record_list",
+    ),
+    path(
+        "access-records/map/",
+        views.AccessRecordGlobalMapView.as_view(),
+        name="access_record_global_map",
+    ),
+    path(
         "<int:pk>/access-records/",
         views.SiteAccessRecordsView.as_view(),
         name="site_access_records",

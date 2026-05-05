@@ -22,8 +22,6 @@
     !dataElement ||
     !preferenceElement ||
     !tileLayerElement ||
-    !siteLatitudeElement ||
-    !siteLongitudeElement ||
     typeof escapeHtml !== "function" ||
     typeof createThemeTileController !== "function" ||
     typeof fitLayersOrDefault !== "function" ||
@@ -42,8 +40,16 @@
   const points = Array.isArray(mapData.points) ? mapData.points : [];
   const tracks = Array.isArray(mapData.tracks) ? mapData.tracks : [];
   const tileLayer = JSON.parse(tileLayerElement.textContent);
-  const siteLatitude = Number(JSON.parse(siteLatitudeElement.textContent));
-  const siteLongitude = Number(JSON.parse(siteLongitudeElement.textContent));
+  const defaultCenter = [-41.2865, 174.7762];
+  const defaultZoom = 5;
+  const hasSiteCenter = siteLatitudeElement && siteLongitudeElement;
+  const siteLatitude = hasSiteCenter
+    ? Number(JSON.parse(siteLatitudeElement.textContent))
+    : defaultCenter[0];
+  const siteLongitude = hasSiteCenter
+    ? Number(JSON.parse(siteLongitudeElement.textContent))
+    : defaultCenter[1];
+  const initialZoom = hasSiteCenter ? 12 : defaultZoom;
   const featureLayer = L.layerGroup();
   const featureColors = {
     access_start: "#1a5fb4",
@@ -82,7 +88,7 @@
   // entire access record and all of its points/tracks together.
   const hasRecordToggles = toggleButtons.length > 0;
 
-  const map = L.map(mapElement).setView([siteLatitude, siteLongitude], 12);
+  const map = L.map(mapElement).setView([siteLatitude, siteLongitude], initialZoom);
   featureLayer.addTo(map);
   const tileController = createThemeTileController(map, tileLayer);
 
@@ -122,6 +128,11 @@
         : "";
     return `
       <div class="site-access-map-popup-title">${escapeHtml(feature.typeLabel)}</div>
+      ${
+        feature.siteCode
+          ? `<div><strong>Site:</strong> <a href="${escapeHtml(feature.siteUrl || "#")}">${escapeHtml(feature.siteCode)}</a> ${escapeHtml(feature.siteName || "")}</div>`
+          : ""
+      }
       <div><strong>Access Record:</strong> ${escapeHtml(feature.recordName)}</div>
       <div><strong>Label:</strong> ${escapeHtml(feature.label || "-")}</div>
       <div><strong>Coordinates:</strong> ${escapeHtml(
@@ -223,7 +234,7 @@
   }
 
   function fitFeatures(layers) {
-    fitLayersOrDefault(map, layers, [siteLatitude, siteLongitude], 12);
+    fitLayersOrDefault(map, layers, [siteLatitude, siteLongitude], initialZoom);
   }
 
   function updateToggleButton(button, isVisible) {

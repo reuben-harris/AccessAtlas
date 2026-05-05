@@ -1,0 +1,36 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}Access Records Map - Access Atlas{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/leaflet.fullscreen/Control.FullScreen.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">Access Records</h2>
+    </div>
+  </div>
+</div>
+
+<div class="access-atlas-map-page">
+  {% include "sites/_access_record_view_toolbar.html" %}
+
+  <div class="card site-access-map-card access-atlas-map-card--fill">
+    <div class="card-body p-0">
+      <div id="site-access-map" class="site-access-map" aria-label="Map of access record features"></div>
+    </div>
+  </div>
+</div>
+
+{{ site_access_map_data|json_script:"site-access-map-data" }}
+{{ site_access_map_preference|json_script:"site-access-map-preference" }}
+{{ map_tile_layer|json_script:"site-access-map-tile-layer" }}
+<script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
+<script src="{% static 'vendor/leaflet.fullscreen/Control.FullScreen.umd.js' %}"></script>
+<script src="{% static 'js/site_access_map.js' %}"></script>
+{% endblock %}

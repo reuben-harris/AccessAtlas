@@ -1,9 +1,14 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Max
 from django.shortcuts import get_object_or_404, redirect
-from django.views.generic import DetailView, FormView, UpdateView
+from django.views.generic import DetailView, FormView, ListView, UpdateView
 
-from access_atlas.core.mixins import PaginatedObjectHistoryMixin
+from access_atlas.core.mixins import (
+    PaginatedObjectHistoryMixin,
+    SearchablePaginatedListMixin,
+    SortableListMixin,
+)
 
 from .access_record_snapshots import build_access_record_snapshots
 from .access_warnings import build_access_record_warnings
@@ -26,9 +31,79 @@ from .services import (
 )
 from .view_helpers import (
     access_record_detail_sections,
+    access_record_list_views,
     build_site_access_map_data,
     map_tile_layer,
 )
+
+
+class AccessRecordListView(
+    SortableListMixin,
+    SearchablePaginatedListMixin,
+    LoginRequiredMixin,
+    ListView,
+):
+    model = AccessRecord
+    template_name = "sites/access_record_list.html"
+    search_fields = (
+        "name",
+        "site__code",
+        "site__name",
+        "site__source_name",
+        "status",
+        "arrival_method",
+    )
+    search_placeholder = "Search access records"
+    sort_preference_page_key = "access-records"
+    default_sort = "site"
+    sort_field_map = {
+        "site": "site__code",
+        "name": "name",
+        "arrival-method": "arrival_method",
+        "status": "status",
+        "latest-revision": "latest_version_number",
+    }
+
+    def get_queryset(self):
+        queryset = (
+            AccessRecord.objects.select_related("site")
+            .prefetch_related("versions")
+            .annotate(latest_version_number=Max("versions__version_number"))
+        )
+        return self.apply_sort(self.apply_search(queryset))
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["access_record_views"] = access_record_list_views("table")
+        return context
+
+
+class AccessRecordGlobalMapView(LoginRequiredMixin, ListView):
+    model = AccessRecord
+    template_name = "sites/access_record_global_map.html"
+
+    def get_queryset(self):
+        return (
+            AccessRecord.objects.select_related("site")
+            .prefetch_related("versions")
+            .order_by("site__code", "name")
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        access_records = list(context["object_list"])
+        snapshots_by_record_id = build_access_record_snapshots(access_records)
+        context["access_record_views"] = access_record_list_views("map")
+        context["site_access_map_data"] = build_site_access_map_data(
+            access_records,
+            snapshots_by_record_id,
+        )
+        context["site_access_map_preference"] = {
+            "key": "",
+            "value": {"visible_record_ids": [], "animate_tracks": True},
+        }
+        context["map_tile_layer"] = map_tile_layer()
+        return context
 
 
 class AccessRecordCreateView(LoginRequiredMixin, FormView):

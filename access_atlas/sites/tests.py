@@ -467,6 +467,113 @@ def test_site_map_uses_saved_viewport_preference(client):
 
 
 @pytest.mark.django_db
+def test_access_record_list_shows_records_and_links_to_map_view(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    access_record = AccessRecord.objects.create(site=site, name="Road access")
+    AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=2,
+        geojson={"type": "FeatureCollection", "features": []},
+        change_note="Second revision",
+        uploaded_by=user,
+    )
+
+    response = client.get(reverse("access_record_list"))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Road access" in content
+    assert "AA-001" in content
+    assert "v2" in content
+    assert reverse("access_record_global_map") in content
+
+
+@pytest.mark.django_db
+def test_access_record_list_search_filters_by_site(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    first_site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Ridge Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    second_site = Site.objects.create(
+        source_name="dummy",
+        external_id="002",
+        code="AA-002",
+        name="Valley Site",
+        latitude=-42.1,
+        longitude=175.1,
+    )
+    AccessRecord.objects.create(site=first_site, name="Ridge access")
+    AccessRecord.objects.create(site=second_site, name="Valley access")
+
+    response = client.get(reverse("access_record_list"), {"q": "AA-002"})
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Valley access" in content
+    assert "Ridge access" not in content
+
+
+@pytest.mark.django_db
+def test_access_record_global_map_includes_access_features(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    access_record = AccessRecord.objects.create(site=site, name="Road access")
+    AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=1,
+        geojson={
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [174.25, -41.25]},
+                    "properties": {
+                        "access_atlas:type": "access_start",
+                        "label": "Gate",
+                    },
+                }
+            ],
+        },
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+
+    response = client.get(reverse("access_record_global_map"))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert reverse("access_record_list") in content
+    assert 'id="site-access-map"' in content
+    payload = parse_json_script(content, "site-access-map-data")
+    assert payload["points"][0]["recordId"] == access_record.pk
+    assert payload["points"][0]["siteCode"] == "AA-001"
+    assert payload["points"][0]["recordName"] == "Road access"
+
+
+@pytest.mark.django_db
 def test_site_detail_renders_site_google_maps_button(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)

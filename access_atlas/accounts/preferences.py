@@ -25,6 +25,7 @@ ALLOWED_LIST_SORT_PREFERENCE_PAGES = {
     "trips",
     "jobs",
     "job-templates",
+    "access-records",
     "history",
 }
 ALLOWED_JOB_STATUSES = set(JobStatus.values)

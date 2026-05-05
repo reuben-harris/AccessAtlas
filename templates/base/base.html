@@ -97,6 +97,12 @@
                   <span class="nav-link-title">Sites</span>
                 </a>
               </li>
+              <li class="nav-item{% if active_nav_item == 'access_records' %} active{% endif %}">
+                <a class="nav-link" href="{% url 'access_record_list' %}"{% if active_nav_item == 'access_records' %} aria-current="page"{% endif %}>
+                  <span class="nav-link-icon"><i class="ti ti-route-2" aria-hidden="true"></i></span>
+                  <span class="nav-link-title">Access Records</span>
+                </a>
+              </li>
 
               <li class="nav-section">Audit</li>
               <li class="nav-item{% if active_nav_item == 'history' %} active{% endif %}">
