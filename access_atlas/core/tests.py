@@ -11,6 +11,7 @@ from access_atlas.accounts.preferences import (
     list_sort_preference_key,
 )
 from access_atlas.core.context_processors import active_nav_item
+from access_atlas.core.templatetags.status_badges import status_badge_class
 from access_atlas.jobs.models import Job, JobTemplate
 from access_atlas.sites.models import (
     AccessRecord,
@@ -30,6 +31,12 @@ def user(db):
 def logged_in_client(client, user):
     client.force_login(user)
     return client
+
+
+def test_trip_approval_statuses_use_distinct_badge_colors():
+    assert status_badge_class(TripStatus.SUBMITTED) == "bg-orange-lt"
+    assert status_badge_class(TripStatus.APPROVED) == "bg-blue-lt"
+    assert status_badge_class(TripStatus.COMPLETED) == "bg-green-lt"
 
 
 @pytest.fixture
