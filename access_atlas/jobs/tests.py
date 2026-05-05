@@ -1,6 +1,7 @@
 import pytest
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import IntegrityError
 from django.urls import reverse
 
 from access_atlas.accounts.models import User
@@ -77,6 +78,45 @@ def test_job_created_manually_is_unassigned_by_default():
     job = Job.objects.create(site=site, title="Inspect cabinet")
 
     assert job.status == "unassigned"
+
+
+@pytest.mark.django_db
+def test_job_template_title_must_be_unique_case_insensitive():
+    JobTemplate.objects.create(title="Replace Sensor")
+    duplicate = JobTemplate(title="replace sensor")
+
+    with pytest.raises(ValidationError):
+        duplicate.full_clean()
+
+
+@pytest.mark.django_db
+def test_job_template_title_unique_constraint_is_case_insensitive():
+    JobTemplate.objects.create(title="Replace Sensor")
+
+    with pytest.raises(IntegrityError):
+        JobTemplate.objects.create(title="replace sensor")
+
+
+@pytest.mark.django_db
+def test_job_template_form_shows_duplicate_title_error(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    JobTemplate.objects.create(title="Replace Sensor")
+
+    response = client.post(
+        reverse("job_template_create"),
+        {
+            "title": "replace sensor",
+            "description": "",
+            "estimated_duration_minutes": "",
+            "priority": "normal",
+            "notes": "",
+            "is_active": "on",
+        },
+    )
+
+    assert response.status_code == 200
+    assert "A job template with this title already exists." in response.content.decode()
 
 
 @pytest.mark.django_db

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.functions import Lower
 from django.urls import reverse
 from simple_history.models import HistoricalRecords
 
@@ -49,6 +50,12 @@ class JobTemplate(models.Model):
 
     class Meta:
         ordering = ["title"]
+        constraints = [
+            models.UniqueConstraint(
+                Lower("title"),
+                name="unique_job_template_title_case_insensitive",
+            )
+        ]
 
     def __str__(self) -> str:
         return self.title
@@ -58,6 +65,15 @@ class JobTemplate(models.Model):
 
     def get_history_url(self) -> str:
         return reverse("job_template_history", kwargs={"pk": self.pk})
+
+    def clean(self) -> None:
+        duplicate_titles = JobTemplate.objects.filter(title__iexact=self.title)
+        if self.pk:
+            duplicate_titles = duplicate_titles.exclude(pk=self.pk)
+        if duplicate_titles.exists():
+            raise ValidationError(
+                {"title": "A job template with this title already exists."}
+            )
 
 
 class TemplateRequirement(models.Model):
