@@ -7,7 +7,25 @@ from access_atlas.jobs.models import Job, JobStatus, JobTemplate
 from access_atlas.sites.models import Site
 
 
-class SiteAutocompleteView(AutocompleteModelView):
+class AccessAtlasAutocompleteView(AutocompleteModelView):
+    """Autocomplete base view that respects declared virtual display fields."""
+
+    def _validate_value_fields(self) -> None:
+        # django-tomselect appends label_field to value_fields during widget
+        # rendering. Declared virtual fields are intentionally populated by
+        # hook_prepare_results(), so they must not be logged as invalid columns.
+        virtual_fields = set(getattr(self, "virtual_fields", []))
+        original_value_fields = self.value_fields
+        self.value_fields = [
+            field for field in original_value_fields if field not in virtual_fields
+        ]
+        try:
+            super()._validate_value_fields()
+        finally:
+            self.value_fields = original_value_fields
+
+
+class SiteAutocompleteView(AccessAtlasAutocompleteView):
     """Autocomplete sites using the same code + name label shown across the app."""
 
     model = Site
@@ -26,7 +44,7 @@ class SiteAutocompleteView(AutocompleteModelView):
         return results
 
 
-class TeamMemberAutocompleteView(AutocompleteModelView):
+class TeamMemberAutocompleteView(AccessAtlasAutocompleteView):
     """Autocomplete users by display name or email for trip team membership."""
 
     model = User
@@ -45,7 +63,7 @@ class TeamMemberAutocompleteView(AutocompleteModelView):
         return results
 
 
-class JobTemplateAutocompleteView(AutocompleteModelView):
+class JobTemplateAutocompleteView(AccessAtlasAutocompleteView):
     """Autocomplete only active job templates, preserving current form behavior."""
 
     model = JobTemplate
@@ -58,7 +76,7 @@ class JobTemplateAutocompleteView(AutocompleteModelView):
         return queryset.filter(is_active=True)
 
 
-class UnassignedJobAutocompleteView(AutocompleteModelView):
+class UnassignedJobAutocompleteView(AccessAtlasAutocompleteView):
     """Autocomplete jobs that can still be assigned to a site visit."""
 
     model = Job

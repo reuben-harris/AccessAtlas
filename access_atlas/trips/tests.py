@@ -823,6 +823,24 @@ def test_trip_create_includes_tomselect_media(client):
 
 
 @pytest.mark.django_db
+def test_site_visit_create_does_not_warn_about_virtual_site_label(client, caplog):
+    user = User.objects.create_user(email="user@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    client.force_login(user)
+    caplog.set_level("WARNING")
+
+    response = client.get(reverse("site_visit_create", kwargs={"trip_pk": trip.pk}))
+
+    assert response.status_code == 200
+    assert "value_fields ['label'] are not concrete database columns" not in caplog.text
+
+
+@pytest.mark.django_db
 def test_site_visit_detail_includes_tomselect_media(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
