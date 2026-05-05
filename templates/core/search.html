@@ -1,24 +1,104 @@
 {% extends "base/base.html" %}
+{% load search_extras %}
 
 {% block title %}Search - Access Atlas{% endblock %}
 
 {% block content %}
-<h2 class="page-title">Search</h2>
-{% if not query %}
-  <p class="text-secondary">Enter a search term above.</p>
-{% else %}
-  <p class="text-secondary">Results for <strong>{{ query }}</strong></p>
-  {% for label, items in results.items %}
-    <div class="card mb-3">
-      <div class="card-header"><h3 class="card-title">{{ label|title }}</h3></div>
-      <div class="list-group list-group-flush">
-        {% for item in items %}
-          <a class="list-group-item list-group-item-action" href="{{ item.get_absolute_url }}">{{ item }}</a>
-        {% empty %}
-          <div class="list-group-item text-secondary">No results.</div>
-        {% endfor %}
-      </div>
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">Search</h2>
     </div>
-  {% endfor %}
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="global-search-form">
+      <input type="hidden" name="sort" value="{{ current_sort }}">
+      <div class="global-search-query">
+        <label class="form-label mb-1 d-flex align-items-center gap-2" for="global-search-input">
+          <span>Search</span>
+          <span class="badge bg-secondary-lt text-secondary-emphasis">
+            {{ total_results }} Result{{ total_results|pluralize }}
+          </span>
+        </label>
+        <input
+          id="global-search-input"
+          class="form-control"
+          type="search"
+          name="q"
+          placeholder="Search across the whole website"
+          value="{{ query }}"
+        >
+      </div>
+      <div class="global-search-lookup">
+        <label class="form-label mb-1" for="global-search-lookup">Lookup type</label>
+        <select id="global-search-lookup" class="form-select" name="lookup">
+          {% for value, label in lookup_options %}
+            <option value="{{ value }}"{% if value == lookup_type %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary" type="submit">Search</button>
+      </div>
+      <div class="global-search-per-page">
+        <label class="form-label mb-1" for="global-search-per-page">Per page</label>
+        <select
+          id="global-search-per-page"
+          class="form-select"
+          name="{{ page_size_param }}"
+        >
+          {% for option in page_size_options %}
+            <option value="{{ option }}"{% if option == per_page %} selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary" type="submit">Apply</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if search_error %}
+  <div class="card mb-3">
+    <div class="card-body text-danger">{{ search_error }}</div>
+  </div>
+{% endif %}
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-vcenter card-table">
+      <thead>
+        <tr>
+          {% include "includes/sortable_th.html" with label="Type" sort_key="type" %}
+          {% include "includes/sortable_th.html" with label="Value" sort_key="value" %}
+          {% include "includes/sortable_th.html" with label="Object" sort_key="object" %}
+        </tr>
+      </thead>
+      <tbody>
+        {% if result_rows %}
+          {% for row in result_rows %}
+            <tr>
+              <td>{{ row.object_type }}</td>
+              <td>{{ row.value|highlight_match:highlight_query }}</td>
+              <td><a href="{{ row.object_url }}">{{ row.object_label }}</a></td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="3" class="text-secondary">
+              No results found.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% if is_paginated %}
+  {% include "includes/pagination_footer.html" %}
 {% endif %}
 {% endblock %}

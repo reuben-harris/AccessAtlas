@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Count, Q
+from django.db.models import Count
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
@@ -13,6 +13,14 @@ from django.views.generic import TemplateView
 
 from access_atlas.core.history import history_reason
 from access_atlas.core.mixins import SearchablePaginatedListMixin, SortableListMixin
+from access_atlas.core.search import (
+    SEARCH_LOOKUP_OPTIONS,
+    build_global_search_results,
+    normalize_lookup_type,
+    normalize_per_page,
+    normalize_sort_value,
+    page_size_options_for,
+)
 from access_atlas.jobs.models import (
     Job,
     JobStatus,
@@ -182,29 +190,42 @@ def dashboard(request):
 @login_required
 def search(request):
     query = request.GET.get("q", "").strip()
-    results = {
-        "sites": [],
-        "jobs": [],
-        "job_templates": [],
-        "trips": [],
-    }
-    if query:
-        results["sites"] = Site.objects.filter(
-            Q(code__icontains=query) | Q(name__icontains=query)
-        )[:10]
-        results["jobs"] = Job.objects.filter(
-            Q(title__icontains=query)
-            | Q(description__icontains=query)
-            | Q(site__code__icontains=query)
-            | Q(site__name__icontains=query)
-        )[:10]
-        results["job_templates"] = JobTemplate.objects.filter(
-            Q(title__icontains=query) | Q(description__icontains=query)
-        )[:10]
-        results["trips"] = Trip.objects.filter(
-            Q(name__icontains=query) | Q(notes__icontains=query)
-        )[:10]
-    return render(request, "core/search.html", {"query": query, "results": results})
+    lookup_type = normalize_lookup_type(request.GET.get("lookup"))
+    sort_value = normalize_sort_value(request.GET.get("sort"))
+    per_page = normalize_per_page(request.GET.get("per_page"))
+    results = build_global_search_results(
+        query=query,
+        lookup_type=lookup_type,
+        sort_value=sort_value,
+    )
+    paginator = Paginator(results.rows, per_page)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    result_rows = list(page_obj.object_list)
+    current_sort_field = sort_value.removeprefix("-")
+    return render(
+        request,
+        "core/search.html",
+        {
+            "query": query,
+            "lookup_type": lookup_type,
+            "highlight_query": f"{lookup_type}::{query}" if query else "",
+            "lookup_options": SEARCH_LOOKUP_OPTIONS,
+            "search_error": results.error,
+            "result_rows": result_rows,
+            "total_results": results.total,
+            "page_obj": page_obj,
+            "paginator": paginator,
+            "is_paginated": page_obj.has_other_pages(),
+            "page_range": paginator.get_elided_page_range(number=page_obj.number),
+            "current_sort": sort_value,
+            "current_sort_field": current_sort_field,
+            "current_sort_descending": sort_value.startswith("-"),
+            "sort_param": "sort",
+            "per_page": per_page,
+            "page_size_param": "per_page",
+            "page_size_options": page_size_options_for(per_page),
+        },
+    )
 
 
 class GlobalHistoryView(

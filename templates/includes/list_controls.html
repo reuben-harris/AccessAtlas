@@ -8,7 +8,12 @@
             <input type="hidden" name="{{ key }}" value="{{ value }}">
           {% endfor %}
           <div class="flex-fill">
-            <label class="form-label mb-1" for="list-search-input">Search</label>
+            <label class="form-label mb-1 d-flex align-items-center gap-2" for="list-search-input">
+              <span>Search</span>
+              <span class="badge bg-secondary-lt text-secondary-emphasis">
+                {{ search_result_count }} Result{{ search_result_count|pluralize }}
+              </span>
+            </label>
             <input
               id="list-search-input"
               class="form-control"

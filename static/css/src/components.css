@@ -170,3 +170,46 @@
 .table-sort-link i {
   font-size: .95rem;
 }
+
+/* Global search has a wider query field and a compact lookup selector. */
+
+.global-search-form {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1fr) max-content auto max-content auto;
+  gap: 1rem;
+  align-items: end;
+}
+
+.global-search-query {
+  min-width: 0;
+}
+
+.global-search-lookup,
+.global-search-lookup .form-select,
+.global-search-per-page,
+.global-search-per-page .form-select {
+  width: max-content;
+}
+
+.global-search-lookup,
+.global-search-lookup .form-select {
+  min-width: 11rem;
+}
+
+.global-search-per-page,
+.global-search-per-page .form-select {
+  min-width: 5.5rem;
+}
+
+@media (max-width: 767.98px) {
+  .global-search-form {
+    grid-template-columns: 1fr;
+  }
+
+  .global-search-lookup,
+  .global-search-lookup .form-select,
+  .global-search-per-page,
+  .global-search-per-page .form-select {
+    width: 100%;
+  }
+}

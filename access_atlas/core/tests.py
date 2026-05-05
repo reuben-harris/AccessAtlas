@@ -1,5 +1,8 @@
+import re
+
 import pytest
 from django.urls import reverse
+from django.utils.html import escape
 
 from access_atlas.accounts.models import User
 from access_atlas.accounts.preferences import (
@@ -39,6 +42,37 @@ def site(db):
     )
 
 
+def _site(
+    *,
+    external_id: str,
+    code: str,
+    name: str,
+) -> Site:
+    return Site.objects.create(
+        source_name="dummy",
+        external_id=external_id,
+        code=code,
+        name=name,
+        latitude=-41.1,
+        longitude=174.1,
+    )
+
+
+def _global_search_rows(response):
+    return list(response.context["result_rows"])
+
+
+def _input_value(content: str, input_id: str) -> str:
+    match = re.search(
+        rf'<input\b[^>]*id="{re.escape(input_id)}"[^>]*>',
+        content,
+        re.DOTALL,
+    )
+    assert match is not None
+    value_match = re.search(r'\bvalue="([^"]*)"', match.group(0))
+    return value_match.group(1) if value_match else ""
+
+
 @pytest.mark.django_db
 def test_dashboard_renders(logged_in_client):
     response = logged_in_client.get(reverse("dashboard"))
@@ -50,6 +84,210 @@ def test_dashboard_renders(logged_in_client):
     assert b"Data Attention" in response.content
     assert b'href="/static/css/app.css"' in response.content
     assert b'src="/static/js/theme.js"' in response.content
+
+
+@pytest.mark.django_db
+def test_global_search_shows_total_counts_and_new_object_groups(logged_in_client, user):
+    site = _site(external_id="001", code="AA-001", name="Ridge Site")
+    Job.objects.create(site=site, title="Ridge Inspection")
+    JobTemplate.objects.create(title="Ridge Template")
+    trip = Trip.objects.create(
+        name="Ridge Trip",
+        start_date="2026-05-10",
+        end_date="2026-05-12",
+        trip_leader=user,
+    )
+    SiteVisit.objects.create(trip=trip, site=site)
+    access_record = AccessRecord.objects.create(site=site, name="Ridge access")
+    AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=1,
+        geojson={"type": "FeatureCollection", "features": []},
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+
+    response = logged_in_client.get(reverse("search"), {"q": "ridge"})
+
+    assert response.status_code == 200
+    assert response.context["total_results"] == 6
+    assert response.context["lookup_type"] == "istartswith"
+    row_types = {row.object_type for row in _global_search_rows(response)}
+    assert row_types == {
+        "Site",
+        "Job",
+        "Job Template",
+        "Trip",
+        "Site Visit",
+        "Access Record",
+    }
+    content = response.content.decode()
+    assert "Type" in content
+    assert "Value" in content
+    assert "Object" in content
+    assert "Ridge Template" in content
+    assert "Ridge access" in content
+    assert "Ridge Trip - AA-001" in content
+    assert '<mark class="search-match">Ridge</mark>' in content
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("lookup_type", "query", "expected_names"),
+    [
+        ("iexact", "Alpha Field", ["Alpha Field"]),
+        ("istartswith", "Alpha", ["Alpha Field", "Alpha Ridge"]),
+        ("iendswith", "Ridge", ["Alpha Ridge", "Beta Ridge"]),
+        ("iregex", "^(Alpha|Beta)", ["Alpha Field", "Alpha Ridge", "Beta Ridge"]),
+    ],
+)
+def test_global_search_lookup_modes(
+    logged_in_client,
+    lookup_type,
+    query,
+    expected_names,
+):
+    _site(external_id="001", code="AA-001", name="Alpha Field")
+    _site(external_id="002", code="AA-002", name="Alpha Ridge")
+    _site(external_id="003", code="AA-003", name="Beta Ridge")
+    _site(external_id="004", code="AA-004", name="Gamma Plain")
+
+    response = logged_in_client.get(
+        reverse("search"),
+        {"q": query, "lookup": lookup_type, "sort": "value"},
+    )
+
+    assert response.status_code == 200
+    assert [row.value for row in _global_search_rows(response)] == expected_names
+
+
+@pytest.mark.django_db
+def test_global_search_invalid_regex_shows_error(logged_in_client):
+    _site(external_id="001", code="AA-001", name="Alpha Field")
+
+    response = logged_in_client.get(
+        reverse("search"),
+        {"q": "[", "lookup": "iregex"},
+    )
+
+    assert response.status_code == 200
+    assert response.context["total_results"] == 0
+    assert response.context["search_error"] == "Invalid regular expression."
+    assert "Invalid regular expression." in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_global_search_sorts_rows(logged_in_client, user):
+    site = _site(external_id="001", code="AA-001", name="Searchable Site")
+    Job.objects.create(site=site, title="Searchable Job")
+    JobTemplate.objects.create(title="Searchable Template")
+    Trip.objects.create(
+        name="Searchable Trip",
+        start_date="2026-05-10",
+        end_date="2026-05-12",
+        trip_leader=user,
+    )
+
+    response = logged_in_client.get(
+        reverse("search"),
+        {"q": "Searchable", "sort": "object"},
+    )
+    assert [row.object_label for row in _global_search_rows(response)] == [
+        "AA-001 - Searchable Site",
+        "Searchable Job",
+        "Searchable Template",
+        "Searchable Trip",
+    ]
+
+    response = logged_in_client.get(
+        reverse("search"),
+        {"q": "Searchable", "sort": "-object"},
+    )
+    assert [row.object_label for row in _global_search_rows(response)] == [
+        "Searchable Trip",
+        "Searchable Template",
+        "Searchable Job",
+        "AA-001 - Searchable Site",
+    ]
+
+
+@pytest.mark.django_db
+def test_global_search_pagination_preserves_state(logged_in_client):
+    for index in range(30):
+        _site(
+            external_id=f"{index:03d}",
+            code=f"AA-{index:03d}",
+            name=f"Paginated Site {index:02d}",
+        )
+
+    response = logged_in_client.get(
+        reverse("search"),
+        {
+            "q": "Paginated",
+            "lookup": "istartswith",
+            "sort": "value",
+            "per_page": "10",
+            "page": "2",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.context["page_obj"].number == 2
+    assert response.context["per_page"] == 10
+    content = response.content.decode()
+    assert "q=Paginated" in content
+    assert "lookup=istartswith" in content
+    assert "sort=value" in content
+    assert "per_page=10" in content
+
+
+@pytest.mark.django_db
+def test_global_search_accepts_custom_per_page_value(logged_in_client):
+    _site(external_id="001", code="AA-001", name="Custom Page Size")
+
+    response = logged_in_client.get(
+        reverse("search"),
+        {"q": "Custom", "per_page": "1000000"},
+    )
+
+    assert response.status_code == 200
+    assert response.context["per_page"] == 1000000
+    assert 1000000 in response.context["page_size_options"]
+    assert "Per page" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_global_search_renders_table_without_query_or_results(logged_in_client):
+    response = logged_in_client.get(reverse("search"))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Enter a search term above." not in content
+    assert "Type" in content
+    assert "Value" in content
+    assert "Object" in content
+    assert "No results found." in content
+
+    response = logged_in_client.get(reverse("search"), {"q": "Missing"})
+    content = response.content.decode()
+    assert "Type" in content
+    assert "Value" in content
+    assert "Object" in content
+    assert "No results found." in content
+
+
+@pytest.mark.django_db
+def test_navbar_search_stays_empty_after_local_searches(logged_in_client):
+    response = logged_in_client.get(reverse("search"), {"q": "Ridge"})
+    content = response.content.decode()
+
+    assert _input_value(content, "navbar-global-search-input") == ""
+    assert _input_value(content, "global-search-input") == escape("Ridge")
+
+    response = logged_in_client.get(reverse("trip_list"), {"q": "Trip"})
+    content = response.content.decode()
+    assert _input_value(content, "navbar-global-search-input") == ""
+    assert 'value="Trip"' in content
 
 
 @pytest.mark.django_db

@@ -82,6 +82,9 @@ class SearchablePaginatedListMixin:
         context["search_query"] = self.get_search_query()
         context["search_param"] = self.search_param
         context["search_placeholder"] = self.search_placeholder
+        context["search_result_count"] = (
+            context["paginator"].count if context.get("paginator") is not None else 0
+        )
         context["per_page"] = current_per_page
         context["page_size_param"] = self.page_size_param
         context["page_size_options"] = page_size_options
