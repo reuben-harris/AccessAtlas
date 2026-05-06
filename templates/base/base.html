@@ -100,10 +100,13 @@
                   <span class="nav-link-title">Sites</span>
                 </a>
               </li>
-              <li class="nav-item{% if active_nav_item == 'access_records' %} active{% endif %}">
+              <li class="nav-item nav-item-with-create{% if active_nav_item == 'access_records' %} active{% endif %}">
                 <a class="nav-link" href="{% url 'access_record_list' %}"{% if active_nav_item == 'access_records' %} aria-current="page"{% endif %}>
                   <span class="nav-link-icon"><i class="ti ti-route-2" aria-hidden="true"></i></span>
                   <span class="nav-link-title">Access Records</span>
+                </a>
+                <a class="nav-create-link" href="{% url 'access_record_create_global' %}" aria-label="New access record" title="New access record">
+                  <i class="ti ti-plus" aria-hidden="true"></i>
                 </a>
               </li>
 

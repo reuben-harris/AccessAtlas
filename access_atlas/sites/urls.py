@@ -17,6 +17,11 @@ urlpatterns = [
         name="access_record_global_map",
     ),
     path(
+        "access-records/new/",
+        views.AccessRecordCreateView.as_view(),
+        name="access_record_create_global",
+    ),
+    path(
         "<int:pk>/access-records/",
         views.SiteAccessRecordsView.as_view(),
         name="site_access_records",

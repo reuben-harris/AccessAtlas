@@ -32,7 +32,7 @@ class SiteAutocompleteView(AccessAtlasAutocompleteView):
     permission_required = None
     search_lookups = ["code__icontains", "name__icontains"]
     ordering = ["code"]
-    value_fields = ["id", "code", "name"]
+    value_fields = ["id", "code", "name", "label"]
     virtual_fields = ["label"]
 
     def hook_prepare_results(

@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Max
 from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
 from django.views.generic import DetailView, FormView, ListView, UpdateView
 
 from access_atlas.core.mixins import (
@@ -111,18 +112,21 @@ class AccessRecordCreateView(LoginRequiredMixin, FormView):
     template_name = "sites/access_record_upload.html"
 
     def dispatch(self, request, *args, **kwargs):
-        self.site = get_object_or_404(Site, pk=kwargs["site_pk"])
+        self.initial_site = None
+        if "site_pk" in kwargs:
+            self.initial_site = get_object_or_404(Site, pk=kwargs["site_pk"])
         return super().dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs["site"] = self.site
+        if self.initial_site is not None:
+            kwargs["site"] = self.initial_site
         kwargs["user"] = self.request.user
         return kwargs
 
     def form_valid(self, form):
-        create_access_record_from_upload(
-            site=self.site,
+        access_record = create_access_record_from_upload(
+            site=form.cleaned_data["site"],
             user=self.request.user,
             name=form.cleaned_data["name"],
             arrival_method=form.cleaned_data["arrival_method"],
@@ -134,27 +138,35 @@ class AccessRecordCreateView(LoginRequiredMixin, FormView):
         if form.replaced_staged_upload is not None:
             form.replaced_staged_upload.delete()
         messages.success(self.request, "Access record uploaded.")
-        return redirect(self.site.get_access_records_url())
+        return redirect(access_record.site.get_access_records_url())
 
     def form_invalid(self, form):
         self._stage_uploaded_geojson(form)
         return super().form_invalid(form)
 
     def _stage_uploaded_geojson(self, form):
-        if form.staged_upload is not None or "geojson" not in form.cleaned_data:
+        if (
+            form.staged_upload is not None
+            or "geojson" not in form.cleaned_data
+            or "site" not in form.cleaned_data
+        ):
             return
         form.staged_upload = create_access_record_upload_draft(
             user=self.request.user,
-            site=self.site,
+            site=form.cleaned_data["site"],
             geojson=form.cleaned_data["geojson"],
             file_name=form.cleaned_data["geojson_file_name"],
         )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["site"] = self.site
+        context["site"] = self.initial_site
         context["form_title"] = "New access record"
-        context["cancel_url"] = self.site.get_access_records_url()
+        context["cancel_url"] = (
+            self.initial_site.get_access_records_url()
+            if self.initial_site is not None
+            else reverse("access_record_list")
+        )
         return context
 
 

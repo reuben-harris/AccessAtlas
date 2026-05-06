@@ -1,9 +1,12 @@
 import json
 
 from django import forms
+from django_tomselect.forms import TomSelectModelChoiceField
+
+from access_atlas.core.tomselect import site_tomselect_config
 
 from .access_records import AccessRecordGeoJSONError, parse_access_record_geojson
-from .models import AccessRecord, AccessRecordUploadDraft, ArrivalMethod
+from .models import AccessRecord, AccessRecordUploadDraft, ArrivalMethod, Site
 
 
 class MultipleImageInput(forms.ClearableFileInput):
@@ -105,17 +108,27 @@ class AccessRecordGeoJSONUploadMixin(forms.Form):
 
 
 class AccessRecordUploadForm(AccessRecordGeoJSONUploadMixin):
+    site = TomSelectModelChoiceField(
+        queryset=Site.objects.order_by("code"),
+        label="Site",
+        required=True,
+        config=site_tomselect_config(),
+    )
     name = forms.CharField(max_length=255)
     arrival_method = forms.ChoiceField(choices=ArrivalMethod.choices)
     change_note = forms.CharField(widget=forms.Textarea(attrs={"rows": 4}))
 
     def __init__(self, *args, **kwargs):
-        self.site = kwargs.pop("site")
+        initial_site = kwargs.pop("site", None)
+        if initial_site is not None:
+            initial = kwargs.setdefault("initial", {})
+            initial.setdefault("site", initial_site.pk)
         super().__init__(*args, **kwargs)
 
     def clean_name(self):
         name = self.cleaned_data["name"].strip()
-        if AccessRecord.objects.filter(site=self.site, name=name).exists():
+        site = self.cleaned_data.get("site")
+        if site and AccessRecord.objects.filter(site=site, name=name).exists():
             raise forms.ValidationError(
                 "An access record with this name already exists for this site."
             )
@@ -128,9 +141,11 @@ class AccessRecordUploadForm(AccessRecordGeoJSONUploadMixin):
         return change_note
 
     def _staged_upload_matches_context(self, staged_upload):
+        site = self.cleaned_data.get("site")
+        if site is None:
+            return False
         return (
-            staged_upload.site_id == self.site.pk
-            and staged_upload.access_record_id is None
+            staged_upload.site_id == site.pk and staged_upload.access_record_id is None
         )
 
 

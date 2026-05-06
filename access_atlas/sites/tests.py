@@ -27,6 +27,7 @@ from access_atlas.sites.access_warnings import (
     build_site_warnings,
 )
 from access_atlas.sites.feed import SiteFeedError, sync_sites_from_payload
+from access_atlas.sites.forms import AccessRecordUploadForm
 from access_atlas.sites.models import (
     AccessRecord,
     AccessRecordStatus,
@@ -1026,6 +1027,129 @@ def test_site_detail_shows_access_record_actions(client):
 
 
 @pytest.mark.django_db
+def test_access_record_list_shows_global_create_actions(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.get(reverse("access_record_list"))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    create_url = reverse("access_record_create_global")
+    assert create_url in content
+    assert "New access record" in content
+    assert 'class="nav-create-link"' in content
+    assert "ti ti-plus" in content
+
+
+@pytest.mark.django_db
+def test_access_record_upload_prefills_site_from_site_route(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+
+    response = client.get(reverse("access_record_create", kwargs={"site_pk": site.pk}))
+
+    assert response.status_code == 200
+    form = response.context["form"]
+    assert form.initial["site"] == site.pk
+
+
+@pytest.mark.django_db
+def test_access_record_upload_site_field_uses_tomselect():
+    form = AccessRecordUploadForm(user=User(email="user@example.com"))
+    widget = form.fields["site"].widget
+
+    assert widget.url == "autocomplete_sites"
+    assert widget.label_field == "label"
+
+
+@pytest.mark.django_db
+def test_access_record_upload_page_includes_tomselect_media(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.get(reverse("access_record_create_global"))
+
+    assert response.status_code == 200
+    assert b"django_tomselect/js/django-tomselect" in response.content
+
+
+@pytest.mark.django_db
+def test_global_access_record_upload_requires_site(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.post(
+        reverse("access_record_create_global"),
+        {
+            "name": "Boat access",
+            "arrival_method": ArrivalMethod.BOAT,
+            "change_note": "Initial upload",
+            "geojson_file": geojson_file(),
+        },
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Site: This field is required." in content
+    assert AccessRecord.objects.count() == 0
+    assert AccessRecordUploadDraft.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_access_record_upload_rejects_staged_geojson_for_different_site(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    first_site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="First site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    second_site = Site.objects.create(
+        source_name="dummy",
+        external_id="002",
+        code="AA-002",
+        name="Second site",
+        latitude=-42.1,
+        longitude=175.1,
+    )
+    draft = AccessRecordUploadDraft.objects.create(
+        user=user,
+        site=first_site,
+        geojson={"type": "FeatureCollection", "features": []},
+        file_name="first-site.geojson",
+    )
+
+    response = client.post(
+        reverse("access_record_create_global"),
+        {
+            "site": str(second_site.pk),
+            "name": "Road access",
+            "arrival_method": ArrivalMethod.ROAD,
+            "change_note": "Initial upload",
+            "staged_upload_id": str(draft.pk),
+        },
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "The retained GeoJSON file is no longer available." in content
+    assert AccessRecord.objects.count() == 0
+    assert AccessRecordUploadDraft.objects.filter(pk=draft.pk).exists()
+
+
+@pytest.mark.django_db
 def test_site_detail_shows_access_start_actions_per_access_record(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -1085,6 +1209,7 @@ def test_access_record_upload_creates_record_and_first_version(client):
     response = client.post(
         reverse("access_record_create", kwargs={"site_pk": site.pk}),
         {
+            "site": str(site.pk),
             "name": "Boat access",
             "arrival_method": ArrivalMethod.BOAT,
             "change_note": "Initial upload",
@@ -1105,6 +1230,37 @@ def test_access_record_upload_creates_record_and_first_version(client):
 
 
 @pytest.mark.django_db
+def test_global_access_record_upload_creates_record_for_selected_site(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+
+    response = client.post(
+        reverse("access_record_create_global"),
+        {
+            "site": str(site.pk),
+            "name": "Road access",
+            "arrival_method": ArrivalMethod.ROAD,
+            "change_note": "Initial upload",
+            "geojson_file": geojson_file(),
+        },
+    )
+
+    assert response.status_code == 302
+    access_record = AccessRecord.objects.get(site=site)
+    assert access_record.name == "Road access"
+    assert access_record.arrival_method == ArrivalMethod.ROAD
+    assert access_record.current_version is not None
+
+
+@pytest.mark.django_db
 def test_access_record_upload_rejects_invalid_geojson(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -1120,6 +1276,7 @@ def test_access_record_upload_rejects_invalid_geojson(client):
     response = client.post(
         reverse("access_record_create", kwargs={"site_pk": site.pk}),
         {
+            "site": str(site.pk),
             "name": "Boat access",
             "arrival_method": ArrivalMethod.BOAT,
             "change_note": "Initial upload",
@@ -1153,6 +1310,7 @@ def test_access_record_upload_retains_valid_geojson_when_metadata_is_invalid(cli
     response = client.post(
         reverse("access_record_create", kwargs={"site_pk": site.pk}),
         {
+            "site": str(site.pk),
             "name": "Boat access",
             "arrival_method": ArrivalMethod.BOAT,
             "change_note": "",
@@ -1170,6 +1328,7 @@ def test_access_record_upload_retains_valid_geojson_when_metadata_is_invalid(cli
     response = client.post(
         reverse("access_record_create", kwargs={"site_pk": site.pk}),
         {
+            "site": str(site.pk),
             "name": "Boat access",
             "arrival_method": ArrivalMethod.BOAT,
             "change_note": "Initial upload",
