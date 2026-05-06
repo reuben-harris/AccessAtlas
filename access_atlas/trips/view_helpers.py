@@ -1,4 +1,10 @@
 from django.urls import reverse
+from django.utils import timezone
+from django.utils.formats import date_format
+
+from access_atlas.sites.access_record_snapshots import build_access_record_snapshots
+from access_atlas.sites.models import AccessRecord
+from access_atlas.sites.view_helpers import build_site_access_map_data
 
 from .models import SiteVisit, Trip, TripStatus
 from .services import user_can_approve_trip
@@ -32,12 +38,83 @@ def trip_detail_sections(
             "is_active": active_section == "overview",
         },
         {
+            "label": "Map",
+            "icon": "ti-map",
+            "url": trip.get_map_url(),
+            "is_active": active_section == "map",
+        },
+        {
             "label": "History",
             "icon": "ti-history",
             "url": trip.get_history_url(),
             "is_active": active_section == "history",
         },
     ]
+
+
+def site_visit_time_label(site_visit: SiteVisit) -> str:
+    if site_visit.planned_start is None:
+        return "Time not set"
+    start = timezone.localtime(site_visit.planned_start)
+    if site_visit.planned_end is None:
+        return date_format(start, "H:i")
+    end = timezone.localtime(site_visit.planned_end)
+    return f"{date_format(start, 'H:i')} - {date_format(end, 'H:i')}"
+
+
+def build_trip_map_data(site_visits: list[SiteVisit]) -> dict[str, list[dict]]:
+    """Build trip map markers plus access starts/tracks for visited sites."""
+
+    visits = []
+    group_labels = {}
+    next_label = 1
+    for site_visit in site_visits:
+        if site_visit.planned_day and site_visit.planned_start is None:
+            order_key = ("untimed-day", site_visit.planned_day.isoformat())
+            order_note = "Order within day not set"
+        else:
+            order_key = ("visit", site_visit.pk)
+            order_note = ""
+        if order_key not in group_labels:
+            group_labels[order_key] = str(next_label)
+            next_label += 1
+
+        visits.append(
+            {
+                "id": site_visit.pk,
+                "url": site_visit.get_absolute_url(),
+                "siteId": site_visit.site_id,
+                "siteCode": site_visit.site.code,
+                "siteName": site_visit.site.name,
+                "siteUrl": site_visit.site.get_absolute_url(),
+                "latitude": float(site_visit.site.latitude),
+                "longitude": float(site_visit.site.longitude),
+                "orderLabel": group_labels[order_key],
+                "orderNote": order_note,
+                "dateLabel": date_format(site_visit.planned_day, "j M Y")
+                if site_visit.planned_day
+                else "-",
+                "timeLabel": site_visit_time_label(site_visit),
+                "statusLabel": site_visit.get_status_display(),
+            }
+        )
+
+    site_ids = {site_visit.site_id for site_visit in site_visits}
+    access_records = list(
+        AccessRecord.objects.filter(site_id__in=site_ids).select_related("site")
+    )
+    access_map_data = build_site_access_map_data(
+        access_records,
+        build_access_record_snapshots(access_records),
+    )
+    access_map_data["points"] = [
+        point for point in access_map_data["points"] if point["type"] == "access_start"
+    ]
+    return {
+        "visits": visits,
+        "accessPoints": access_map_data["points"],
+        "accessTracks": access_map_data["tracks"],
+    }
 
 
 def site_visit_detail_sections(

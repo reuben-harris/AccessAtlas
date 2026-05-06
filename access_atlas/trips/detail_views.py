@@ -9,11 +9,13 @@ from access_atlas.core.mixins import (
     ObjectFormMixin,
     PaginatedObjectHistoryMixin,
 )
+from access_atlas.sites.view_helpers import map_tile_layer
 
 from .approval import ApprovedTripChangeMixin
 from .forms import AssignJobForm, SiteVisitForm, TripForm
 from .models import SiteVisit, SiteVisitJob, Trip
 from .view_helpers import (
+    build_trip_map_data,
     site_visit_detail_sections,
     trip_action_controls,
     trip_approval_summary,
@@ -67,6 +69,30 @@ class TripHistoryView(PaginatedObjectHistoryMixin, LoginRequiredMixin, DetailVie
             self.object, self.request.user
         )
         context.update(self.get_history_context())
+        return context
+
+
+class TripMapView(LoginRequiredMixin, DetailView):
+    model = Trip
+    template_name = "trips/trip_map.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        site_visits = list(
+            self.object.site_visits.select_related("site").order_by(
+                F("planned_day").asc(nulls_last=True),
+                F("planned_start").asc(nulls_last=True),
+                "site__code",
+                "id",
+            )
+        )
+        context["detail_sections"] = trip_detail_sections(self.object, "map")
+        context["detail_navigation_label"] = "Trip sections"
+        context["trip_action_controls"] = trip_action_controls(
+            self.object, self.request.user
+        )
+        context["trip_map_data"] = build_trip_map_data(site_visits)
+        context["map_tile_layer"] = map_tile_layer()
         return context
 
 

@@ -16,6 +16,7 @@ from .detail_views import (
     TripCreateView,
     TripDetailView,
     TripHistoryView,
+    TripMapView,
     TripUpdateView,
 )
 from .list_views import TripGanttView, TripListView
@@ -25,6 +26,7 @@ __all__ = [
     "TripListView",
     "TripGanttView",
     "TripDetailView",
+    "TripMapView",
     "TripHistoryView",
     "TripCreateView",
     "TripUpdateView",

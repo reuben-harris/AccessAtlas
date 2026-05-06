@@ -1,0 +1,35 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}{{ object.name }} Map - Access Atlas{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/leaflet.fullscreen/Control.FullScreen.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">{{ object.name }}</h2>
+    </div>
+    <div class="col-auto ms-auto">
+      {% include "trips/_trip_actions.html" %}
+    </div>
+  </div>
+</div>
+{% include "includes/detail_section_nav.html" %}
+
+<div class="card trip-map-card">
+  <div class="card-body p-0">
+    <div id="trip-map" class="trip-map" aria-label="Map of trip site visits"></div>
+  </div>
+</div>
+
+{{ trip_map_data|json_script:"trip-map-data" }}
+{{ map_tile_layer|json_script:"trip-map-tile-layer" }}
+<script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
+<script src="{% static 'vendor/leaflet.fullscreen/Control.FullScreen.umd.js' %}"></script>
+<script src="{% static 'js/trip_map.js' %}"></script>
+{% endblock %}

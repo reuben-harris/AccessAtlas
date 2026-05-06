@@ -6,8 +6,9 @@ from django.urls import reverse
 from django.utils import timezone
 
 from access_atlas.accounts.models import User
+from access_atlas.core.test_utils import parse_json_script
 from access_atlas.jobs.models import Job, JobStatus
-from access_atlas.sites.models import Site
+from access_atlas.sites.models import AccessRecord, AccessRecordVersion, Site
 from access_atlas.trips.forms import AssignJobForm, SiteVisitForm, TripForm
 from access_atlas.trips.models import (
     SiteVisit,
@@ -1006,6 +1007,121 @@ def test_trip_detail_orders_site_visits_by_planned_start(client):
     assert "21 Apr 2026" in content
     assert "09:00" in content
     assert "11:00" in content
+
+
+@pytest.mark.django_db
+def test_trip_map_renders_site_visits_and_access_starts_only(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    SiteVisit.objects.create(
+        trip=trip,
+        site=site,
+        planned_start=timezone.make_aware(datetime(2026, 4, 21, 9, 0)),
+        planned_end=timezone.make_aware(datetime(2026, 4, 21, 11, 0)),
+    )
+    access_record = AccessRecord.objects.create(site=site, name="Road access")
+    AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=1,
+        geojson={
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [174.2, -41.2]},
+                    "properties": {"access_atlas:type": "access_start"},
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [174.3, -41.3]},
+                    "properties": {"access_atlas:type": "gate"},
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [[174.2, -41.2], [174.25, -41.25]],
+                    },
+                    "properties": {"access_atlas:type": "track"},
+                },
+            ],
+        },
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("trip_map", kwargs={"pk": trip.pk}))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert 'id="trip-map"' in content
+    payload = parse_json_script(content, "trip-map-data")
+    assert payload["visits"][0]["siteCode"] == "AA-001"
+    assert payload["visits"][0]["orderLabel"] == "1"
+    assert payload["accessPoints"][0]["type"] == "access_start"
+    assert len(payload["accessPoints"]) == 1
+    assert len(payload["accessTracks"]) == 1
+
+
+@pytest.mark.django_db
+def test_trip_map_uses_shared_order_label_for_untimed_same_day_visits(client):
+    user = User.objects.create_user(email="user@example.com")
+    first_site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    second_site = Site.objects.create(
+        source_name="dummy",
+        external_id="002",
+        code="AA-002",
+        name="Site B",
+        latitude=-42.1,
+        longitude=175.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    SiteVisit.objects.create(
+        trip=trip,
+        site=first_site,
+        planned_day=date(2026, 4, 21),
+    )
+    SiteVisit.objects.create(
+        trip=trip,
+        site=second_site,
+        planned_day=date(2026, 4, 21),
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("trip_map", kwargs={"pk": trip.pk}))
+
+    assert response.status_code == 200
+    payload = parse_json_script(response.content.decode(), "trip-map-data")
+    assert {visit["orderLabel"] for visit in payload["visits"]} == {"1"}
+    assert {visit["orderNote"] for visit in payload["visits"]} == {
+        "Order within day not set"
+    }
 
 
 @pytest.mark.django_db

@@ -6,6 +6,7 @@ urlpatterns = [
     path("", views.TripListView.as_view(), name="trip_list"),
     path("gantt/", views.TripGanttView.as_view(), name="trip_gantt"),
     path("new/", views.TripCreateView.as_view(), name="trip_create"),
+    path("<int:pk>/map/", views.TripMapView.as_view(), name="trip_map"),
     path("<int:pk>/history/", views.TripHistoryView.as_view(), name="trip_history"),
     path("<int:pk>/", views.TripDetailView.as_view(), name="trip_detail"),
     path("<int:pk>/edit/", views.TripUpdateView.as_view(), name="trip_update"),

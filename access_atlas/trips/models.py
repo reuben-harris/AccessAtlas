@@ -87,6 +87,9 @@ class Trip(models.Model):
     def get_history_url(self) -> str:
         return reverse("trip_history", kwargs={"pk": self.pk})
 
+    def get_map_url(self) -> str:
+        return reverse("trip_map", kwargs={"pk": self.pk})
+
     @property
     def is_terminal(self) -> bool:
         return self.status in {TripStatus.COMPLETED, TripStatus.CANCELLED}
