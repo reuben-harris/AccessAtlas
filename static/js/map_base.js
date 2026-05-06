@@ -96,6 +96,48 @@
     return [Number(latitude), longitudeNormalizer(longitude)];
   }
 
+  function minimumWorldFillZoom(map) {
+    const size = map.getSize();
+    const height = size?.y || 0;
+    if (!Number.isFinite(height) || height <= 0) {
+      return 2;
+    }
+    return Math.max(2, Math.ceil(Math.log2(height / 256)));
+  }
+
+  function configureMapConstraints(map) {
+    // Leaflet repeats the world horizontally. Bound panning to adjacent world
+    // copies so users can inspect antimeridian data without scrolling forever.
+    const maxLatitude = 85.05112878;
+    map.setMaxBounds([
+      [-maxLatitude, -540],
+      [maxLatitude, 540],
+    ]);
+    map.options.maxBoundsViscosity = 1;
+
+    function applyMinZoom() {
+      const minZoom = minimumWorldFillZoom(map);
+      map.setMinZoom(minZoom);
+      if (map.getZoom() < minZoom) {
+        map.setZoom(minZoom, { animate: false });
+      }
+    }
+
+    applyMinZoom();
+    map.on("resize", applyMinZoom);
+    return { applyMinZoom };
+  }
+
+  function markerScaleForZoom(zoom) {
+    if (zoom <= 2) {
+      return "world";
+    }
+    if (zoom <= 3) {
+      return "far";
+    }
+    return "normal";
+  }
+
   function addHomeControl(map, onClick, options = {}) {
     const controlClassName =
       options.controlClassName || "access-atlas-map-home-control";
@@ -219,6 +261,8 @@
   accessAtlas.fitLayersOrDefault = fitLayersOrDefault;
   accessAtlas.createLongitudeNormalizer = createLongitudeNormalizer;
   accessAtlas.normalizeLatLng = normalizeLatLng;
+  accessAtlas.configureMapConstraints = configureMapConstraints;
+  accessAtlas.markerScaleForZoom = markerScaleForZoom;
   accessAtlas.addHomeControl = addHomeControl;
   accessAtlas.addFullscreenControl = addFullscreenControl;
   accessAtlas.settleMapLayout = settleMapLayout;

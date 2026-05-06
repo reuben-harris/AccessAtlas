@@ -13,6 +13,8 @@
   const settleMapLayout = window.AccessAtlas?.settleMapLayout;
   const createLongitudeNormalizer = window.AccessAtlas?.createLongitudeNormalizer;
   const normalizeLatLng = window.AccessAtlas?.normalizeLatLng;
+  const configureMapConstraints = window.AccessAtlas?.configureMapConstraints;
+  const markerScaleForZoom = window.AccessAtlas?.markerScaleForZoom;
 
   if (
     !mapElement ||
@@ -29,6 +31,8 @@
     typeof settleMapLayout !== "function" ||
     typeof createLongitudeNormalizer !== "function" ||
     typeof normalizeLatLng !== "function" ||
+    typeof configureMapConstraints !== "function" ||
+    typeof markerScaleForZoom !== "function" ||
     typeof L === "undefined"
   ) {
     return;
@@ -55,6 +59,7 @@
   // same operational state the user last chose.
 
   const map = L.map(mapElement).setView([-41.2865, 174.7762], 5);
+  configureMapConstraints(map);
   const markerLayer = L.layerGroup().addTo(map);
   const tileController = createThemeTileController(map, tileLayer);
   let viewportSaveTimeout = null;
@@ -94,17 +99,29 @@
     viewportSaveTimeout = window.setTimeout(savePreference, 500);
   }
 
+  function markerSize() {
+    const scale = markerScaleForZoom(map.getZoom());
+    if (scale === "world") {
+      return { anchor: [4, 10], count: 0, iconSize: [8, 10], pin: 8 };
+    }
+    if (scale === "far") {
+      return { anchor: [6, 15], count: 6, iconSize: [12, 15], pin: 12 };
+    }
+    return { anchor: [13, 32], count: 11, iconSize: [26, 32], pin: 26 };
+  }
+
   function makeMarkerIcon(statusLayer, jobCount) {
+    const size = markerSize();
     return L.divIcon({
       className: "job-map-marker",
       html: `
-        <span class="job-map-marker-pin" style="--job-map-marker-color: ${escapeHtml(statusLayer.color)};">
+        <span class="job-map-marker-pin" style="--job-map-marker-color: ${escapeHtml(statusLayer.color)}; --job-map-marker-size: ${size.pin}px; --job-map-marker-count-size: ${size.count}px;">
           <span class="job-map-marker-count">${jobCount}</span>
         </span>
       `,
-      iconAnchor: [13, 32],
-      iconSize: [26, 32],
-      popupAnchor: [0, -28],
+      iconAnchor: size.anchor,
+      iconSize: size.iconSize,
+      popupAnchor: [0, -Math.max(size.iconSize[1] - 4, 6)],
     });
   }
 
@@ -170,6 +187,8 @@
           icon: makeMarkerIcon(dominantStatus, jobs.length),
         },
       );
+      marker.statusLayer = dominantStatus;
+      marker.jobCount = jobs.length;
       marker.bindPopup(buildPopup(site, jobs));
       marker.addTo(markerLayer);
       markers.push(marker);
@@ -252,5 +271,10 @@
 
   applySavedViewport();
   settleMapLayout(map, applySavedViewport);
+  map.on("zoomend", () => {
+    for (const marker of visibleMarkers) {
+      marker.setIcon(makeMarkerIcon(marker.statusLayer, marker.jobCount));
+    }
+  });
   map.on("moveend zoomend", queueViewportSave);
 })();

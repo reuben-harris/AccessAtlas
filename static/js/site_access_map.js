@@ -18,6 +18,8 @@
   const settleMapLayout = window.AccessAtlas?.settleMapLayout;
   const createLongitudeNormalizer = window.AccessAtlas?.createLongitudeNormalizer;
   const normalizeLatLng = window.AccessAtlas?.normalizeLatLng;
+  const configureMapConstraints = window.AccessAtlas?.configureMapConstraints;
+  const markerScaleForZoom = window.AccessAtlas?.markerScaleForZoom;
 
   if (
     !mapElement ||
@@ -32,6 +34,8 @@
     typeof settleMapLayout !== "function" ||
     typeof createLongitudeNormalizer !== "function" ||
     typeof normalizeLatLng !== "function" ||
+    typeof configureMapConstraints !== "function" ||
+    typeof markerScaleForZoom !== "function" ||
     typeof L === "undefined"
   ) {
     return;
@@ -127,6 +131,7 @@
     [siteLatitude, displaySiteLongitude],
     initialZoom,
   );
+  configureMapConstraints(map);
   featureLayer.addTo(map);
   const tileController = createThemeTileController(map, tileLayer);
 
@@ -146,16 +151,28 @@
     return "ti-map-pin";
   }
 
+  function markerSize() {
+    const scale = markerScaleForZoom(map.getZoom());
+    if (scale === "world") {
+      return { anchor: [4, 4], icon: 0, iconSize: [8, 8], pin: 8 };
+    }
+    if (scale === "far") {
+      return { anchor: [6, 6], icon: 7, iconSize: [12, 12], pin: 12 };
+    }
+    return { anchor: [12, 12], icon: 14, iconSize: [24, 24], pin: 24 };
+  }
+
   function makeMarkerIcon(feature) {
     const featureType = feature.type;
     const color = featureColors[featureType] || "#667382";
     const iconClass = markerIconClass(feature);
+    const size = markerSize();
     return L.divIcon({
       className: "site-access-map-marker",
-      html: `<span class="site-access-map-marker-pin" style="--site-access-map-marker-color: ${escapeHtml(color)};"><i class="ti ${escapeHtml(iconClass)}" aria-hidden="true"></i></span>`,
-      iconAnchor: [12, 12],
-      iconSize: [24, 24],
-      popupAnchor: [0, -12],
+      html: `<span class="site-access-map-marker-pin" style="--site-access-map-marker-color: ${escapeHtml(color)}; --site-access-map-marker-size: ${size.pin}px; --site-access-map-marker-icon-size: ${size.icon}px;"><i class="ti ${escapeHtml(iconClass)}" aria-hidden="true"></i></span>`,
+      iconAnchor: size.anchor,
+      iconSize: size.iconSize,
+      popupAnchor: [0, -Math.max(size.iconSize[1] / 2, 4)],
     });
   }
 
@@ -239,6 +256,7 @@
           icon: makeMarkerIcon(point),
         },
       );
+      marker.featureData = point;
       marker.bindPopup(buildPointPopup(point));
       marker.addTo(featureLayer);
       layers.push(marker);
@@ -366,6 +384,13 @@
   fitFeatures(drawnLayers);
   settleMapLayout(map, () => {
     fitFeatures(drawnLayers);
+  });
+  map.on("zoomend", () => {
+    for (const layer of drawnLayers) {
+      if (layer.featureData && typeof layer.setIcon === "function") {
+        layer.setIcon(makeMarkerIcon(layer.featureData));
+      }
+    }
   });
 
   for (const button of toggleButtons) {

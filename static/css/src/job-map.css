@@ -51,11 +51,14 @@
 
 .job-map-marker-pin {
   --job-map-marker-color: var(--tblr-primary);
+  --job-map-marker-count-size: 0.6875rem;
+  --job-map-marker-size: 1.625rem;
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.625rem;
-  height: 1.625rem;
+  width: var(--job-map-marker-size);
+  height: var(--job-map-marker-size);
   color: #fff;
   background: var(--job-map-marker-color);
   border: 2px solid #fff;
@@ -65,7 +68,7 @@
 }
 
 .job-map-marker-count {
-  font-size: 0.6875rem;
+  font-size: var(--job-map-marker-count-size);
   font-weight: 700;
   line-height: 1;
   transform: rotate(45deg);

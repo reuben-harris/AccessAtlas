@@ -11,6 +11,8 @@
   const settleMapLayout = window.AccessAtlas?.settleMapLayout;
   const createLongitudeNormalizer = window.AccessAtlas?.createLongitudeNormalizer;
   const normalizeLatLng = window.AccessAtlas?.normalizeLatLng;
+  const configureMapConstraints = window.AccessAtlas?.configureMapConstraints;
+  const markerScaleForZoom = window.AccessAtlas?.markerScaleForZoom;
   const postJSON = window.AccessAtlas?.postJSON;
 
   if (
@@ -26,6 +28,8 @@
     typeof settleMapLayout !== "function" ||
     typeof createLongitudeNormalizer !== "function" ||
     typeof normalizeLatLng !== "function" ||
+    typeof configureMapConstraints !== "function" ||
+    typeof markerScaleForZoom !== "function" ||
     typeof L === "undefined"
   ) {
     return;
@@ -38,6 +42,7 @@
   const defaultCenter = [-41.2865, 174.7762];
   const defaultZoom = 5;
   const map = L.map(mapElement).setView(defaultCenter, defaultZoom);
+  configureMapConstraints(map);
   const markerLayer = L.layerGroup().addTo(map);
   const tileController = createThemeTileController(map, tileLayer);
   const longitudeNormalizer = createLongitudeNormalizer(
@@ -91,17 +96,29 @@
     return "ti-point-filled";
   }
 
+  function markerSize() {
+    const scale = markerScaleForZoom(map.getZoom());
+    if (scale === "world") {
+      return { anchor: [4, 10], icon: 0, iconSize: [8, 10], pin: 8 };
+    }
+    if (scale === "far") {
+      return { anchor: [6, 15], icon: 7, iconSize: [12, 15], pin: 12 };
+    }
+    return { anchor: [13, 32], icon: 14, iconSize: [26, 32], pin: 26 };
+  }
+
   function markerIcon(site) {
+    const size = markerSize();
     return L.divIcon({
       className: "site-list-map-marker",
       html: `
-        <span class="site-list-map-marker-pin" style="--site-list-map-marker-color: ${escapeHtml(markerColor(site))};">
+        <span class="site-list-map-marker-pin" style="--site-list-map-marker-color: ${escapeHtml(markerColor(site))}; --site-list-map-marker-size: ${size.pin}px; --site-list-map-marker-icon-size: ${size.icon}px;">
           <i class="ti ${escapeHtml(markerIconClass(site))}" aria-hidden="true"></i>
         </span>
       `,
-      iconAnchor: [13, 32],
-      iconSize: [26, 32],
-      popupAnchor: [0, -28],
+      iconAnchor: size.anchor,
+      iconSize: size.iconSize,
+      popupAnchor: [0, -Math.max(size.iconSize[1] - 4, 6)],
     });
   }
 
@@ -142,6 +159,7 @@
           icon: markerIcon(site),
         },
       );
+      marker.siteData = site;
       marker.bindPopup(buildPopup(site));
       marker.addTo(markerLayer);
       siteMarkers.push(marker);
@@ -180,5 +198,10 @@
   markers = drawMarkers();
   applySavedViewport();
   settleMapLayout(map, applySavedViewport);
+  map.on("zoomend", () => {
+    for (const marker of markers) {
+      marker.setIcon(markerIcon(marker.siteData));
+    }
+  });
   map.on("moveend zoomend", queueViewportSave);
 })();
