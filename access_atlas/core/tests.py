@@ -220,7 +220,7 @@ def test_global_search_shows_total_counts_and_new_object_groups(logged_in_client
 
     assert response.status_code == 200
     assert response.context["total_results"] == 7
-    assert response.context["lookup_type"] == "istartswith"
+    assert response.context["lookup_type"] == "icontains"
     row_types = {row.object_type for row in _global_search_rows(response)}
     assert row_types == {
         "Site",
@@ -245,6 +245,7 @@ def test_global_search_shows_total_counts_and_new_object_groups(logged_in_client
 @pytest.mark.parametrize(
     ("lookup_type", "query", "expected_names"),
     [
+        ("icontains", "Ridge", ["Alpha Ridge", "Beta Ridge"]),
         ("iexact", "Alpha Field", ["Alpha Field"]),
         ("istartswith", "Alpha", ["Alpha Field", "Alpha Ridge"]),
         ("iendswith", "Ridge", ["Alpha Ridge", "Beta Ridge"]),

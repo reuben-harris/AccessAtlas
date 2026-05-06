@@ -9,13 +9,14 @@ from access_atlas.sites.models import AccessRecord, Site
 from access_atlas.trips.models import SiteVisit, Trip
 
 SEARCH_LOOKUP_OPTIONS = (
+    ("icontains", "Partial match"),
     ("iexact", "Exact match"),
     ("istartswith", "Starts with"),
     ("iendswith", "Ends with"),
     ("iregex", "Regex"),
 )
 SEARCH_LOOKUP_VALUES = {value for value, _label in SEARCH_LOOKUP_OPTIONS}
-DEFAULT_SEARCH_LOOKUP = "istartswith"
+DEFAULT_SEARCH_LOOKUP = "icontains"
 DEFAULT_SEARCH_SORT = "type"
 SEARCH_SORT_FIELDS = {"type", "value", "object"}
 DEFAULT_SEARCH_PER_PAGE = 25
@@ -97,7 +98,7 @@ def first_matching_value(
             normalized_query
         ):
             return candidate
-        if normalized_query in normalized_candidate:
+        if lookup_type == "icontains" and normalized_query in normalized_candidate:
             return candidate
     return candidates[0] if candidates else ""
 
