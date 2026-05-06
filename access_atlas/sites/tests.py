@@ -603,6 +603,8 @@ def test_access_record_global_map_includes_access_features(client):
     assert response.status_code == 200
     content = response.content.decode()
     assert reverse("access_record_list") in content
+    assert reverse("access_record_create_global") in content
+    assert "New access record" in content
     assert 'id="site-access-map"' in content
     payload = parse_json_script(content, "site-access-map-data")
     assert payload["points"][0]["recordId"] == access_record.pk
