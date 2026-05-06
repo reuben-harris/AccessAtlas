@@ -1,0 +1,47 @@
+{% extends "base/base.html" %}
+
+{% block title %}Work Programmes - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">Work Programmes</h2>
+    </div>
+    <div class="col-auto ms-auto">
+      <a class="btn btn-primary" href="{% url 'work_programme_create' %}">New work programme</a>
+    </div>
+  </div>
+</div>
+{% include "includes/list_controls.html" %}
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-vcenter">
+      <thead>
+        <tr>
+          {% include "includes/sortable_th.html" with label="Name" sort_key="name" %}
+          {% include "includes/sortable_th.html" with label="Start Date" sort_key="start-date" %}
+          {% include "includes/sortable_th.html" with label="Due Date" sort_key="end-date" %}
+          <th>Jobs</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for work_programme in object_list %}
+          <tr>
+            <td><a href="{{ work_programme.get_absolute_url }}">{{ work_programme.name }}</a></td>
+            <td>{{ work_programme.start_date|date:"Y-m-d" }}</td>
+            <td>{{ work_programme.end_date|date:"Y-m-d" }}</td>
+            <td>{{ work_programme.job_count }}</td>
+            {% url 'work_programme_update' work_programme.pk as edit_url %}
+            {% include "includes/row_actions.html" with edit_url=edit_url label=work_programme.name %}
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-secondary">No work programmes found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "includes/pagination_footer.html" %}
+{% endblock %}

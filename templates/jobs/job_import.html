@@ -20,13 +20,13 @@
         <h3 class="card-title">CSV Specification</h3>
       </div>
       <div class="card-body">
-        <p>The CSV must include <code>site_code</code> and <code>template_title</code>. It can also include <code>status</code> and <code>closeout_note</code>.</p>
-        <pre class="mb-3"><code>site_code,template_title,status,closeout_note</code></pre>
-        <p>Each row creates a job by copying an active job template for a synced site. Status can be <code>unassigned</code>, <code>completed</code>, or <code>cancelled</code>. Completed and cancelled jobs require a closeout note.</p>
+        <p>The CSV must include <code>site_code</code> and <code>template_title</code>. It can also include <code>status</code>, <code>closeout_note</code>, and <code>work_programme</code>.</p>
+        <pre class="mb-3"><code>site_code,template_title,status,closeout_note,work_programme</code></pre>
+        <p>Each row creates a job by copying an active job template for a synced site. Status can be <code>unassigned</code>, <code>completed</code>, or <code>cancelled</code>. Completed and cancelled jobs require a closeout note. Work programme names must already exist.</p>
         <p>Example CSV: <code>{{ example_path }}</code></p>
-        <pre class="mb-0"><code>site_code,template_title,status,closeout_note
-AA-001,Replace sensor,unassigned,
-AA-002,Inspect cabinet,completed,Imported from existing completed work log</code></pre>
+        <pre class="mb-0"><code>site_code,template_title,status,closeout_note,work_programme
+AA-001,Replace sensor,unassigned,,2026 Field Work
+AA-002,Inspect cabinet,completed,Imported from existing completed work log,2026 Field Work</code></pre>
       </div>
     </div>
   </div>
@@ -45,6 +45,7 @@ AA-002,Inspect cabinet,completed,Imported from existing completed work log</code
             <th>Row</th>
             <th>Site Code</th>
             <th>Template Title</th>
+            <th>Work Programme</th>
             <th>Status</th>
             <th>Closeout Note</th>
             <th>Result</th>
@@ -56,6 +57,7 @@ AA-002,Inspect cabinet,completed,Imported from existing completed work log</code
               <td>{{ row.row_number|default:"-" }}</td>
               <td>{{ row.site_code|default:"-" }}</td>
               <td>{{ row.template_title|default:"-" }}</td>
+              <td>{{ row.work_programme_name|default:"-" }}</td>
               <td>{{ row.status_label|default:"-" }}</td>
               <td>{{ row.closeout_note|default:"-" }}</td>
               <td>

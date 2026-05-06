@@ -7,6 +7,31 @@ urlpatterns = [
     path("map/", views.JobMapView.as_view(), name="job_map"),
     path("import/", views.import_jobs_view, name="job_import"),
     path("import/confirm/", views.confirm_jobs_import_view, name="job_import_confirm"),
+    path(
+        "work-programmes/",
+        views.WorkProgrammeListView.as_view(),
+        name="work_programme_list",
+    ),
+    path(
+        "work-programmes/new/",
+        views.WorkProgrammeCreateView.as_view(),
+        name="work_programme_create",
+    ),
+    path(
+        "work-programmes/<int:pk>/",
+        views.WorkProgrammeDetailView.as_view(),
+        name="work_programme_detail",
+    ),
+    path(
+        "work-programmes/<int:pk>/history/",
+        views.WorkProgrammeHistoryView.as_view(),
+        name="work_programme_history",
+    ),
+    path(
+        "work-programmes/<int:pk>/edit/",
+        views.WorkProgrammeUpdateView.as_view(),
+        name="work_programme_update",
+    ),
     path("new/", views.JobCreateView.as_view(), name="job_create"),
     path(
         "from-template/",

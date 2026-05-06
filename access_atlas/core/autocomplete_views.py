@@ -3,7 +3,7 @@ from __future__ import annotations
 from django_tomselect.autocompletes import AutocompleteModelView
 
 from access_atlas.accounts.models import User
-from access_atlas.jobs.models import Job, JobStatus, JobTemplate
+from access_atlas.jobs.models import Job, JobStatus, JobTemplate, WorkProgramme
 from access_atlas.sites.models import Site
 
 
@@ -74,6 +74,27 @@ class JobTemplateAutocompleteView(AccessAtlasAutocompleteView):
 
     def hook_queryset(self, queryset):
         return queryset.filter(is_active=True)
+
+
+class WorkProgrammeAutocompleteView(AccessAtlasAutocompleteView):
+    """Autocomplete work programmes by name for job assignment."""
+
+    model = WorkProgramme
+    permission_required = None
+    search_lookups = ["name__icontains", "description__icontains"]
+    ordering = ["start_date", "name"]
+    value_fields = ["id", "name", "start_date", "end_date", "label"]
+    virtual_fields = ["label"]
+
+    def hook_prepare_results(
+        self,
+        results: list[dict[str, object]],
+    ) -> list[dict[str, object]]:
+        for item in results:
+            item["label"] = (
+                f"{item['name']} ({item['start_date']} to {item['end_date']})"
+            )
+        return results
 
 
 class UnassignedJobAutocompleteView(AccessAtlasAutocompleteView):

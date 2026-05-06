@@ -29,6 +29,8 @@
         <tr>
           {% include "includes/sortable_th.html" with label="Title" sort_key="title" %}
           {% include "includes/sortable_th.html" with label="Site" sort_key="site" %}
+          {% include "includes/sortable_th.html" with label="Work Programme" sort_key="work-programme" %}
+          {% include "includes/sortable_th.html" with label="Due Date" sort_key="due-date" %}
           {% include "includes/sortable_th.html" with label="Status" sort_key="status" %}
           {% include "includes/sortable_th.html" with label="Priority" sort_key="priority" %}
           {% include "includes/sortable_th.html" with label="Estimate" sort_key="estimate" %}
@@ -40,6 +42,14 @@
           <tr>
             <td><a href="{{ job.get_absolute_url }}">{{ job.title }}</a></td>
             <td><a href="{{ job.site.get_absolute_url }}">{{ job.site.code }}</a></td>
+            <td>
+              {% if job.work_programme %}
+                <a href="{{ job.work_programme.get_absolute_url }}">{{ job.work_programme.name }}</a>
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>{{ job.due_date|date:"Y-m-d"|default:"-" }}</td>
             <td><span class="badge {{ job.status|status_badge_class }}">{{ job.get_status_display }}</span></td>
             <td>{{ job.get_priority_display }}</td>
             <td>{{ job.estimated_duration_minutes|default:"-" }} min</td>
@@ -47,7 +57,7 @@
             {% include "includes/row_actions.html" with edit_url=edit_url label=job.title %}
           </tr>
         {% empty %}
-          <tr><td colspan="6" class="text-secondary">No jobs found.</td></tr>
+          <tr><td colspan="8" class="text-secondary">No jobs found.</td></tr>
         {% endfor %}
       </tbody>
     </table>

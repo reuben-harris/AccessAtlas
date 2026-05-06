@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from django.db import DatabaseError
 from django.db.models import Q
 
-from access_atlas.jobs.models import Job, JobTemplate
+from access_atlas.jobs.models import Job, JobTemplate, WorkProgramme
 from access_atlas.sites.models import AccessRecord, Site
 from access_atlas.trips.models import SiteVisit, Trip
 
@@ -135,7 +135,13 @@ def build_job_rows(queryset, query: str, lookup_type: str) -> list[SearchResultR
             object_type="Job",
             value=first_matching_value(
                 query,
-                [job.title, job.description, job.site.code, job.site.name],
+                [
+                    job.title,
+                    job.description,
+                    job.site.code,
+                    job.site.name,
+                    job.work_programme.name if job.work_programme else "",
+                ],
                 lookup_type,
             ),
             object_label=job.title,
@@ -162,6 +168,26 @@ def build_job_template_rows(
             object_url=job_template.get_absolute_url(),
         )
         for job_template in queryset
+    ]
+
+
+def build_work_programme_rows(
+    queryset,
+    query: str,
+    lookup_type: str,
+) -> list[SearchResultRow]:
+    return [
+        SearchResultRow(
+            object_type="Work Programme",
+            value=first_matching_value(
+                query,
+                [work_programme.name, work_programme.description],
+                lookup_type,
+            ),
+            object_label=work_programme.name,
+            object_url=work_programme.get_absolute_url(),
+        )
+        for work_programme in queryset
     ]
 
 
@@ -265,15 +291,24 @@ def build_global_search_results(
         site_matches = Site.objects.filter(
             build_search_predicate(("code", "name", "description"), query, lookup_type)
         )
-        job_matches = Job.objects.select_related("site").filter(
+        job_matches = Job.objects.select_related("site", "work_programme").filter(
             build_search_predicate(
-                ("title", "description", "site__code", "site__name"),
+                (
+                    "title",
+                    "description",
+                    "site__code",
+                    "site__name",
+                    "work_programme__name",
+                ),
                 query,
                 lookup_type,
             )
         )
         job_template_matches = JobTemplate.objects.filter(
             build_search_predicate(("title", "description"), query, lookup_type)
+        )
+        work_programme_matches = WorkProgramme.objects.filter(
+            build_search_predicate(("name", "description"), query, lookup_type)
         )
         trip_matches = Trip.objects.filter(
             build_search_predicate(("name",), query, lookup_type)
@@ -299,6 +334,7 @@ def build_global_search_results(
             *build_site_rows(site_matches, query, lookup_type),
             *build_job_rows(job_matches, query, lookup_type),
             *build_job_template_rows(job_template_matches, query, lookup_type),
+            *build_work_programme_rows(work_programme_matches, query, lookup_type),
             *build_trip_rows(trip_matches, query, lookup_type),
             *build_site_visit_rows(site_visit_matches, query, lookup_type),
             *build_access_record_rows(access_record_matches, query, lookup_type),

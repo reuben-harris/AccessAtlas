@@ -1,7 +1,7 @@
 from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
 
-from .models import Job, JobTemplate, Requirement, TemplateRequirement
+from .models import Job, JobTemplate, Requirement, TemplateRequirement, WorkProgramme
 
 
 class TemplateRequirementInline(admin.TabularInline):
@@ -21,11 +21,31 @@ class JobTemplateAdmin(SimpleHistoryAdmin):
     inlines = [TemplateRequirementInline]
 
 
+@admin.register(WorkProgramme)
+class WorkProgrammeAdmin(SimpleHistoryAdmin):
+    list_display = ["name", "start_date", "end_date"]
+    search_fields = ["name", "description"]
+
+
 @admin.register(Job)
 class JobAdmin(SimpleHistoryAdmin):
-    list_display = ["title", "site", "priority", "status", "estimated_duration_minutes"]
-    list_filter = ["status", "priority"]
-    search_fields = ["title", "description", "notes", "site__code", "site__name"]
+    list_display = [
+        "title",
+        "site",
+        "work_programme",
+        "priority",
+        "status",
+        "estimated_duration_minutes",
+    ]
+    list_filter = ["status", "priority", "work_programme"]
+    search_fields = [
+        "title",
+        "description",
+        "notes",
+        "site__code",
+        "site__name",
+        "work_programme__name",
+    ]
     inlines = [RequirementInline]
 
 

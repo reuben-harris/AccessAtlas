@@ -11,6 +11,7 @@ The application owns:
 - Trips
 - Site visits
 - Jobs and unassigned jobs
+- Work programmes
 - Job templates
 - Job requirements
 - Notes
@@ -27,6 +28,7 @@ Use the product language consistently:
 - `Site Visit`: a planned attendance at one site during a trip
 - `Job`: a unit of work for a site
 - `Unassigned Job`: a job not yet planned into a site visit
+- `Work Programme`: a dated batch of jobs with a shared due date
 - `Job Template`: a reusable starting point for a job
 - `Requirement`: something needed to complete a job
 - `Object History`: who changed what and when
@@ -50,6 +52,7 @@ Access Atlas owns planning-specific data:
 - Trips
 - Site visits
 - Jobs
+- Work programmes
 - Templates
 - Requirements
 - Planning status

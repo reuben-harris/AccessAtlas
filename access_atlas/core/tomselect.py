@@ -46,6 +46,22 @@ def job_template_tomselect_config(
     )
 
 
+def work_programme_tomselect_config(
+    *,
+    placeholder: str = "Search work programmes",
+) -> TomSelectConfig:
+    """Standard single-select config for assigning jobs to work programmes."""
+
+    return TomSelectConfig(
+        url="autocomplete_work_programmes",
+        css_framework="bootstrap5",
+        label_field="label",
+        placeholder=placeholder,
+        minimum_query_length=0,
+        preload="focus",
+    )
+
+
 def assignable_jobs_tomselect_config(site_id: int) -> TomSelectConfig:
     """Filter unassigned-job autocomplete results down to one site."""
 

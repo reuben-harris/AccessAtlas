@@ -1,16 +1,18 @@
 from access_atlas.sites.models import Site
 
-from .models import Job, JobTemplate, Requirement
+from .models import Job, JobTemplate, Requirement, WorkProgramme
 
 
 def create_job_from_template(
     site: Site,
     template: JobTemplate,
     change_reason: str = "Created job from template",
+    work_programme: WorkProgramme | None = None,
 ) -> Job:
     job = Job(
         site=site,
         template=template,
+        work_programme=work_programme,
         title=template.title,
         description=template.description,
         estimated_duration_minutes=template.estimated_duration_minutes,

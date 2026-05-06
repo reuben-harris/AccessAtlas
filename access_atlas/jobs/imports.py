@@ -7,11 +7,11 @@ from django.db import transaction
 from access_atlas.core.imports import has_import_row_errors, read_uploaded_csv_rows
 from access_atlas.sites.models import Site
 
-from .models import Job, JobStatus, JobTemplate
+from .models import Job, JobStatus, JobTemplate, WorkProgramme
 from .services import create_job_from_template
 
 REQUIRED_HEADERS = ["site_code", "template_title"]
-OPTIONAL_HEADERS = ["status", "closeout_note"]
+OPTIONAL_HEADERS = ["status", "closeout_note", "work_programme"]
 IMPORTABLE_STATUSES = {
     JobStatus.UNASSIGNED,
     JobStatus.COMPLETED,
@@ -27,8 +27,10 @@ class JobImportRow:
     template_title: str
     status: str = JobStatus.UNASSIGNED
     closeout_note: str = ""
+    work_programme_name: str = ""
     site: Site | None = None
     template: JobTemplate | None = None
+    work_programme: WorkProgramme | None = None
     error: str = ""
 
     @property
@@ -44,6 +46,10 @@ class JobImportRow:
             "template_title": self.template_title,
             "status": self.status,
             "closeout_note": self.closeout_note,
+            "work_programme_id": self.work_programme.pk
+            if self.work_programme
+            else None,
+            "work_programme_name": self.work_programme_name,
             "error": self.error,
         }
 
@@ -82,6 +88,7 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
         template_title = (row.get("template_title") or "").strip()
         status = normalize_import_status(row.get("status") or "")
         closeout_note = (row.get("closeout_note") or "").strip()
+        work_programme_name = (row.get("work_programme") or "").strip()
 
         if not site_code:
             result.append(
@@ -91,6 +98,7 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
                     template_title,
                     status=status,
                     closeout_note=closeout_note,
+                    work_programme_name=work_programme_name,
                     error="Missing site_code.",
                 )
             )
@@ -103,6 +111,7 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
                     template_title,
                     status=status,
                     closeout_note=closeout_note,
+                    work_programme_name=work_programme_name,
                     error="Missing template_title.",
                 )
             )
@@ -115,6 +124,7 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
                     template_title,
                     status=status,
                     closeout_note=closeout_note,
+                    work_programme_name=work_programme_name,
                     error="Assigned jobs must be planned through a site visit.",
                 )
             )
@@ -127,6 +137,7 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
                     template_title,
                     status=status,
                     closeout_note=closeout_note,
+                    work_programme_name=work_programme_name,
                     error="Unknown status.",
                 )
             )
@@ -139,6 +150,7 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
                     template_title,
                     status=status,
                     closeout_note=closeout_note,
+                    work_programme_name=work_programme_name,
                     error="closeout_note is required for completed or cancelled jobs.",
                 )
             )
@@ -152,6 +164,7 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
                     template_title,
                     status=status,
                     closeout_note=closeout_note,
+                    work_programme_name=work_programme_name,
                     error="Unknown site_code.",
                 )
             )
@@ -170,6 +183,7 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
                     template_title,
                     status=status,
                     closeout_note=closeout_note,
+                    work_programme_name=work_programme_name,
                     error="Unknown active template_title.",
                 )
             )
@@ -182,10 +196,30 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
                     template_title,
                     status=status,
                     closeout_note=closeout_note,
+                    work_programme_name=work_programme_name,
                     error="template_title matches more than one active job template.",
                 )
             )
             continue
+
+        work_programme = None
+        if work_programme_name:
+            work_programme = WorkProgramme.objects.filter(
+                name__iexact=work_programme_name
+            ).first()
+            if work_programme is None:
+                result.append(
+                    JobImportRow(
+                        index,
+                        site_code,
+                        template_title,
+                        status=status,
+                        closeout_note=closeout_note,
+                        work_programme_name=work_programme_name,
+                        error="Unknown work_programme.",
+                    )
+                )
+                continue
 
         result.append(
             JobImportRow(
@@ -194,8 +228,10 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
                 template_title=template_title,
                 status=status,
                 closeout_note=closeout_note,
+                work_programme_name=work_programme_name,
                 site=site,
                 template=templates.get(),
+                work_programme=work_programme,
             )
         )
 
@@ -221,9 +257,15 @@ def rows_from_session(session_rows: list[dict[str, object]]) -> list[JobImportRo
     for row in session_rows:
         site_id = row.get("site_id")
         template_id = row.get("template_id")
+        work_programme_id = row.get("work_programme_id")
         site = Site.objects.filter(pk=site_id).first() if site_id else None
         template = (
             JobTemplate.objects.filter(pk=template_id).first() if template_id else None
+        )
+        work_programme = (
+            WorkProgramme.objects.filter(pk=work_programme_id).first()
+            if work_programme_id
+            else None
         )
         rows.append(
             JobImportRow(
@@ -232,8 +274,10 @@ def rows_from_session(session_rows: list[dict[str, object]]) -> list[JobImportRo
                 template_title=str(row["template_title"]),
                 status=str(row.get("status") or JobStatus.UNASSIGNED),
                 closeout_note=str(row.get("closeout_note") or ""),
+                work_programme_name=str(row.get("work_programme_name") or ""),
                 site=site,
                 template=template,
+                work_programme=work_programme,
                 error=str(row.get("error") or ""),
             )
         )
@@ -250,6 +294,7 @@ def create_jobs_from_import_rows(rows: list[JobImportRow]) -> list[Job]:
             site=row.site,
             template=row.template,
             change_reason="Imported from CSV using job template",
+            work_programme=row.work_programme,
         )
         if row.status != JobStatus.UNASSIGNED or row.closeout_note:
             job.status = row.status

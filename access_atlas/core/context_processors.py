@@ -13,6 +13,7 @@ PREFIX_NAV_ITEMS = (
     ("site_visit_", "trips"),
     ("assign_job", "trips"),
     ("unassign_job", "trips"),
+    ("work_programme_", "work_programmes"),
     ("job_template_", "job_templates"),
     ("template_requirement_", "job_templates"),
     ("job_", "jobs"),

@@ -30,6 +30,15 @@
           -
         {% endif %}
       </dd>
+      <dt class="col-sm-3">Work Programme</dt>
+      <dd class="col-sm-9">
+        {% if object.work_programme %}
+          <a href="{{ object.work_programme.get_absolute_url }}">{{ object.work_programme.name }}</a>
+        {% else %}
+          -
+        {% endif %}
+      </dd>
+      <dt class="col-sm-3">Due Date</dt><dd class="col-sm-9">{{ object.due_date|date:"Y-m-d"|default:"-" }}</dd>
       <dt class="col-sm-3">Status</dt><dd class="col-sm-9"><span class="badge {{ object.status|status_badge_class }}">{{ object.get_status_display }}</span></dd>
       <dt class="col-sm-3">Priority</dt><dd class="col-sm-9">{{ object.get_priority_display }}</dd>
       <dt class="col-sm-3">Estimate</dt><dd class="col-sm-9">{{ object.estimated_duration_minutes|default:"-" }} min</dd>

@@ -76,6 +76,45 @@ class JobTemplate(models.Model):
             )
 
 
+class WorkProgramme(models.Model):
+    name = models.CharField(max_length=255)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    history = HistoricalRecords()
+
+    class Meta:
+        ordering = ["start_date", "name"]
+        constraints = [
+            models.UniqueConstraint(
+                Lower("name"),
+                name="unique_work_programme_name_case_insensitive",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return self.name
+
+    def get_absolute_url(self) -> str:
+        return reverse("work_programme_detail", kwargs={"pk": self.pk})
+
+    def get_history_url(self) -> str:
+        return reverse("work_programme_history", kwargs={"pk": self.pk})
+
+    def clean(self) -> None:
+        if self.end_date < self.start_date:
+            raise ValidationError({"end_date": "End date cannot be before start date."})
+        duplicate_names = WorkProgramme.objects.filter(name__iexact=self.name)
+        if self.pk:
+            duplicate_names = duplicate_names.exclude(pk=self.pk)
+        if duplicate_names.exists():
+            raise ValidationError(
+                {"name": "A work programme with this name already exists."}
+            )
+
+
 class TemplateRequirement(models.Model):
     job_template = models.ForeignKey(
         JobTemplate,
@@ -105,6 +144,13 @@ class Job(models.Model):
     template = models.ForeignKey(
         JobTemplate,
         related_name="created_jobs",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    work_programme = models.ForeignKey(
+        WorkProgramme,
+        related_name="jobs",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -145,6 +191,10 @@ class Job(models.Model):
 
     def get_history_url(self) -> str:
         return reverse("job_history", kwargs={"pk": self.pk})
+
+    @property
+    def due_date(self):
+        return self.work_programme.end_date if self.work_programme else None
 
     def clean(self) -> None:
         if self.status == JobStatus.ASSIGNED and (not self.pk or not self.is_assigned):

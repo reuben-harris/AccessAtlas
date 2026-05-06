@@ -1,101 +1,101 @@
-site_code,template_title,status,closeout_note
-AA-001,Asset Renewal Alloy,unassigned,
-AA-002,GDSP SIM swap,completed,Completed before Access Atlas import
-AA-003,Battery Bank Inspection,cancelled,Cancelled before Access Atlas import
-AA-004,Microwave Dish Alignment,unassigned,
-AA-001,Generator Fuel Check,completed,Completed before Access Atlas import
-AA-002,Cabinet Filter Replacement,cancelled,Cancelled before Access Atlas import
-AA-003,Earthing Continuity Test,unassigned,
-AA-004,Antenna Feeder Sweep,completed,Completed before Access Atlas import
-AA-001,Firmware Version Audit,cancelled,Cancelled before Access Atlas import
-AA-002,Security Lock Replacement,unassigned,
-AA-003,Vegetation Clearance Review,completed,Completed before Access Atlas import
-AA-004,UPS Runtime Test,cancelled,Cancelled before Access Atlas import
-AA-001,Cable Label Refresh,unassigned,
-AA-002,Water Ingress Inspection,completed,Completed before Access Atlas import
-AA-003,Radio Link Health Check,cancelled,Cancelled before Access Atlas import
-AA-004,Mast Bolt Torque Check,unassigned,
-AA-001,Access Track Condition Review,completed,Completed before Access Atlas import
-AA-002,Environmental Sensor Calibration,cancelled,Cancelled before Access Atlas import
-AA-003,Asset Renewal Alloy,unassigned,
-AA-004,GDSP SIM swap,completed,Completed before Access Atlas import
-AA-001,Battery Bank Inspection,cancelled,Cancelled before Access Atlas import
-AA-002,Microwave Dish Alignment,unassigned,
-AA-003,Generator Fuel Check,completed,Completed before Access Atlas import
-AA-004,Cabinet Filter Replacement,cancelled,Cancelled before Access Atlas import
-AA-001,Earthing Continuity Test,unassigned,
-AA-002,Antenna Feeder Sweep,completed,Completed before Access Atlas import
-AA-003,Firmware Version Audit,cancelled,Cancelled before Access Atlas import
-AA-004,Security Lock Replacement,unassigned,
-AA-001,Vegetation Clearance Review,completed,Completed before Access Atlas import
-AA-002,UPS Runtime Test,cancelled,Cancelled before Access Atlas import
-AA-003,Cable Label Refresh,unassigned,
-AA-004,Water Ingress Inspection,completed,Completed before Access Atlas import
-AA-001,Radio Link Health Check,cancelled,Cancelled before Access Atlas import
-AA-002,Mast Bolt Torque Check,unassigned,
-AA-003,Access Track Condition Review,completed,Completed before Access Atlas import
-AA-004,Environmental Sensor Calibration,cancelled,Cancelled before Access Atlas import
-AA-001,Asset Renewal Alloy,unassigned,
-AA-002,GDSP SIM swap,completed,Completed before Access Atlas import
-AA-003,Battery Bank Inspection,cancelled,Cancelled before Access Atlas import
-AA-004,Microwave Dish Alignment,unassigned,
-AA-001,Generator Fuel Check,completed,Completed before Access Atlas import
-AA-002,Cabinet Filter Replacement,cancelled,Cancelled before Access Atlas import
-AA-003,Earthing Continuity Test,unassigned,
-AA-004,Antenna Feeder Sweep,completed,Completed before Access Atlas import
-AA-001,Firmware Version Audit,cancelled,Cancelled before Access Atlas import
-AA-002,Security Lock Replacement,unassigned,
-AA-003,Vegetation Clearance Review,completed,Completed before Access Atlas import
-AA-004,UPS Runtime Test,cancelled,Cancelled before Access Atlas import
-AA-001,Cable Label Refresh,unassigned,
-AA-002,Water Ingress Inspection,completed,Completed before Access Atlas import
-AA-003,Radio Link Health Check,cancelled,Cancelled before Access Atlas import
-AA-004,Mast Bolt Torque Check,unassigned,
-AA-001,Access Track Condition Review,completed,Completed before Access Atlas import
-AA-002,Environmental Sensor Calibration,cancelled,Cancelled before Access Atlas import
-AA-003,Asset Renewal Alloy,unassigned,
-AA-004,GDSP SIM swap,completed,Completed before Access Atlas import
-AA-001,Battery Bank Inspection,cancelled,Cancelled before Access Atlas import
-AA-002,Microwave Dish Alignment,unassigned,
-AA-003,Generator Fuel Check,completed,Completed before Access Atlas import
-AA-004,Cabinet Filter Replacement,cancelled,Cancelled before Access Atlas import
-AA-001,Earthing Continuity Test,unassigned,
-AA-002,Antenna Feeder Sweep,completed,Completed before Access Atlas import
-AA-003,Firmware Version Audit,cancelled,Cancelled before Access Atlas import
-AA-004,Security Lock Replacement,unassigned,
-AA-001,Vegetation Clearance Review,completed,Completed before Access Atlas import
-AA-002,UPS Runtime Test,cancelled,Cancelled before Access Atlas import
-AA-003,Cable Label Refresh,unassigned,
-AA-004,Water Ingress Inspection,completed,Completed before Access Atlas import
-AA-001,Radio Link Health Check,cancelled,Cancelled before Access Atlas import
-AA-002,Mast Bolt Torque Check,unassigned,
-AA-003,Access Track Condition Review,completed,Completed before Access Atlas import
-AA-004,Environmental Sensor Calibration,cancelled,Cancelled before Access Atlas import
-AA-001,Asset Renewal Alloy,unassigned,
-AA-002,GDSP SIM swap,completed,Completed before Access Atlas import
-AA-003,Battery Bank Inspection,cancelled,Cancelled before Access Atlas import
-AA-004,Microwave Dish Alignment,unassigned,
-AA-001,Generator Fuel Check,completed,Completed before Access Atlas import
-AA-002,Cabinet Filter Replacement,cancelled,Cancelled before Access Atlas import
-AA-003,Earthing Continuity Test,unassigned,
-AA-004,Antenna Feeder Sweep,completed,Completed before Access Atlas import
-AA-001,Firmware Version Audit,cancelled,Cancelled before Access Atlas import
-AA-002,Security Lock Replacement,unassigned,
-AA-003,Vegetation Clearance Review,completed,Completed before Access Atlas import
-AA-004,UPS Runtime Test,cancelled,Cancelled before Access Atlas import
-AA-001,Cable Label Refresh,unassigned,
-AA-002,Water Ingress Inspection,completed,Completed before Access Atlas import
-AA-003,Radio Link Health Check,cancelled,Cancelled before Access Atlas import
-AA-004,Mast Bolt Torque Check,unassigned,
-AA-001,Access Track Condition Review,completed,Completed before Access Atlas import
-AA-002,Environmental Sensor Calibration,cancelled,Cancelled before Access Atlas import
-AA-003,Asset Renewal Alloy,unassigned,
-AA-004,GDSP SIM swap,completed,Completed before Access Atlas import
-AA-001,Battery Bank Inspection,cancelled,Cancelled before Access Atlas import
-AA-002,Microwave Dish Alignment,unassigned,
-AA-003,Generator Fuel Check,completed,Completed before Access Atlas import
-AA-004,Cabinet Filter Replacement,cancelled,Cancelled before Access Atlas import
-AA-001,Earthing Continuity Test,unassigned,
-AA-002,Antenna Feeder Sweep,completed,Completed before Access Atlas import
-AA-003,Firmware Version Audit,cancelled,Cancelled before Access Atlas import
-AA-004,Security Lock Replacement,unassigned,
+site_code,template_title,status,closeout_note,work_programme
+AA-001,Asset Renewal Alloy,unassigned,,
+AA-002,GDSP SIM swap,completed,Completed before Access Atlas import,
+AA-003,Battery Bank Inspection,cancelled,Cancelled before Access Atlas import,
+AA-004,Microwave Dish Alignment,unassigned,,
+AA-001,Generator Fuel Check,completed,Completed before Access Atlas import,
+AA-002,Cabinet Filter Replacement,cancelled,Cancelled before Access Atlas import,
+AA-003,Earthing Continuity Test,unassigned,,
+AA-004,Antenna Feeder Sweep,completed,Completed before Access Atlas import,
+AA-001,Firmware Version Audit,cancelled,Cancelled before Access Atlas import,
+AA-002,Security Lock Replacement,unassigned,,
+AA-003,Vegetation Clearance Review,completed,Completed before Access Atlas import,
+AA-004,UPS Runtime Test,cancelled,Cancelled before Access Atlas import,
+AA-001,Cable Label Refresh,unassigned,,
+AA-002,Water Ingress Inspection,completed,Completed before Access Atlas import,
+AA-003,Radio Link Health Check,cancelled,Cancelled before Access Atlas import,
+AA-004,Mast Bolt Torque Check,unassigned,,
+AA-001,Access Track Condition Review,completed,Completed before Access Atlas import,
+AA-002,Environmental Sensor Calibration,cancelled,Cancelled before Access Atlas import,
+AA-003,Asset Renewal Alloy,unassigned,,
+AA-004,GDSP SIM swap,completed,Completed before Access Atlas import,
+AA-001,Battery Bank Inspection,cancelled,Cancelled before Access Atlas import,
+AA-002,Microwave Dish Alignment,unassigned,,
+AA-003,Generator Fuel Check,completed,Completed before Access Atlas import,
+AA-004,Cabinet Filter Replacement,cancelled,Cancelled before Access Atlas import,
+AA-001,Earthing Continuity Test,unassigned,,
+AA-002,Antenna Feeder Sweep,completed,Completed before Access Atlas import,
+AA-003,Firmware Version Audit,cancelled,Cancelled before Access Atlas import,
+AA-004,Security Lock Replacement,unassigned,,
+AA-001,Vegetation Clearance Review,completed,Completed before Access Atlas import,
+AA-002,UPS Runtime Test,cancelled,Cancelled before Access Atlas import,
+AA-003,Cable Label Refresh,unassigned,,
+AA-004,Water Ingress Inspection,completed,Completed before Access Atlas import,
+AA-001,Radio Link Health Check,cancelled,Cancelled before Access Atlas import,
+AA-002,Mast Bolt Torque Check,unassigned,,
+AA-003,Access Track Condition Review,completed,Completed before Access Atlas import,
+AA-004,Environmental Sensor Calibration,cancelled,Cancelled before Access Atlas import,
+AA-001,Asset Renewal Alloy,unassigned,,
+AA-002,GDSP SIM swap,completed,Completed before Access Atlas import,
+AA-003,Battery Bank Inspection,cancelled,Cancelled before Access Atlas import,
+AA-004,Microwave Dish Alignment,unassigned,,
+AA-001,Generator Fuel Check,completed,Completed before Access Atlas import,
+AA-002,Cabinet Filter Replacement,cancelled,Cancelled before Access Atlas import,
+AA-003,Earthing Continuity Test,unassigned,,
+AA-004,Antenna Feeder Sweep,completed,Completed before Access Atlas import,
+AA-001,Firmware Version Audit,cancelled,Cancelled before Access Atlas import,
+AA-002,Security Lock Replacement,unassigned,,
+AA-003,Vegetation Clearance Review,completed,Completed before Access Atlas import,
+AA-004,UPS Runtime Test,cancelled,Cancelled before Access Atlas import,
+AA-001,Cable Label Refresh,unassigned,,
+AA-002,Water Ingress Inspection,completed,Completed before Access Atlas import,
+AA-003,Radio Link Health Check,cancelled,Cancelled before Access Atlas import,
+AA-004,Mast Bolt Torque Check,unassigned,,
+AA-001,Access Track Condition Review,completed,Completed before Access Atlas import,
+AA-002,Environmental Sensor Calibration,cancelled,Cancelled before Access Atlas import,
+AA-003,Asset Renewal Alloy,unassigned,,
+AA-004,GDSP SIM swap,completed,Completed before Access Atlas import,
+AA-001,Battery Bank Inspection,cancelled,Cancelled before Access Atlas import,
+AA-002,Microwave Dish Alignment,unassigned,,
+AA-003,Generator Fuel Check,completed,Completed before Access Atlas import,
+AA-004,Cabinet Filter Replacement,cancelled,Cancelled before Access Atlas import,
+AA-001,Earthing Continuity Test,unassigned,,
+AA-002,Antenna Feeder Sweep,completed,Completed before Access Atlas import,
+AA-003,Firmware Version Audit,cancelled,Cancelled before Access Atlas import,
+AA-004,Security Lock Replacement,unassigned,,
+AA-001,Vegetation Clearance Review,completed,Completed before Access Atlas import,
+AA-002,UPS Runtime Test,cancelled,Cancelled before Access Atlas import,
+AA-003,Cable Label Refresh,unassigned,,
+AA-004,Water Ingress Inspection,completed,Completed before Access Atlas import,
+AA-001,Radio Link Health Check,cancelled,Cancelled before Access Atlas import,
+AA-002,Mast Bolt Torque Check,unassigned,,
+AA-003,Access Track Condition Review,completed,Completed before Access Atlas import,
+AA-004,Environmental Sensor Calibration,cancelled,Cancelled before Access Atlas import,
+AA-001,Asset Renewal Alloy,unassigned,,
+AA-002,GDSP SIM swap,completed,Completed before Access Atlas import,
+AA-003,Battery Bank Inspection,cancelled,Cancelled before Access Atlas import,
+AA-004,Microwave Dish Alignment,unassigned,,
+AA-001,Generator Fuel Check,completed,Completed before Access Atlas import,
+AA-002,Cabinet Filter Replacement,cancelled,Cancelled before Access Atlas import,
+AA-003,Earthing Continuity Test,unassigned,,
+AA-004,Antenna Feeder Sweep,completed,Completed before Access Atlas import,
+AA-001,Firmware Version Audit,cancelled,Cancelled before Access Atlas import,
+AA-002,Security Lock Replacement,unassigned,,
+AA-003,Vegetation Clearance Review,completed,Completed before Access Atlas import,
+AA-004,UPS Runtime Test,cancelled,Cancelled before Access Atlas import,
+AA-001,Cable Label Refresh,unassigned,,
+AA-002,Water Ingress Inspection,completed,Completed before Access Atlas import,
+AA-003,Radio Link Health Check,cancelled,Cancelled before Access Atlas import,
+AA-004,Mast Bolt Torque Check,unassigned,,
+AA-001,Access Track Condition Review,completed,Completed before Access Atlas import,
+AA-002,Environmental Sensor Calibration,cancelled,Cancelled before Access Atlas import,
+AA-003,Asset Renewal Alloy,unassigned,,
+AA-004,GDSP SIM swap,completed,Completed before Access Atlas import,
+AA-001,Battery Bank Inspection,cancelled,Cancelled before Access Atlas import,
+AA-002,Microwave Dish Alignment,unassigned,,
+AA-003,Generator Fuel Check,completed,Completed before Access Atlas import,
+AA-004,Cabinet Filter Replacement,cancelled,Cancelled before Access Atlas import,
+AA-001,Earthing Continuity Test,unassigned,,
+AA-002,Antenna Feeder Sweep,completed,Completed before Access Atlas import,
+AA-003,Firmware Version Audit,cancelled,Cancelled before Access Atlas import,
+AA-004,Security Lock Replacement,unassigned,,

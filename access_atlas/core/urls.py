@@ -8,6 +8,7 @@ from .autocomplete_views import (
     SiteAutocompleteView,
     TeamMemberAutocompleteView,
     UnassignedJobAutocompleteView,
+    WorkProgrammeAutocompleteView,
 )
 
 urlpatterns = [
@@ -28,6 +29,11 @@ urlpatterns = [
         "autocomplete/job-templates/",
         JobTemplateAutocompleteView.as_view(),
         name="autocomplete_job_templates",
+    ),
+    path(
+        "autocomplete/work-programmes/",
+        WorkProgrammeAutocompleteView.as_view(),
+        name="autocomplete_work_programmes",
     ),
     path(
         "autocomplete/unassigned-jobs/",

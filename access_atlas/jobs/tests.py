@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
 from django.urls import reverse
+from django.utils.dateparse import parse_date
 
 from access_atlas.accounts.models import User
 from access_atlas.accounts.preferences import (
@@ -20,6 +21,7 @@ from access_atlas.jobs.models import (
     Priority,
     Requirement,
     TemplateRequirement,
+    WorkProgramme,
 )
 from access_atlas.jobs.services import create_job_from_template
 from access_atlas.jobs.template_imports import parse_job_template_import_csv
@@ -101,6 +103,54 @@ def test_job_template_title_unique_constraint_is_case_insensitive():
 
 
 @pytest.mark.django_db
+def test_work_programme_name_must_be_unique_case_insensitive():
+    WorkProgramme.objects.create(
+        name="2026 Field Work",
+        start_date="2026-01-01",
+        end_date="2026-12-31",
+    )
+    duplicate = WorkProgramme(
+        name="2026 field work",
+        start_date="2026-02-01",
+        end_date="2026-11-30",
+    )
+
+    with pytest.raises(ValidationError):
+        duplicate.full_clean()
+
+
+@pytest.mark.django_db
+def test_work_programme_end_date_cannot_be_before_start_date():
+    work_programme = WorkProgramme(
+        name="2026 Field Work",
+        start_date="2026-12-31",
+        end_date="2026-01-01",
+    )
+
+    with pytest.raises(ValidationError):
+        work_programme.full_clean()
+
+
+@pytest.mark.django_db
+def test_work_programme_list_and_detail_render(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    work_programme = WorkProgramme.objects.create(
+        name="2026 Field Work",
+        start_date="2026-01-01",
+        end_date="2026-12-31",
+    )
+
+    list_response = client.get(reverse("work_programme_list"))
+    detail_response = client.get(work_programme.get_absolute_url())
+
+    assert list_response.status_code == 200
+    assert "2026 Field Work" in list_response.content.decode()
+    assert detail_response.status_code == 200
+    assert "Due Date" in detail_response.content.decode()
+
+
+@pytest.mark.django_db
 def test_job_template_form_shows_duplicate_title_error(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -163,6 +213,82 @@ def test_job_form_marks_site_select_as_searchable():
 
     assert widget.url == "autocomplete_sites"
     assert widget.label_field == "label"
+
+
+@pytest.mark.django_db
+def test_job_detail_shows_work_programme_due_date(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    work_programme = WorkProgramme.objects.create(
+        name="2026 Field Work",
+        start_date="2026-01-01",
+        end_date="2026-12-31",
+    )
+    job = Job.objects.create(
+        site=site,
+        title="Inspect cabinet",
+        work_programme=work_programme,
+    )
+
+    response = client.get(job.get_absolute_url())
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Work Programme" in content
+    assert "2026 Field Work" in content
+    assert "2026-12-31" in content
+
+
+@pytest.mark.django_db
+def test_job_update_sets_and_clears_work_programme(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    work_programme = WorkProgramme.objects.create(
+        name="2026 Field Work",
+        start_date="2026-01-01",
+        end_date="2026-12-31",
+    )
+
+    response = client.post(
+        reverse("job_update", kwargs={"pk": job.pk}),
+        {
+            "site": site.pk,
+            "work_programme": work_programme.pk,
+            "title": "Inspect cabinet",
+            "description": "",
+            "estimated_duration_minutes": "",
+            "priority": "normal",
+            "status": JobStatus.UNASSIGNED,
+            "closeout_note": "",
+            "notes": "",
+        },
+    )
+
+    assert response.status_code == 302
+    job.refresh_from_db()
+    assert job.work_programme == work_programme
+
+    response = client.post(
+        reverse("job_update", kwargs={"pk": job.pk}),
+        {
+            "site": site.pk,
+            "work_programme": "",
+            "title": "Inspect cabinet",
+            "description": "",
+            "estimated_duration_minutes": "",
+            "priority": "normal",
+            "status": JobStatus.UNASSIGNED,
+            "closeout_note": "",
+            "notes": "",
+        },
+    )
+
+    assert response.status_code == 302
+    job.refresh_from_db()
+    assert job.work_programme is None
 
 
 @pytest.mark.django_db
@@ -240,6 +366,16 @@ def test_job_from_template_form_marks_site_select_as_searchable():
     assert site_widget.label_field == "label"
     assert template_widget.url == "autocomplete_job_templates"
     assert template_widget.label_field == "title"
+
+
+@pytest.mark.django_db
+def test_job_form_marks_work_programme_select_as_searchable():
+    form = JobForm()
+    work_programme_widget = form.fields["work_programme"].widget
+
+    assert work_programme_widget.url == "autocomplete_work_programmes"
+    assert work_programme_widget.label_field == "label"
+    assert form.fields["work_programme"].required is False
 
 
 @pytest.mark.django_db
@@ -550,7 +686,7 @@ def test_job_import_parser_rejects_unsupported_headers():
 
     assert rows[0].error == (
         "CSV headers must include site_code,template_title and may also include "
-        "status,closeout_note."
+        "status,closeout_note,work_programme."
     )
 
 
@@ -565,7 +701,7 @@ def test_job_import_parser_rejects_missing_required_headers():
 
     assert rows[0].error == (
         "CSV headers must include site_code,template_title and may also include "
-        "status,closeout_note."
+        "status,closeout_note,work_programme."
     )
 
 
@@ -654,7 +790,7 @@ def test_job_import_page_includes_specification_and_example_path(client):
 
     content = response.content.decode()
     assert response.status_code == 200
-    assert "site_code,template_title,status,closeout_note" in content
+    assert "site_code,template_title,status,closeout_note,work_programme" in content
     assert "docs/examples/job-test-import.csv" in content
     assert "Create jobs" not in content
 
@@ -683,6 +819,58 @@ def test_job_import_confirm_creates_jobs_from_reviewed_rows(client):
     assert job.history.first().history_change_reason == (
         "Imported from CSV using job template"
     )
+
+
+@pytest.mark.django_db
+def test_job_import_confirm_assigns_existing_work_programme(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    create_site()
+    JobTemplate.objects.create(title="Replace sensor", is_active=True)
+    work_programme = WorkProgramme.objects.create(
+        name="2026 Field Work",
+        start_date="2026-01-01",
+        end_date="2026-12-31",
+    )
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        (
+            b"site_code,template_title,work_programme\n"
+            b"AA-001,Replace sensor,2026 Field Work\n"
+        ),
+        content_type="text/csv",
+    )
+    client.post(reverse("job_import"), {"csv_file": csv_file})
+
+    response = client.post(reverse("job_import_confirm"))
+
+    assert response.status_code == 302
+    job = Job.objects.get()
+    assert job.work_programme == work_programme
+    assert job.due_date == parse_date("2026-12-31")
+
+
+@pytest.mark.django_db
+def test_job_import_rejects_unknown_work_programme(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    create_site()
+    JobTemplate.objects.create(title="Replace sensor", is_active=True)
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        (
+            b"site_code,template_title,work_programme\n"
+            b"AA-001,Replace sensor,Unknown Programme\n"
+        ),
+        content_type="text/csv",
+    )
+
+    response = client.post(reverse("job_import"), {"csv_file": csv_file})
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Unknown work_programme." in content
+    assert Job.objects.count() == 0
 
 
 @pytest.mark.django_db

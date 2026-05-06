@@ -13,7 +13,7 @@ from access_atlas.accounts.preferences import (
 )
 from access_atlas.core.context_processors import active_nav_item
 from access_atlas.core.templatetags.status_badges import status_badge_class
-from access_atlas.jobs.models import Job, JobTemplate
+from access_atlas.jobs.models import Job, JobTemplate, WorkProgramme
 from access_atlas.sites.models import (
     AccessRecord,
     AccessRecordVersion,
@@ -155,6 +155,7 @@ def test_active_nav_item_maps_url_names_to_sidebar_sections():
         "site_visit_update": "trips",
         "job_list": "jobs",
         "requirement_create": "jobs",
+        "work_programme_detail": "work_programmes",
         "job_template_detail": "job_templates",
         "template_requirement_update": "job_templates",
         "site_detail": "sites",
@@ -175,6 +176,7 @@ def test_sidebar_highlights_current_top_level_page(logged_in_client):
         ("dashboard", reverse("dashboard")),
         ("trips", reverse("trip_list")),
         ("jobs", reverse("job_list")),
+        ("work_programmes", reverse("work_programme_list")),
         ("job_templates", reverse("job_template_list")),
         ("sites", reverse("site_list")),
         ("history", reverse("global_history")),
@@ -193,6 +195,11 @@ def test_global_search_shows_total_counts_and_new_object_groups(logged_in_client
     site = _site(external_id="001", code="AA-001", name="Ridge Site")
     Job.objects.create(site=site, title="Ridge Inspection")
     JobTemplate.objects.create(title="Ridge Template")
+    WorkProgramme.objects.create(
+        name="Ridge Work Programme",
+        start_date="2026-01-01",
+        end_date="2026-12-31",
+    )
     trip = Trip.objects.create(
         name="Ridge Trip",
         start_date="2026-05-10",
@@ -212,13 +219,14 @@ def test_global_search_shows_total_counts_and_new_object_groups(logged_in_client
     response = logged_in_client.get(reverse("search"), {"q": "ridge"})
 
     assert response.status_code == 200
-    assert response.context["total_results"] == 6
+    assert response.context["total_results"] == 7
     assert response.context["lookup_type"] == "istartswith"
     row_types = {row.object_type for row in _global_search_rows(response)}
     assert row_types == {
         "Site",
         "Job",
         "Job Template",
+        "Work Programme",
         "Trip",
         "Site Visit",
         "Access Record",
@@ -670,3 +678,28 @@ def test_job_template_autocomplete_only_returns_active_templates(logged_in_clien
     labels = [item["title"] for item in payload["results"]]
     assert "Active Template" in labels
     assert "Inactive Template" not in labels
+
+
+@pytest.mark.django_db
+def test_work_programme_autocomplete_returns_matching_programmes(logged_in_client):
+    WorkProgramme.objects.create(
+        name="Ridge Renewal Programme",
+        start_date="2026-01-01",
+        end_date="2026-12-31",
+    )
+    WorkProgramme.objects.create(
+        name="Coastal Programme",
+        start_date="2026-01-01",
+        end_date="2026-12-31",
+    )
+
+    response = logged_in_client.get(
+        reverse("autocomplete_work_programmes"),
+        {"q": "Ridge"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    results = payload["results"]
+    assert [item["name"] for item in results] == ["Ridge Renewal Programme"]
+    assert results[0]["label"] == "Ridge Renewal Programme (2026-01-01 to 2026-12-31)"

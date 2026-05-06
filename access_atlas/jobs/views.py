@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic import (
     CreateView,
@@ -40,6 +41,7 @@ from .forms import (
     JobTemplateImportUploadForm,
     RequirementForm,
     TemplateRequirementForm,
+    WorkProgrammeForm,
 )
 from .imports import (
     SESSION_KEY as JOB_IMPORT_SESSION_KEY,
@@ -50,7 +52,14 @@ from .imports import (
     parse_job_import_csv,
     rows_from_session,
 )
-from .models import Job, JobStatus, JobTemplate, Requirement, TemplateRequirement
+from .models import (
+    Job,
+    JobStatus,
+    JobTemplate,
+    Requirement,
+    TemplateRequirement,
+    WorkProgramme,
+)
 from .services import create_job_from_template
 from .template_imports import (
     SESSION_KEY as JOB_TEMPLATE_IMPORT_SESSION_KEY,
@@ -86,6 +95,29 @@ class JobTemplateListView(
         return self.apply_sort(self.apply_search(super().get_queryset()))
 
 
+class WorkProgrammeListView(
+    SortableListMixin,
+    SearchablePaginatedListMixin,
+    LoginRequiredMixin,
+    ListView,
+):
+    model = WorkProgramme
+    template_name = "jobs/work_programme_list.html"
+    search_fields = ("name", "description")
+    search_placeholder = "Search work programmes"
+    sort_preference_page_key = "work-programmes"
+    default_sort = "start-date"
+    sort_field_map = {
+        "name": "name",
+        "start-date": "start_date",
+        "end-date": "end_date",
+    }
+
+    def get_queryset(self):
+        queryset = super().get_queryset().annotate(job_count=Count("jobs"))
+        return self.apply_sort(self.apply_search(queryset))
+
+
 def _job_template_detail_sections(
     job_template: JobTemplate, active_section: str
 ) -> list[dict[str, str | bool]]:
@@ -100,6 +132,25 @@ def _job_template_detail_sections(
             "label": "History",
             "icon": "ti-history",
             "url": job_template.get_history_url(),
+            "is_active": active_section == "history",
+        },
+    ]
+
+
+def _work_programme_detail_sections(
+    work_programme: WorkProgramme, active_section: str
+) -> list[dict[str, str | bool]]:
+    return [
+        {
+            "label": "Overview",
+            "icon": "ti-layout-dashboard",
+            "url": work_programme.get_absolute_url(),
+            "is_active": active_section == "overview",
+        },
+        {
+            "label": "History",
+            "icon": "ti-history",
+            "url": work_programme.get_history_url(),
             "is_active": active_section == "history",
         },
     ]
@@ -151,6 +202,63 @@ class JobTemplateHistoryView(
         context["detail_navigation_label"] = "Job template sections"
         context.update(self.get_history_context())
         return context
+
+
+class WorkProgrammeDetailView(LoginRequiredMixin, DetailView):
+    model = WorkProgramme
+    template_name = "jobs/work_programme_detail.html"
+
+    def get_queryset(self):
+        return WorkProgramme.objects.prefetch_related("jobs__site")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["detail_sections"] = _work_programme_detail_sections(
+            self.object, "overview"
+        )
+        context["detail_navigation_label"] = "Work programme sections"
+        return context
+
+
+class WorkProgrammeHistoryView(
+    PaginatedObjectHistoryMixin,
+    LoginRequiredMixin,
+    DetailView,
+):
+    model = WorkProgramme
+    template_name = "jobs/work_programme_history.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["detail_sections"] = _work_programme_detail_sections(
+            self.object, "history"
+        )
+        context["detail_navigation_label"] = "Work programme sections"
+        context.update(self.get_history_context())
+        return context
+
+
+class WorkProgrammeCreateView(
+    HistoryReasonMixin,
+    ObjectFormMixin,
+    LoginRequiredMixin,
+    CreateView,
+):
+    history_action = "Created"
+    model = WorkProgramme
+    form_class = WorkProgrammeForm
+    template_name = "object_form.html"
+
+
+class WorkProgrammeUpdateView(
+    HistoryReasonMixin,
+    ObjectFormMixin,
+    LoginRequiredMixin,
+    UpdateView,
+):
+    model = WorkProgramme
+    form_class = WorkProgrammeForm
+    template_name = "object_form.html"
 
 
 class JobTemplateCreateView(
@@ -312,13 +420,23 @@ class JobListView(
     sort_field_map = {
         "title": "title",
         "site": "site__code",
+        "work-programme": "work_programme__name",
+        "due-date": "work_programme__end_date",
         "status": "status",
         "priority": "priority",
         "estimate": "estimated_duration_minutes",
     }
 
     def get_queryset(self):
-        queryset = super().get_queryset().select_related("site", "template")
+        queryset = (
+            super()
+            .get_queryset()
+            .select_related(
+                "site",
+                "template",
+                "work_programme",
+            )
+        )
         status = self.request.GET.get("status")
         if status == JobStatus.UNASSIGNED:
             queryset = queryset.filter(
@@ -336,7 +454,7 @@ class JobMapView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return (
-            Job.objects.select_related("site")
+            Job.objects.select_related("site", "work_programme")
             .filter(status__in=JobStatus.values)
             .order_by("site__code", "title")
         )
@@ -372,6 +490,10 @@ class JobMapView(LoginRequiredMixin, ListView):
                     "statusValue": job.status,
                     "status": job.get_status_display(),
                     "priority": job.get_priority_display(),
+                    "workProgramme": str(job.work_programme)
+                    if job.work_programme
+                    else "",
+                    "dueDate": job.due_date.isoformat() if job.due_date else "",
                 }
             )
         context["map_sites"] = list(sites.values())
