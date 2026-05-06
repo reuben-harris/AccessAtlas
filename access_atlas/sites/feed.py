@@ -14,6 +14,21 @@ from simple_history.utils import update_change_reason
 from .models import Site, SiteSyncStatus
 
 SUPPORTED_SCHEMA_VERSION = "1.0"
+TAG_COLORS = {
+    "blue",
+    "azure",
+    "indigo",
+    "purple",
+    "pink",
+    "red",
+    "orange",
+    "yellow",
+    "lime",
+    "green",
+    "teal",
+    "cyan",
+    "secondary",
+}
 
 
 class SiteFeedError(Exception):
@@ -67,6 +82,31 @@ def validate_feed(payload: dict[str, Any]) -> tuple[str, list[dict[str, Any]]]:
     return payload["source_name"], payload["sites"]
 
 
+def normalize_site_tags(value: object) -> list[dict[str, str]]:
+    """Return safe display tags from optional feed metadata."""
+    if not isinstance(value, list):
+        return []
+
+    tags = []
+    for item in value:
+        if isinstance(item, str):
+            label = item.strip()
+            color = ""
+        elif isinstance(item, dict):
+            label = str(item.get("label") or "").strip()
+            color = str(item.get("color") or "").strip().lower()
+        else:
+            continue
+
+        if not label:
+            continue
+        if color not in TAG_COLORS:
+            color = ""
+        tags.append({"label": label, "color": color})
+
+    return tags
+
+
 def sync_sites_from_payload(payload: dict[str, Any]) -> SyncResult:
     source_name, records = validate_feed(payload)
     now = timezone.now()
@@ -103,6 +143,7 @@ def sync_sites_from_payload(payload: dict[str, Any]) -> SyncResult:
                 "code": str(record["code"]),
                 "name": str(record["name"]),
                 "description": str(record.get("description") or ""),
+                "tags": normalize_site_tags(record.get("tags")),
                 "latitude": latitude,
                 "longitude": longitude,
                 "sync_status": SiteSyncStatus.ACTIVE,

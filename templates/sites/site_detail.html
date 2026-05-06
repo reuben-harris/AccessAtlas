@@ -36,6 +36,18 @@
       <dt class="col-sm-3">Site Code</dt><dd class="col-sm-9">{{ object.code }}</dd>
       <dt class="col-sm-3">Site Name</dt><dd class="col-sm-9">{{ object.name }}</dd>
       <dt class="col-sm-3">Description</dt><dd class="col-sm-9">{{ object.description|linebreaksbr|default:"-" }}</dd>
+      <dt class="col-sm-3">Tags</dt>
+      <dd class="col-sm-9">
+        {% if object.tags %}
+          <div class="d-flex flex-wrap gap-1">
+            {% for tag in object.tags %}
+              <span class="badge {{ tag.color|site_tag_badge_class }}">{{ tag.label }}</span>
+            {% endfor %}
+          </div>
+        {% else %}
+          <span class="text-secondary">-</span>
+        {% endif %}
+      </dd>
       <dt class="col-sm-3">External ID</dt><dd class="col-sm-9">{{ object.external_id }}</dd>
       <dt class="col-sm-3">Latitude</dt><dd class="col-sm-9">{{ object.latitude }}</dd>
       <dt class="col-sm-3">Longitude</dt><dd class="col-sm-9">{{ object.longitude }}</dd>

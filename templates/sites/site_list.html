@@ -27,6 +27,7 @@
           {% include "includes/sortable_th.html" with label="Code" sort_key="code" %}
           {% include "includes/sortable_th.html" with label="Name" sort_key="name" %}
           {% include "includes/sortable_th.html" with label="Source" sort_key="source" %}
+          <th>Tags</th>
           <th>Coordinates</th>
           {% include "includes/sortable_th.html" with label="Status" sort_key="sync-status" %}
         </tr>
@@ -46,13 +47,24 @@
               </div>
             </td>
             <td>{{ site.source_name }}</td>
+            <td>
+              {% if site.tags %}
+                <div class="d-flex flex-wrap gap-1">
+                  {% for tag in site.tags %}
+                    <span class="badge {{ tag.color|site_tag_badge_class }}">{{ tag.label }}</span>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <span class="text-secondary">-</span>
+              {% endif %}
+            </td>
             <td>{{ site.latitude }}, {{ site.longitude }}</td>
             <td>
               <span class="badge {{ site.sync_status|status_badge_class }}">{{ site.get_sync_status_display }}</span>
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="5" class="text-secondary">No sites found.</td></tr>
+          <tr><td colspan="6" class="text-secondary">No sites found.</td></tr>
         {% endfor %}
       </tbody>
     </table>

@@ -53,6 +53,12 @@ def test_sync_sites_from_payload_creates_and_updates_sites():
                 "code": "AA-001",
                 "name": "Original",
                 "description": "Original site notes",
+                "tags": [
+                    {"label": "Remote", "color": "orange"},
+                    {"label": "No colour", "color": "invalid"},
+                    {"label": ""},
+                    "Legacy string tag",
+                ],
                 "latitude": -41.1,
                 "longitude": 174.1,
             }
@@ -66,17 +72,24 @@ def test_sync_sites_from_payload_creates_and_updates_sites():
     assert site.code == "AA-001"
     assert site.name == "Original"
     assert site.description == "Original site notes"
+    assert site.tags == [
+        {"label": "Remote", "color": "orange"},
+        {"label": "No colour", "color": ""},
+        {"label": "Legacy string tag", "color": ""},
+    ]
     assert site.sync_status == SiteSyncStatus.ACTIVE
     assert site.history.first().history_change_reason == "Created from site feed"
 
     payload["sites"][0]["name"] = "Updated"
     payload["sites"][0]["description"] = "Updated site notes"
+    payload["sites"][0]["tags"] = [{"label": "Road access", "color": "blue"}]
     result = sync_sites_from_payload(payload)
 
     assert result.updated == 1
     site.refresh_from_db()
     assert site.name == "Updated"
     assert site.description == "Updated site notes"
+    assert site.tags == [{"label": "Road access", "color": "blue"}]
     assert site.sync_status == SiteSyncStatus.ACTIVE
     assert site.history.first().history_change_reason == "Updated from site feed"
 
@@ -247,6 +260,33 @@ def test_site_list_renders_coordinates(client):
     assert "-44.100000, 169.300000" in content
     assert "Active" in content
     assert "Stale" in content
+
+
+@pytest.mark.django_db
+def test_site_list_renders_synced_tags(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    Site.objects.create(
+        source_name="dummy",
+        external_id="002",
+        code="AA-002",
+        name="Tagged Site",
+        tags=[
+            {"label": "Remote", "color": "orange"},
+            {"label": "No colour", "color": ""},
+        ],
+        latitude=-44.1,
+        longitude=169.3,
+    )
+
+    response = client.get(reverse("site_list"))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Remote" in content
+    assert "No colour" in content
+    assert "bg-orange-lt" in content
+    assert "bg-secondary-lt" in content
 
 
 @pytest.mark.django_db
@@ -622,6 +662,7 @@ def test_site_detail_renders_site_google_maps_button(client):
         code="AA-001",
         name="Site",
         description="Site description from the source system.",
+        tags=[{"label": "Remote", "color": "orange"}],
         latitude=-41.1,
         longitude=174.1,
     )
@@ -633,6 +674,8 @@ def test_site_detail_renders_site_google_maps_button(client):
     assert "Open site coordinates in Google Maps" in content
     assert "Sync Status" in content
     assert "Site description from the source system." in content
+    assert "Remote" in content
+    assert "bg-orange-lt" in content
     assert "badge bg-blue-lt" in content
     assert (
         "https://www.google.com/maps/search/?api=1&amp;query=-41.100000%2C174.100000"

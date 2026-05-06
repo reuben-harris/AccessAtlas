@@ -22,6 +22,7 @@ class SiteAdmin(SimpleHistoryAdmin):
         "code",
         "name",
         "description",
+        "tags",
         "latitude",
         "longitude",
         "sync_status",
