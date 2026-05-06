@@ -6,7 +6,7 @@ from django_tomselect.forms import TomSelectModelChoiceField
 from access_atlas.core.tomselect import site_tomselect_config
 
 from .access_records import AccessRecordGeoJSONError, parse_access_record_geojson
-from .models import AccessRecord, AccessRecordUploadDraft, ArrivalMethod, Site
+from .models import AccessRecord, AccessRecordUploadDraft, ArrivalMethod
 
 
 class MultipleImageInput(forms.ClearableFileInput):
@@ -109,7 +109,6 @@ class AccessRecordGeoJSONUploadMixin(forms.Form):
 
 class AccessRecordUploadForm(AccessRecordGeoJSONUploadMixin):
     site = TomSelectModelChoiceField(
-        queryset=Site.objects.order_by("code"),
         label="Site",
         required=True,
         config=site_tomselect_config(),
