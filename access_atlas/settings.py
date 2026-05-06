@@ -122,6 +122,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "access_atlas.accounts.context_processors.theme_preference",
                 "access_atlas.core.context_processors.active_nav_item",
+                "access_atlas.core.context_processors.bug_report",
             ],
         },
     },
@@ -217,6 +218,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 DEFAULT_SITE_FEED_URL = "http://127.0.0.1:8000/dummy/site-feed.json"
 SITE_FEED_URL = os.getenv("SITE_FEED_URL") or DEFAULT_SITE_FEED_URL
 SITE_FEED_TOKEN = os.getenv("SITE_FEED_TOKEN") or "dev-token"
+DEFAULT_BUG_REPORT_URL = "https://github.com/reuben-harris/AccessAtlas/issues/new"
+BUG_REPORT_URL = os.getenv("BUG_REPORT_URL", DEFAULT_BUG_REPORT_URL).strip()
 
 MAP_TILE_URL = os.getenv(
     "MAP_TILE_URL",

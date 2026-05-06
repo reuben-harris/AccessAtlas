@@ -2,6 +2,7 @@ import re
 from types import SimpleNamespace
 
 import pytest
+from django.test import override_settings
 from django.urls import reverse
 from django.utils.html import escape
 
@@ -113,6 +114,38 @@ def test_dashboard_renders(logged_in_client):
     assert b"Data Attention" in response.content
     assert b'href="/static/css/app.css"' in response.content
     assert b'src="/static/js/theme.js"' in response.content
+
+
+@pytest.mark.django_db
+def test_bug_report_button_uses_configured_url(logged_in_client):
+    with override_settings(
+        BUG_REPORT_URL="https://github.com/example/access-atlas/issues/new"
+    ):
+        response = logged_in_client.get(reverse("dashboard"))
+
+    assert response.status_code == 200
+    assert b"data-bug-report-link" in response.content
+    expected_href = b'href="https://github.com/example/access-atlas/issues/new"'
+    assert expected_href in response.content
+
+
+@pytest.mark.django_db
+def test_bug_report_button_uses_default_url(logged_in_client):
+    response = logged_in_client.get(reverse("dashboard"))
+
+    assert response.status_code == 200
+    assert b"data-bug-report-link" in response.content
+    expected_href = b'href="https://github.com/reuben-harris/AccessAtlas/issues/new"'
+    assert expected_href in response.content
+
+
+@pytest.mark.django_db
+def test_bug_report_button_is_hidden_when_unconfigured(logged_in_client):
+    with override_settings(BUG_REPORT_URL=""):
+        response = logged_in_client.get(reverse("dashboard"))
+
+    assert response.status_code == 200
+    assert b"data-bug-report-link" not in response.content
 
 
 def test_active_nav_item_maps_url_names_to_sidebar_sections():

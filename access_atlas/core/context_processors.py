@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from django.conf import settings
 from django.http import HttpRequest
 
 EXACT_NAV_ITEMS = {
@@ -37,3 +38,8 @@ def active_nav_item(request: HttpRequest) -> dict[str, str]:
             return {"active_nav_item": nav_item}
 
     return {"active_nav_item": ""}
+
+
+def bug_report(request: HttpRequest) -> dict[str, str]:
+    """Expose the configured external bug-report target to the app shell."""
+    return {"bug_report_url": settings.BUG_REPORT_URL}
