@@ -129,6 +129,28 @@ def test_preference_view_saves_allowed_preference(client):
 
 
 @pytest.mark.django_db
+def test_preference_view_saves_wrapped_job_map_viewport(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.post(
+        reverse("account_preference"),
+        {
+            "key": JOBS_MAP_PREFERENCE_KEY,
+            "value": {
+                "visible_statuses": ["assigned"],
+                "viewport": {"lat": -33.9, "lng": 490.2, "zoom": 5},
+            },
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    preference = UserPreference.objects.get(user=user, key=JOBS_MAP_PREFERENCE_KEY)
+    assert preference.value["viewport"] == {"lat": -33.9, "lng": 490.2, "zoom": 5}
+
+
+@pytest.mark.django_db
 def test_preference_view_rejects_unknown_key(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -199,6 +221,25 @@ def test_preference_view_saves_sites_map_preference(client):
     assert response.status_code == 200
     preference = UserPreference.objects.get(user=user, key=SITES_MAP_PREFERENCE_KEY)
     assert preference.value == {"viewport": {"lat": -41.2, "lng": 174.7, "zoom": 8}}
+
+
+@pytest.mark.django_db
+def test_preference_view_saves_wrapped_sites_map_viewport(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.post(
+        reverse("account_preference"),
+        {
+            "key": SITES_MAP_PREFERENCE_KEY,
+            "value": {"viewport": {"lat": -33.9, "lng": 490.2, "zoom": 5}},
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    preference = UserPreference.objects.get(user=user, key=SITES_MAP_PREFERENCE_KEY)
+    assert preference.value == {"viewport": {"lat": -33.9, "lng": 490.2, "zoom": 5}}
 
 
 @pytest.mark.django_db

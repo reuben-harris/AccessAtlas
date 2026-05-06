@@ -9,6 +9,8 @@
   const addHomeControl = window.AccessAtlas?.addHomeControl;
   const addFullscreenControl = window.AccessAtlas?.addFullscreenControl;
   const settleMapLayout = window.AccessAtlas?.settleMapLayout;
+  const createLongitudeNormalizer = window.AccessAtlas?.createLongitudeNormalizer;
+  const normalizeLatLng = window.AccessAtlas?.normalizeLatLng;
   const postJSON = window.AccessAtlas?.postJSON;
 
   if (
@@ -22,6 +24,8 @@
     typeof addHomeControl !== "function" ||
     typeof addFullscreenControl !== "function" ||
     typeof settleMapLayout !== "function" ||
+    typeof createLongitudeNormalizer !== "function" ||
+    typeof normalizeLatLng !== "function" ||
     typeof L === "undefined"
   ) {
     return;
@@ -36,6 +40,9 @@
   const map = L.map(mapElement).setView(defaultCenter, defaultZoom);
   const markerLayer = L.layerGroup().addTo(map);
   const tileController = createThemeTileController(map, tileLayer);
+  const longitudeNormalizer = createLongitudeNormalizer(
+    sites.map((site) => site.longitude),
+  );
   let viewportSaveTimeout = null;
   let markers = [];
 
@@ -129,7 +136,12 @@
       if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
         continue;
       }
-      const marker = L.marker([latitude, longitude], { icon: markerIcon(site) });
+      const marker = L.marker(
+        normalizeLatLng(latitude, longitude, longitudeNormalizer),
+        {
+          icon: markerIcon(site),
+        },
+      );
       marker.bindPopup(buildPopup(site));
       marker.addTo(markerLayer);
       siteMarkers.push(marker);

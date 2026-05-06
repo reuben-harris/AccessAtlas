@@ -48,6 +48,54 @@
     map.setView(defaultCenter, defaultZoom);
   }
 
+  function createLongitudeNormalizer(longitudes) {
+    // Longitudes wrap at +/-180. Pick the shortest display window so sites on
+    // either side of the antimeridian render together instead of on separate
+    // repeated world copies.
+    const normalizedLongitudes = longitudes
+      .map((longitude) => Number(longitude))
+      .filter((longitude) => Number.isFinite(longitude))
+      .map((longitude) => ((((longitude + 180) % 360) + 360) % 360) - 180)
+      .sort((first, second) => first - second);
+
+    if (normalizedLongitudes.length < 2) {
+      const normalizer = (longitude) => Number(longitude);
+      normalizer.crossesAntimeridian = false;
+      return normalizer;
+    }
+
+    let largestGap = -1;
+    let startIndex = 0;
+    for (let index = 0; index < normalizedLongitudes.length; index += 1) {
+      const current = normalizedLongitudes[index];
+      const next =
+        index === normalizedLongitudes.length - 1
+          ? normalizedLongitudes[0] + 360
+          : normalizedLongitudes[index + 1];
+      const gap = next - current;
+      if (gap > largestGap) {
+        largestGap = gap;
+        startIndex = (index + 1) % normalizedLongitudes.length;
+      }
+    }
+
+    const displayStart = normalizedLongitudes[startIndex];
+
+    const normalizer = (longitude) => {
+      let normalized = ((((Number(longitude) + 180) % 360) + 360) % 360) - 180;
+      if (normalized < displayStart) {
+        normalized += 360;
+      }
+      return normalized;
+    };
+    normalizer.crossesAntimeridian = startIndex !== 0;
+    return normalizer;
+  }
+
+  function normalizeLatLng(latitude, longitude, longitudeNormalizer) {
+    return [Number(latitude), longitudeNormalizer(longitude)];
+  }
+
   function addHomeControl(map, onClick, options = {}) {
     const controlClassName =
       options.controlClassName || "access-atlas-map-home-control";
@@ -169,6 +217,8 @@
   accessAtlas.escapeHtml = escapeHtml;
   accessAtlas.createThemeTileController = createThemeTileController;
   accessAtlas.fitLayersOrDefault = fitLayersOrDefault;
+  accessAtlas.createLongitudeNormalizer = createLongitudeNormalizer;
+  accessAtlas.normalizeLatLng = normalizeLatLng;
   accessAtlas.addHomeControl = addHomeControl;
   accessAtlas.addFullscreenControl = addFullscreenControl;
   accessAtlas.settleMapLayout = settleMapLayout;

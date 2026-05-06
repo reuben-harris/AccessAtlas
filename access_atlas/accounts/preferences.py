@@ -30,6 +30,8 @@ ALLOWED_LIST_SORT_PREFERENCE_PAGES = {
 }
 ALLOWED_JOB_STATUSES = set(JobStatus.values)
 ALLOWED_THEME_MODES = {"system", "light", "dark"}
+MIN_MAP_VIEWPORT_LONGITUDE = -540
+MAX_MAP_VIEWPORT_LONGITUDE = 540
 
 
 def default_jobs_map_preference() -> dict[str, Any]:
@@ -64,6 +66,14 @@ def is_allowed_preference_key(key: str) -> bool:
     return site_id.isdigit()
 
 
+def is_valid_viewport_longitude(value: object) -> bool:
+    """Allow Leaflet world-copy longitudes while rejecting unbounded input."""
+    return (
+        isinstance(value, int | float)
+        and MIN_MAP_VIEWPORT_LONGITUDE <= value <= MAX_MAP_VIEWPORT_LONGITUDE
+    )
+
+
 def validate_preference(key: str, value: object) -> dict[str, Any]:
     # Preferences are intentionally schema-validated here so the rest of the
     # app can treat saved view state as trusted input instead of re-checking
@@ -94,7 +104,7 @@ def validate_preference(key: str, value: object) -> dict[str, Any]:
             zoom = viewport.get("zoom")
             if not isinstance(latitude, int | float) or not -90 <= latitude <= 90:
                 raise ValidationError("viewport lat is invalid.")
-            if not isinstance(longitude, int | float) or not -180 <= longitude <= 180:
+            if not is_valid_viewport_longitude(longitude):
                 raise ValidationError("viewport lng is invalid.")
             if not isinstance(zoom, int) or not 0 <= zoom <= 22:
                 raise ValidationError("viewport zoom is invalid.")
@@ -117,7 +127,7 @@ def validate_preference(key: str, value: object) -> dict[str, Any]:
             zoom = viewport.get("zoom")
             if not isinstance(latitude, int | float) or not -90 <= latitude <= 90:
                 raise ValidationError("viewport lat is invalid.")
-            if not isinstance(longitude, int | float) or not -180 <= longitude <= 180:
+            if not is_valid_viewport_longitude(longitude):
                 raise ValidationError("viewport lng is invalid.")
             if not isinstance(zoom, int) or not 0 <= zoom <= 22:
                 raise ValidationError("viewport zoom is invalid.")

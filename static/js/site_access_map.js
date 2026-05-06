@@ -16,6 +16,8 @@
   const sharedAddHomeControl = window.AccessAtlas?.addHomeControl;
   const addFullscreenControl = window.AccessAtlas?.addFullscreenControl;
   const settleMapLayout = window.AccessAtlas?.settleMapLayout;
+  const createLongitudeNormalizer = window.AccessAtlas?.createLongitudeNormalizer;
+  const normalizeLatLng = window.AccessAtlas?.normalizeLatLng;
 
   if (
     !mapElement ||
@@ -28,6 +30,8 @@
     typeof sharedAddHomeControl !== "function" ||
     typeof addFullscreenControl !== "function" ||
     typeof settleMapLayout !== "function" ||
+    typeof createLongitudeNormalizer !== "function" ||
+    typeof normalizeLatLng !== "function" ||
     typeof L === "undefined"
   ) {
     return;
@@ -74,7 +78,7 @@
         .map((recordId) => Number(recordId))
         .filter((recordId) => Number.isInteger(recordId))
     : [];
-  const hasSavedVisibilityPreference = Object.prototype.hasOwnProperty.call(
+  const hasSavedVisibilityPreference = Object.hasOwn(
     savedPreference,
     "visible_record_ids",
   );
@@ -91,7 +95,38 @@
   // entire access record and all of its points/tracks together.
   const hasRecordToggles = toggleButtons.length > 0;
 
-  const map = L.map(mapElement).setView([siteLatitude, siteLongitude], initialZoom);
+  function isRecordVisible(recordId) {
+    return !hasRecordToggles || !recordId || visibleRecordIds.has(Number(recordId));
+  }
+
+  function visibleFeatureLongitudes() {
+    const longitudes = hasSiteCenter ? [siteLongitude] : [];
+
+    for (const point of points) {
+      if (!isRecordVisible(point.recordId)) {
+        continue;
+      }
+      longitudes.push(point.longitude);
+    }
+
+    for (const track of tracks) {
+      if (!isRecordVisible(track.recordId) || !Array.isArray(track.path)) {
+        continue;
+      }
+      for (const position of track.path) {
+        longitudes.push(position.longitude);
+      }
+    }
+
+    return longitudes;
+  }
+
+  let longitudeNormalizer = createLongitudeNormalizer(visibleFeatureLongitudes());
+  let displaySiteLongitude = longitudeNormalizer(siteLongitude);
+  const map = L.map(mapElement).setView(
+    [siteLatitude, displaySiteLongitude],
+    initialZoom,
+  );
   featureLayer.addTo(map);
   const tileController = createThemeTileController(map, tileLayer);
 
@@ -190,11 +225,7 @@
     // The server emits a normalized map payload, so the client only concerns
     // itself with visibility filters and rendering choices.
     for (const point of points) {
-      if (
-        hasRecordToggles &&
-        point.recordId &&
-        !visibleRecordIds.has(Number(point.recordId))
-      ) {
+      if (!isRecordVisible(point.recordId)) {
         continue;
       }
       const latitude = Number(point.latitude);
@@ -202,24 +233,29 @@
       if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
         continue;
       }
-      const marker = L.marker([latitude, longitude], {
-        icon: makeMarkerIcon(point),
-      });
+      const marker = L.marker(
+        normalizeLatLng(latitude, longitude, longitudeNormalizer),
+        {
+          icon: makeMarkerIcon(point),
+        },
+      );
       marker.bindPopup(buildPointPopup(point));
       marker.addTo(featureLayer);
       layers.push(marker);
     }
     for (const track of tracks) {
-      if (
-        hasRecordToggles &&
-        track.recordId &&
-        !visibleRecordIds.has(Number(track.recordId))
-      ) {
+      if (!isRecordVisible(track.recordId)) {
         continue;
       }
       const path = Array.isArray(track.path)
         ? track.path
-            .map((position) => [Number(position.latitude), Number(position.longitude)])
+            .map((position) =>
+              normalizeLatLng(
+                position.latitude,
+                position.longitude,
+                longitudeNormalizer,
+              ),
+            )
             .filter(
               ([latitude, longitude]) =>
                 Number.isFinite(latitude) && Number.isFinite(longitude),
@@ -237,7 +273,7 @@
   }
 
   function fitFeatures(layers) {
-    fitLayersOrDefault(map, layers, [siteLatitude, siteLongitude], initialZoom);
+    fitLayersOrDefault(map, layers, [siteLatitude, displaySiteLongitude], initialZoom);
   }
 
   function updateToggleButton(button, isVisible) {
@@ -300,6 +336,8 @@
       L.DomEvent.on(button, "click", () => {
         animateTracksEnabled.value = !animateTracksEnabled.value;
         updateAnimationButton(button);
+        longitudeNormalizer = createLongitudeNormalizer(visibleFeatureLongitudes());
+        displaySiteLongitude = longitudeNormalizer(siteLongitude);
         drawnLayers = drawFeatures();
         fitFeatures(drawnLayers);
         savePreference();
@@ -343,6 +381,8 @@
         visibleRecordIds.add(recordId);
       }
       updateToggleButton(button, visibleRecordIds.has(recordId));
+      longitudeNormalizer = createLongitudeNormalizer(visibleFeatureLongitudes());
+      displaySiteLongitude = longitudeNormalizer(siteLongitude);
       drawnLayers = drawFeatures();
       fitFeatures(drawnLayers);
       savePreference();

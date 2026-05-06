@@ -11,6 +11,8 @@
   const sharedAddHomeControl = window.AccessAtlas?.addHomeControl;
   const addFullscreenControl = window.AccessAtlas?.addFullscreenControl;
   const settleMapLayout = window.AccessAtlas?.settleMapLayout;
+  const createLongitudeNormalizer = window.AccessAtlas?.createLongitudeNormalizer;
+  const normalizeLatLng = window.AccessAtlas?.normalizeLatLng;
 
   if (
     !mapElement ||
@@ -25,6 +27,8 @@
     typeof sharedAddHomeControl !== "function" ||
     typeof addFullscreenControl !== "function" ||
     typeof settleMapLayout !== "function" ||
+    typeof createLongitudeNormalizer !== "function" ||
+    typeof normalizeLatLng !== "function" ||
     typeof L === "undefined"
   ) {
     return;
@@ -38,6 +42,9 @@
   const postJSON = window.AccessAtlas?.postJSON;
   const statusByValue = new Map(
     statusLayers.map((statusLayer) => [statusLayer.value, statusLayer]),
+  );
+  const longitudeNormalizer = createLongitudeNormalizer(
+    sites.map((entry) => entry.site?.longitude),
   );
   const visibleStatuses = new Set(
     statusLayers
@@ -157,9 +164,12 @@
         continue;
       }
 
-      const marker = L.marker([latitude, longitude], {
-        icon: makeMarkerIcon(dominantStatus, jobs.length),
-      });
+      const marker = L.marker(
+        normalizeLatLng(latitude, longitude, longitudeNormalizer),
+        {
+          icon: makeMarkerIcon(dominantStatus, jobs.length),
+        },
+      );
       marker.bindPopup(buildPopup(site, jobs));
       marker.addTo(markerLayer);
       markers.push(marker);
