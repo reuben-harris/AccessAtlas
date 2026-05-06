@@ -7,7 +7,8 @@ COPY package.json pnpm-lock.yaml postcss.config.js ./
 COPY scripts ./scripts
 COPY static/css/src ./static/css/src
 
-RUN corepack enable pnpm
+RUN PNPM_VERSION="$(node -p "require('./package.json').packageManager.split('@')[1]")" \
+    && npm install -g "pnpm@${PNPM_VERSION}"
 RUN pnpm install --frozen-lockfile
 RUN pnpm build:frontend
 
