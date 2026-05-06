@@ -111,6 +111,7 @@ class WorkProgrammeListView(
         "name": "name",
         "start-date": "start_date",
         "end-date": "end_date",
+        "jobs": "job_count",
     }
 
     def get_queryset(self):
@@ -310,7 +311,18 @@ def import_job_templates_view(request):
             "example_path": "docs/examples/job-template-test-import.csv",
             "confirm_url_name": "job_template_import_confirm",
             "confirm_button_label": "Create job templates",
-            **import_review_context(request, rows=rows),
+            **import_review_context(
+                request,
+                rows=rows,
+                sort_field_map={
+                    "row": lambda row: row.row_number,
+                    "title": lambda row: row.title.casefold(),
+                    "default-priority": lambda row: row.priority_label.casefold(),
+                    "estimate": lambda row: row.estimated_duration_minutes or 0,
+                    "active": lambda row: row.active_label,
+                    "result": lambda row: (row.is_valid, row.error.casefold()),
+                },
+            ),
         },
     )
 
@@ -631,7 +643,19 @@ def import_jobs_view(request):
             "example_path": "docs/examples/job-test-import.csv",
             "confirm_url_name": "job_import_confirm",
             "confirm_button_label": "Create jobs",
-            **import_review_context(request, rows=rows),
+            **import_review_context(
+                request,
+                rows=rows,
+                sort_field_map={
+                    "row": lambda row: row.row_number,
+                    "site-code": lambda row: row.site_code.casefold(),
+                    "template-title": lambda row: row.template_title.casefold(),
+                    "work-programme": lambda row: row.work_programme_name.casefold(),
+                    "status": lambda row: row.status_label.casefold(),
+                    "closeout-note": lambda row: row.closeout_note.casefold(),
+                    "result": lambda row: (row.is_valid, row.error.casefold()),
+                },
+            ),
         },
     )
 

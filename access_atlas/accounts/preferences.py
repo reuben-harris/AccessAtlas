@@ -25,6 +25,7 @@ ALLOWED_LIST_SORT_PREFERENCE_PAGES = {
     "trips",
     "jobs",
     "job-templates",
+    "work-programmes",
     "access-records",
     "history",
 }

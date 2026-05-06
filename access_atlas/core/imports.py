@@ -10,6 +10,8 @@ from django.http import HttpRequest
 
 from access_atlas.core.search import normalize_per_page, page_size_options_for
 
+DEFAULT_IMPORT_SORT_PARAM = "sort"
+
 
 class ImportRow(Protocol):
     """Contract shared by CSV review rows that can be stored in the session."""
@@ -86,14 +88,70 @@ def clear_import_rows(request: HttpRequest, *, session_key: str) -> None:
     request.session.modified = True
 
 
+def normalize_import_sort_value(
+    value: str | None,
+    sort_field_map: dict[str, Callable[[ImportRow], object]],
+) -> str:
+    if not value:
+        return ""
+    direction = "-" if value.startswith("-") else ""
+    sort_key = value.removeprefix("-")
+    if sort_key not in sort_field_map:
+        return ""
+    return f"{direction}{sort_key}"
+
+
+def sort_import_rows[RowT: ImportRow](
+    rows: list[RowT],
+    *,
+    sort_value: str,
+    sort_field_map: dict[str, Callable[[RowT], object]],
+) -> list[RowT]:
+    """Sort in-session CSV review rows using stable, view-provided row keys."""
+
+    if not sort_value:
+        return rows
+    descending = sort_value.startswith("-")
+    sort_key = sort_value.removeprefix("-")
+    key_function = sort_field_map.get(sort_key)
+    if key_function is None:
+        return rows
+    return sorted(rows, key=key_function, reverse=descending)
+
+
+def preserved_query_items(
+    request: HttpRequest,
+    *,
+    exclude: set[str],
+) -> list[tuple[str, str]]:
+    items: list[tuple[str, str]] = []
+    for key in request.GET:
+        if key in exclude:
+            continue
+        for value in request.GET.getlist(key):
+            items.append((key, value))
+    return items
+
+
 def import_review_context[RowT: ImportRow](
     request: HttpRequest,
     *,
     rows: list[RowT] | None,
+    sort_field_map: dict[str, Callable[[RowT], object]] | None = None,
 ) -> dict:
+    sort_field_map = sort_field_map or {}
+    sort_value = normalize_import_sort_value(
+        request.GET.get(DEFAULT_IMPORT_SORT_PARAM),
+        sort_field_map,
+    )
+    sorted_rows = (
+        sort_import_rows(rows, sort_value=sort_value, sort_field_map=sort_field_map)
+        if rows is not None
+        else []
+    )
     per_page = normalize_per_page(request.GET.get("per_page"))
     page_size_options = page_size_options_for(per_page)
-    paginator = Paginator(rows or [], per_page)
+    paginator = Paginator(sorted_rows, per_page)
     page_obj = paginator.get_page(request.GET.get("page"))
 
     return {
@@ -106,5 +164,12 @@ def import_review_context[RowT: ImportRow](
         "per_page": per_page,
         "page_size_param": "per_page",
         "page_size_options": page_size_options,
-        "per_page_preserved_query_items": [],
+        "per_page_preserved_query_items": preserved_query_items(
+            request,
+            exclude={"per_page", "page"},
+        ),
+        "current_sort": sort_value,
+        "current_sort_field": sort_value.removeprefix("-"),
+        "current_sort_descending": sort_value.startswith("-"),
+        "sort_param": DEFAULT_IMPORT_SORT_PARAM,
     }

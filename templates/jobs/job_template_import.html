@@ -42,12 +42,12 @@ GDSP SIM swap,Swap GDSP modem SIM,45,normal,,true</code></pre>
       <table class="table table-vcenter">
         <thead>
           <tr>
-            <th>Row</th>
-            <th>Title</th>
-            <th>Default Priority</th>
-            <th>Estimate</th>
-            <th>Active</th>
-            <th>Result</th>
+            {% include "includes/sortable_th.html" with label="Row" sort_key="row" %}
+            {% include "includes/sortable_th.html" with label="Title" sort_key="title" %}
+            {% include "includes/sortable_th.html" with label="Default Priority" sort_key="default-priority" %}
+            {% include "includes/sortable_th.html" with label="Estimate" sort_key="estimate" %}
+            {% include "includes/sortable_th.html" with label="Active" sort_key="active" %}
+            {% include "includes/sortable_th.html" with label="Result" sort_key="result" %}
           </tr>
         </thead>
         <tbody>

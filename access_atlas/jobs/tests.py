@@ -151,6 +151,33 @@ def test_work_programme_list_and_detail_render(client):
 
 
 @pytest.mark.django_db
+def test_work_programme_list_sorts_by_job_count(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    light_programme = WorkProgramme.objects.create(
+        name="Light Programme",
+        start_date="2026-01-01",
+        end_date="2026-06-30",
+    )
+    busy_programme = WorkProgramme.objects.create(
+        name="Busy Programme",
+        start_date="2026-01-01",
+        end_date="2026-12-31",
+    )
+    Job.objects.create(site=site, work_programme=busy_programme, title="Job 1")
+    Job.objects.create(site=site, work_programme=busy_programme, title="Job 2")
+    Job.objects.create(site=site, work_programme=light_programme, title="Job 3")
+
+    response = client.get(reverse("work_programme_list"), {"sort": "-jobs"})
+
+    assert response.status_code == 200
+    programmes = list(response.context["object_list"])
+    assert programmes[0] == busy_programme
+    assert programmes[1] == light_programme
+
+
+@pytest.mark.django_db
 def test_job_template_form_shows_duplicate_title_error(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -1002,6 +1029,28 @@ def test_job_import_review_paginates_rows(client):
 
 
 @pytest.mark.django_db
+def test_job_import_review_sorts_by_result(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    create_site()
+    JobTemplate.objects.create(title="Replace sensor", is_active=True)
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        (b"site_code,template_title\nAA-001,Replace sensor\nAA-001,Missing template\n"),
+        content_type="text/csv",
+    )
+    client.post(reverse("job_import"), {"csv_file": csv_file})
+
+    response = client.get(reverse("job_import"), {"sort": "result"})
+
+    assert response.status_code == 200
+    rows = list(response.context["rows"])
+    assert rows[0].error == "Unknown active template_title."
+    assert rows[1].is_valid
+    assert response.context["current_sort_field"] == "result"
+
+
+@pytest.mark.django_db
 def test_job_template_import_upload_reviews_valid_csv_without_creating_templates(
     client,
 ):
@@ -1288,6 +1337,26 @@ def test_job_template_import_review_paginates_rows(client):
     assert len(response.context["rows"]) == 25
     assert response.context["paginator"].num_pages == 2
     assert response.context["per_page"] == 25
+
+
+@pytest.mark.django_db
+def test_job_template_import_review_sorts_by_result(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    csv_file = SimpleUploadedFile(
+        "job_templates.csv",
+        (b"title,description\nAsset Renewal Alloy,Valid template\n,Missing title\n"),
+        content_type="text/csv",
+    )
+    client.post(reverse("job_template_import"), {"csv_file": csv_file})
+
+    response = client.get(reverse("job_template_import"), {"sort": "result"})
+
+    assert response.status_code == 200
+    rows = list(response.context["rows"])
+    assert rows[0].error == "Missing title."
+    assert rows[1].is_valid
+    assert response.context["current_sort_field"] == "result"
 
 
 @pytest.mark.django_db

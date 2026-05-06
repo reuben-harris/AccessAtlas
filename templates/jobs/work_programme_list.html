@@ -22,7 +22,7 @@
           {% include "includes/sortable_th.html" with label="Name" sort_key="name" %}
           {% include "includes/sortable_th.html" with label="Start Date" sort_key="start-date" %}
           {% include "includes/sortable_th.html" with label="Due Date" sort_key="end-date" %}
-          <th>Jobs</th>
+          {% include "includes/sortable_th.html" with label="Jobs" sort_key="jobs" %}
           <th class="text-end">Actions</th>
         </tr>
       </thead>

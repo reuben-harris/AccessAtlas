@@ -42,13 +42,13 @@ AA-002,Inspect cabinet,completed,Imported from existing completed work log,2026 
       <table class="table table-vcenter">
         <thead>
           <tr>
-            <th>Row</th>
-            <th>Site Code</th>
-            <th>Template Title</th>
-            <th>Work Programme</th>
-            <th>Status</th>
-            <th>Closeout Note</th>
-            <th>Result</th>
+            {% include "includes/sortable_th.html" with label="Row" sort_key="row" %}
+            {% include "includes/sortable_th.html" with label="Site Code" sort_key="site-code" %}
+            {% include "includes/sortable_th.html" with label="Template Title" sort_key="template-title" %}
+            {% include "includes/sortable_th.html" with label="Work Programme" sort_key="work-programme" %}
+            {% include "includes/sortable_th.html" with label="Status" sort_key="status" %}
+            {% include "includes/sortable_th.html" with label="Closeout Note" sort_key="closeout-note" %}
+            {% include "includes/sortable_th.html" with label="Result" sort_key="result" %}
           </tr>
         </thead>
         <tbody>
