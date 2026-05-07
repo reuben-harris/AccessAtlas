@@ -91,9 +91,17 @@ class WorkProgrammeAutocompleteView(AccessAtlasAutocompleteView):
         results: list[dict[str, object]],
     ) -> list[dict[str, object]]:
         for item in results:
-            item["label"] = (
-                f"{item['name']} ({item['start_date']} to {item['end_date']})"
-            )
+            start_date = item["start_date"]
+            end_date = item["end_date"]
+            if start_date and end_date:
+                date_label = f"{start_date} to {end_date}"
+            elif start_date:
+                date_label = f"starts {start_date}"
+            elif end_date:
+                date_label = f"due {end_date}"
+            else:
+                date_label = "dates not set"
+            item["label"] = f"{item['name']} ({date_label})"
         return results
 
 

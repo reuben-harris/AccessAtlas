@@ -30,8 +30,8 @@
         {% for work_programme in object_list %}
           <tr>
             <td><a href="{{ work_programme.get_absolute_url }}">{{ work_programme.name }}</a></td>
-            <td>{{ work_programme.start_date|date:"Y-m-d" }}</td>
-            <td>{{ work_programme.end_date|date:"Y-m-d" }}</td>
+            <td>{{ work_programme.start_date|date:"Y-m-d"|default:"-" }}</td>
+            <td>{{ work_programme.end_date|date:"Y-m-d"|default:"-" }}</td>
             <td>{{ work_programme.job_count }}</td>
             {% url 'work_programme_update' work_programme.pk as edit_url %}
             {% include "includes/row_actions.html" with edit_url=edit_url label=work_programme.name %}

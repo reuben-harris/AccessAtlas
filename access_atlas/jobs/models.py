@@ -78,8 +78,8 @@ class JobTemplate(models.Model):
 
 class WorkProgramme(models.Model):
     name = models.CharField(max_length=255)
-    start_date = models.DateField()
-    end_date = models.DateField()
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -103,8 +103,18 @@ class WorkProgramme(models.Model):
     def get_history_url(self) -> str:
         return reverse("work_programme_history", kwargs={"pk": self.pk})
 
+    def date_range_label(self) -> str:
+        """Return a compact label for programmes that may still be undated drafts."""
+        if self.start_date and self.end_date:
+            return f"{self.start_date:%Y-%m-%d} to {self.end_date:%Y-%m-%d}"
+        if self.start_date:
+            return f"starts {self.start_date:%Y-%m-%d}"
+        if self.end_date:
+            return f"due {self.end_date:%Y-%m-%d}"
+        return "dates not set"
+
     def clean(self) -> None:
-        if self.end_date < self.start_date:
+        if self.start_date and self.end_date and self.end_date < self.start_date:
             raise ValidationError({"end_date": "End date cannot be before start date."})
         duplicate_names = WorkProgramme.objects.filter(name__iexact=self.name)
         if self.pk:

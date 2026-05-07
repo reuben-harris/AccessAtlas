@@ -704,3 +704,17 @@ def test_work_programme_autocomplete_returns_matching_programmes(logged_in_clien
     results = payload["results"]
     assert [item["name"] for item in results] == ["Ridge Renewal Programme"]
     assert results[0]["label"] == "Ridge Renewal Programme (2026-01-01 to 2026-12-31)"
+
+
+@pytest.mark.django_db
+def test_work_programme_autocomplete_labels_missing_dates(logged_in_client):
+    WorkProgramme.objects.create(name="Draft Programme")
+
+    response = logged_in_client.get(
+        reverse("autocomplete_work_programmes"),
+        {"q": "Draft"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["results"][0]["label"] == "Draft Programme (dates not set)"

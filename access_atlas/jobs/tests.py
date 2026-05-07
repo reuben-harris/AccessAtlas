@@ -132,6 +132,27 @@ def test_work_programme_end_date_cannot_be_before_start_date():
 
 
 @pytest.mark.django_db
+def test_work_programme_dates_are_optional():
+    undated_programme = WorkProgramme(name="Draft Programme")
+    start_only_programme = WorkProgramme(
+        name="Start Only Programme",
+        start_date="2026-01-01",
+    )
+    due_only_programme = WorkProgramme(
+        name="Due Only Programme",
+        end_date="2026-12-31",
+    )
+
+    undated_programme.full_clean()
+    start_only_programme.full_clean()
+    due_only_programme.full_clean()
+
+    assert undated_programme.date_range_label() == "dates not set"
+    assert start_only_programme.date_range_label() == "starts 2026-01-01"
+    assert due_only_programme.date_range_label() == "due 2026-12-31"
+
+
+@pytest.mark.django_db
 def test_work_programme_list_and_detail_render(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -148,6 +169,21 @@ def test_work_programme_list_and_detail_render(client):
     assert "2026 Field Work" in list_response.content.decode()
     assert detail_response.status_code == 200
     assert "Due Date" in detail_response.content.decode()
+
+
+@pytest.mark.django_db
+def test_work_programme_list_and_detail_render_missing_dates(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    work_programme = WorkProgramme.objects.create(name="Draft Programme")
+
+    list_response = client.get(reverse("work_programme_list"))
+    detail_response = client.get(work_programme.get_absolute_url())
+
+    assert list_response.status_code == 200
+    assert "Draft Programme" in list_response.content.decode()
+    assert detail_response.status_code == 200
+    assert '<dd class="col-sm-9">-</dd>' in detail_response.content.decode()
 
 
 @pytest.mark.django_db
@@ -265,6 +301,19 @@ def test_job_detail_shows_work_programme_due_date(client):
     assert "Work Programme" in content
     assert "2026 Field Work" in content
     assert "2026-12-31" in content
+
+
+@pytest.mark.django_db
+def test_job_due_date_is_empty_when_work_programme_has_no_due_date():
+    site = create_site()
+    work_programme = WorkProgramme.objects.create(name="Draft Programme")
+    job = Job.objects.create(
+        site=site,
+        title="Inspect cabinet",
+        work_programme=work_programme,
+    )
+
+    assert job.due_date is None
 
 
 @pytest.mark.django_db
