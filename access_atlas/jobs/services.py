@@ -1,3 +1,5 @@
+from django.core.exceptions import ValidationError
+
 from access_atlas.sites.models import Site
 
 from .models import Job, JobTemplate, Requirement, WorkProgramme
@@ -34,4 +36,15 @@ def create_job_from_template(
         requirement._change_reason = "Copied requirement from job template"
         requirement.save()
 
+    return job
+
+
+def assign_job_to_work_programme(job: Job, work_programme: WorkProgramme) -> Job:
+    """Attach an existing unprogrammed job to a work programme."""
+    if job.work_programme_id is not None:
+        raise ValidationError("Only jobs without a work programme can be assigned.")
+
+    job.work_programme = work_programme
+    job._change_reason = "Assigned job to work programme"
+    job.save()
     return job

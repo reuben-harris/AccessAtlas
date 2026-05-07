@@ -12,7 +12,11 @@ from access_atlas.accounts.preferences import (
     set_user_preference,
 )
 from access_atlas.core.test_utils import parse_json_script
-from access_atlas.jobs.forms import JobForm, JobFromTemplateForm
+from access_atlas.jobs.forms import (
+    AssignWorkProgrammeJobForm,
+    JobForm,
+    JobFromTemplateForm,
+)
 from access_atlas.jobs.imports import parse_job_import_csv
 from access_atlas.jobs.models import (
     Job,
@@ -23,7 +27,10 @@ from access_atlas.jobs.models import (
     TemplateRequirement,
     WorkProgramme,
 )
-from access_atlas.jobs.services import create_job_from_template
+from access_atlas.jobs.services import (
+    assign_job_to_work_programme,
+    create_job_from_template,
+)
 from access_atlas.jobs.template_imports import parse_job_template_import_csv
 from access_atlas.sites.models import Site
 from access_atlas.trips.models import SiteVisit, Trip
@@ -187,6 +194,38 @@ def test_work_programme_list_and_detail_render_missing_dates(client):
 
 
 @pytest.mark.django_db
+def test_work_programme_detail_includes_assign_job_form(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    work_programme = WorkProgramme.objects.create(name="2026 Field Work")
+
+    response = client.get(work_programme.get_absolute_url())
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Assign Job" in content
+    assert "autocomplete/unprogrammed-jobs" in content
+
+
+@pytest.mark.django_db
+def test_work_programme_assign_job_view_sets_programme(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    work_programme = WorkProgramme.objects.create(name="2026 Field Work")
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+
+    response = client.post(
+        reverse("work_programme_assign_job", kwargs={"pk": work_programme.pk}),
+        {"job": job.pk},
+    )
+
+    assert response.status_code == 302
+    job.refresh_from_db()
+    assert job.work_programme == work_programme
+
+
+@pytest.mark.django_db
 def test_work_programme_list_sorts_by_job_count(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -314,6 +353,34 @@ def test_job_due_date_is_empty_when_work_programme_has_no_due_date():
     )
 
     assert job.due_date is None
+
+
+@pytest.mark.django_db
+def test_assign_job_to_work_programme_sets_programme_and_history_reason():
+    site = create_site()
+    work_programme = WorkProgramme.objects.create(name="2026 Field Work")
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+
+    assign_job_to_work_programme(job, work_programme)
+
+    job.refresh_from_db()
+    assert job.work_programme == work_programme
+    assert job.history.first().history_change_reason == "Assigned job to work programme"
+
+
+@pytest.mark.django_db
+def test_assign_job_to_work_programme_rejects_already_programmed_job():
+    site = create_site()
+    first_programme = WorkProgramme.objects.create(name="First Programme")
+    second_programme = WorkProgramme.objects.create(name="Second Programme")
+    job = Job.objects.create(
+        site=site,
+        title="Inspect cabinet",
+        work_programme=first_programme,
+    )
+
+    with pytest.raises(ValidationError):
+        assign_job_to_work_programme(job, second_programme)
 
 
 @pytest.mark.django_db
@@ -452,6 +519,14 @@ def test_job_form_marks_work_programme_select_as_searchable():
     assert work_programme_widget.url == "autocomplete_work_programmes"
     assert work_programme_widget.label_field == "label"
     assert form.fields["work_programme"].required is False
+
+
+def test_assign_work_programme_job_form_marks_job_select_as_searchable():
+    form = AssignWorkProgrammeJobForm()
+    widget = form.fields["job"].widget
+
+    assert widget.url == "autocomplete_unprogrammed_jobs"
+    assert widget.label_field == "label"
 
 
 @pytest.mark.django_db

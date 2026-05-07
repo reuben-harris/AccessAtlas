@@ -32,6 +32,11 @@ urlpatterns = [
         views.WorkProgrammeUpdateView.as_view(),
         name="work_programme_update",
     ),
+    path(
+        "work-programmes/<int:pk>/assign-job/",
+        views.assign_work_programme_job,
+        name="work_programme_assign_job",
+    ),
     path("new/", views.JobCreateView.as_view(), name="job_create"),
     path(
         "from-template/",

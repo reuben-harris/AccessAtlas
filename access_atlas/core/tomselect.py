@@ -74,3 +74,16 @@ def assignable_jobs_tomselect_config(site_id: int) -> TomSelectConfig:
         preload="focus",
         filter_by=[Const(str(site_id), "site_id")],
     )
+
+
+def unprogrammed_jobs_tomselect_config() -> TomSelectConfig:
+    """Standard config for assigning existing jobs to a work programme."""
+
+    return TomSelectConfig(
+        url="autocomplete_unprogrammed_jobs",
+        css_framework="bootstrap5",
+        label_field="label",
+        placeholder="Search jobs",
+        minimum_query_length=0,
+        preload="focus",
+    )

@@ -133,3 +133,34 @@ class UnassignedJobAutocompleteView(AccessAtlasAutocompleteView):
         for item in results:
             item["label"] = str(item["title"])
         return results
+
+
+class UnprogrammedJobAutocompleteView(AccessAtlasAutocompleteView):
+    """Autocomplete jobs that are not already linked to a work programme."""
+
+    model = Job
+    permission_required = None
+    search_lookups = [
+        "title__icontains",
+        "site__code__icontains",
+        "site__name__icontains",
+    ]
+    ordering = ["site__code", "title"]
+    value_fields = ["id", "title", "label"]
+    virtual_fields = ["label"]
+
+    def hook_queryset(self, queryset):
+        return queryset.filter(work_programme__isnull=True).select_related("site")
+
+    def hook_prepare_results(
+        self,
+        results: list[dict[str, object]],
+    ) -> list[dict[str, object]]:
+        job_ids = [item["id"] for item in results]
+        site_labels = {
+            job.pk: str(job.site)
+            for job in Job.objects.select_related("site").filter(pk__in=job_ids)
+        }
+        for item in results:
+            item["label"] = f"{item['title']} - {site_labels.get(item['id'], '-')}"
+        return results

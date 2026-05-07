@@ -2,8 +2,10 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ValidationError
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -34,6 +36,7 @@ from access_atlas.sites.models import Site
 from access_atlas.trips.approval import ApprovedTripChangeMixin
 
 from .forms import (
+    AssignWorkProgrammeJobForm,
     JobForm,
     JobFromTemplateForm,
     JobImportUploadForm,
@@ -60,7 +63,7 @@ from .models import (
     TemplateRequirement,
     WorkProgramme,
 )
-from .services import create_job_from_template
+from .services import assign_job_to_work_programme, create_job_from_template
 from .template_imports import (
     SESSION_KEY as JOB_TEMPLATE_IMPORT_SESSION_KEY,
 )
@@ -218,7 +221,26 @@ class WorkProgrammeDetailView(LoginRequiredMixin, DetailView):
             self.object, "overview"
         )
         context["detail_navigation_label"] = "Work programme sections"
+        context["assign_form"] = AssignWorkProgrammeJobForm()
         return context
+
+
+@login_required
+@require_POST
+def assign_work_programme_job(request, pk):
+    work_programme = get_object_or_404(WorkProgramme, pk=pk)
+    form = AssignWorkProgrammeJobForm(request.POST)
+    if form.is_valid():
+        job = form.cleaned_data["job"]
+        try:
+            assign_job_to_work_programme(job, work_programme)
+        except ValidationError as exc:
+            messages.error(request, exc.message)
+        else:
+            messages.success(request, f"Assigned job: {job.title}")
+    else:
+        messages.error(request, "Select a job without a work programme.")
+    return redirect(work_programme)
 
 
 class WorkProgrammeHistoryView(

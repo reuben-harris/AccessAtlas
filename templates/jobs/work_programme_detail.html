@@ -2,6 +2,10 @@
 {% load status_badges %}
 
 {% block title %}{{ object.name }} - Access Atlas{% endblock %}
+{% block head %}
+  {{ block.super }}
+  {{ assign_form.media }}
+{% endblock %}
 
 {% block content %}
 <div class="page-header d-print-none">
@@ -24,6 +28,18 @@
       <dt class="col-sm-3">Start Date</dt><dd class="col-sm-9">{{ object.start_date|date:"Y-m-d"|default:"-" }}</dd>
       <dt class="col-sm-3">Due Date</dt><dd class="col-sm-9">{{ object.end_date|date:"Y-m-d"|default:"-" }}</dd>
     </dl>
+  </div>
+</div>
+<div class="card mt-3">
+  <div class="card-header">
+    <h3 class="card-title">Assign Job</h3>
+  </div>
+  <div class="card-body">
+    <form method="post" action="{% url 'work_programme_assign_job' object.pk %}">
+      {% csrf_token %}
+      {{ assign_form.as_p }}
+      <button class="btn btn-primary" type="submit">Assign</button>
+    </form>
   </div>
 </div>
 <div class="card mt-3">

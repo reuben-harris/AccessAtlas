@@ -8,6 +8,7 @@ from .autocomplete_views import (
     SiteAutocompleteView,
     TeamMemberAutocompleteView,
     UnassignedJobAutocompleteView,
+    UnprogrammedJobAutocompleteView,
     WorkProgrammeAutocompleteView,
 )
 
@@ -39,6 +40,11 @@ urlpatterns = [
         "autocomplete/unassigned-jobs/",
         UnassignedJobAutocompleteView.as_view(),
         name="autocomplete_unassigned_jobs",
+    ),
+    path(
+        "autocomplete/unprogrammed-jobs/",
+        UnprogrammedJobAutocompleteView.as_view(),
+        name="autocomplete_unprogrammed_jobs",
     ),
     path("dummy/site-feed.json", dummy_site_feed, name="dummy_site_feed"),
 ]

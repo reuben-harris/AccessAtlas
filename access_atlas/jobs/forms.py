@@ -4,6 +4,7 @@ from django_tomselect.forms import TomSelectModelChoiceField
 from access_atlas.core.tomselect import (
     job_template_tomselect_config,
     site_tomselect_config,
+    unprogrammed_jobs_tomselect_config,
     work_programme_tomselect_config,
 )
 
@@ -47,6 +48,13 @@ class WorkProgrammeForm(forms.ModelForm):
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "end_date": forms.DateInput(attrs={"type": "date"}),
         }
+
+
+class AssignWorkProgrammeJobForm(forms.Form):
+    job = TomSelectModelChoiceField(
+        label="Job",
+        config=unprogrammed_jobs_tomselect_config(),
+    )
 
 
 class JobForm(forms.ModelForm):

@@ -718,3 +718,35 @@ def test_work_programme_autocomplete_labels_missing_dates(logged_in_client):
     assert response.status_code == 200
     payload = response.json()
     assert payload["results"][0]["label"] == "Draft Programme (dates not set)"
+
+
+@pytest.mark.django_db
+def test_unprogrammed_job_autocomplete_excludes_jobs_with_work_programmes(
+    logged_in_client,
+):
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Example Ridge Station",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    work_programme = WorkProgramme.objects.create(name="2026 Field Work")
+    available_job = Job.objects.create(site=site, title="Available Job")
+    programmed_job = Job.objects.create(
+        site=site,
+        title="Programmed Job",
+        work_programme=work_programme,
+    )
+
+    response = logged_in_client.get(
+        reverse("autocomplete_unprogrammed_jobs"),
+        {"q": "Job"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    labels = [item["label"] for item in payload["results"]]
+    assert f"{available_job.title} - {site}" in labels
+    assert programmed_job.title not in " ".join(labels)
