@@ -73,6 +73,7 @@ def assignable_jobs_tomselect_config(site_id: int) -> TomSelectConfig:
         minimum_query_length=0,
         preload="focus",
         filter_by=[Const(str(site_id), "site_id")],
+        plugin_remove_button=PluginRemoveButton(),
     )
 
 
@@ -86,4 +87,5 @@ def unprogrammed_jobs_tomselect_config() -> TomSelectConfig:
         placeholder="Search jobs",
         minimum_query_length=0,
         preload="focus",
+        plugin_remove_button=PluginRemoveButton(),
     )

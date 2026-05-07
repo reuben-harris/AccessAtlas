@@ -261,7 +261,7 @@ def test_assigning_job_records_history_reason(client):
     client.force_login(user)
 
     response = client.post(
-        reverse("assign_job", kwargs={"pk": site_visit.pk}), {"job": job.pk}
+        reverse("assign_job", kwargs={"pk": site_visit.pk}), {"jobs": [job.pk]}
     )
 
     assert response.status_code == 302
@@ -550,7 +550,7 @@ def test_assigning_job_to_approved_trip_requires_confirmation_and_resubmits(clie
 
     initial_response = client.post(
         reverse("assign_job", kwargs={"pk": site_visit.pk}),
-        {"job": job.pk},
+        {"jobs": [job.pk]},
     )
 
     assert initial_response.status_code == 200
@@ -559,7 +559,7 @@ def test_assigning_job_to_approved_trip_requires_confirmation_and_resubmits(clie
 
     response = client.post(
         reverse("assign_job", kwargs={"pk": site_visit.pk}),
-        {"job": job.pk, "confirm_trip_approval_reset": "1"},
+        {"jobs": [job.pk], "confirm_trip_approval_reset": "1"},
     )
 
     assert response.status_code == 302
@@ -568,6 +568,41 @@ def test_assigning_job_to_approved_trip_requires_confirmation_and_resubmits(clie
     assert trip.status == TripStatus.SUBMITTED
     assert trip.approval_round == 2
     assert job.status == JobStatus.ASSIGNED
+
+
+@pytest.mark.django_db
+def test_assigning_multiple_jobs_to_site_visit(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    first_job = Job.objects.create(site=site, title="First job")
+    second_job = Job.objects.create(site=site, title="Second job")
+    client.force_login(user)
+
+    response = client.post(
+        reverse("assign_job", kwargs={"pk": site_visit.pk}),
+        {"jobs": [first_job.pk, second_job.pk]},
+    )
+
+    assert response.status_code == 302
+    first_job.refresh_from_db()
+    second_job.refresh_from_db()
+    assert first_job.status == JobStatus.ASSIGNED
+    assert second_job.status == JobStatus.ASSIGNED
+    assert SiteVisitJob.objects.filter(site_visit=site_visit).count() == 2
 
 
 @pytest.mark.django_db
@@ -843,7 +878,7 @@ def test_assign_job_form_marks_job_select_as_searchable():
     )
 
     form = AssignJobForm(site=site)
-    widget = form.fields["job"].widget
+    widget = form.fields["jobs"].widget
 
     assert widget.url == "autocomplete_unassigned_jobs"
     assert widget.label_field == "label"

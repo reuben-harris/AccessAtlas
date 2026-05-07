@@ -25,7 +25,8 @@ def hidden_post_fields(post_data) -> list[tuple[str, str]]:
     # duplicating CSRF tokens or the confirmation checkbox itself.
     return [
         (key, value)
-        for key, value in post_data.items()
+        for key, values in post_data.lists()
+        for value in values
         if key not in {"csrfmiddlewaretoken", APPROVAL_CONFIRM_FIELD}
     ]
 
@@ -56,13 +57,14 @@ def assign_job(request, pk):
             },
         )
     if form.is_valid():
-        job = form.cleaned_data["job"]
+        jobs = form.cleaned_data["jobs"]
         try:
             with transaction.atomic():
                 # The assignment and approval reset are one state transition.
-                # Keep them in one transaction so we never assign a job without
-                # also moving the trip back to submitted.
-                assign_job_to_site_visit(site_visit, job)
+                # Keep them in one transaction so bulk assignment never partly
+                # succeeds without also moving the trip back to submitted.
+                for job in jobs:
+                    assign_job_to_site_visit(site_visit, job)
                 invalidate_trip_approval(
                     site_visit.trip,
                     request.user,
@@ -71,9 +73,9 @@ def assign_job(request, pk):
         except ValidationError as exc:
             messages.error(request, exc.message)
         else:
-            messages.success(request, f"Assigned job: {job.title}")
+            messages.success(request, f"Assigned {len(jobs)} job(s).")
     else:
-        messages.error(request, "Select an unassigned job for this site.")
+        messages.error(request, "Select one or more unassigned jobs for this site.")
     return redirect(site_visit)
 
 

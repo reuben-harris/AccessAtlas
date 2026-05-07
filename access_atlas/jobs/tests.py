@@ -217,12 +217,33 @@ def test_work_programme_assign_job_view_sets_programme(client):
 
     response = client.post(
         reverse("work_programme_assign_job", kwargs={"pk": work_programme.pk}),
-        {"job": job.pk},
+        {"jobs": [job.pk]},
     )
 
     assert response.status_code == 302
     job.refresh_from_db()
     assert job.work_programme == work_programme
+
+
+@pytest.mark.django_db
+def test_work_programme_assign_job_view_assigns_multiple_jobs(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    work_programme = WorkProgramme.objects.create(name="2026 Field Work")
+    first_job = Job.objects.create(site=site, title="Inspect cabinet")
+    second_job = Job.objects.create(site=site, title="Replace cable")
+
+    response = client.post(
+        reverse("work_programme_assign_job", kwargs={"pk": work_programme.pk}),
+        {"jobs": [first_job.pk, second_job.pk]},
+    )
+
+    assert response.status_code == 302
+    first_job.refresh_from_db()
+    second_job.refresh_from_db()
+    assert first_job.work_programme == work_programme
+    assert second_job.work_programme == work_programme
 
 
 @pytest.mark.django_db
@@ -523,7 +544,7 @@ def test_job_form_marks_work_programme_select_as_searchable():
 
 def test_assign_work_programme_job_form_marks_job_select_as_searchable():
     form = AssignWorkProgrammeJobForm()
-    widget = form.fields["job"].widget
+    widget = form.fields["jobs"].widget
 
     assert widget.url == "autocomplete_unprogrammed_jobs"
     assert widget.label_field == "label"

@@ -73,7 +73,7 @@
 </div>
 {% if assign_form %}
   <div class="card mt-3">
-    <div class="card-header"><h3 class="card-title">Assign Job</h3></div>
+    <div class="card-header"><h3 class="card-title">Assign Jobs</h3></div>
     <div class="card-body">
       <form method="post" action="{% url 'assign_job' object.pk %}">
         {% csrf_token %}

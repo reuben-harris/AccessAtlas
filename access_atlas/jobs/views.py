@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -231,15 +232,17 @@ def assign_work_programme_job(request, pk):
     work_programme = get_object_or_404(WorkProgramme, pk=pk)
     form = AssignWorkProgrammeJobForm(request.POST)
     if form.is_valid():
-        job = form.cleaned_data["job"]
+        jobs = form.cleaned_data["jobs"]
         try:
-            assign_job_to_work_programme(job, work_programme)
+            with transaction.atomic():
+                for job in jobs:
+                    assign_job_to_work_programme(job, work_programme)
         except ValidationError as exc:
             messages.error(request, exc.message)
         else:
-            messages.success(request, f"Assigned job: {job.title}")
+            messages.success(request, f"Assigned {len(jobs)} job(s).")
     else:
-        messages.error(request, "Select a job without a work programme.")
+        messages.error(request, "Select one or more jobs without a work programme.")
     return redirect(work_programme)
 
 

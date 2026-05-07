@@ -1,5 +1,8 @@
 from django import forms
-from django_tomselect.forms import TomSelectModelChoiceField
+from django_tomselect.forms import (
+    TomSelectModelChoiceField,
+    TomSelectModelMultipleChoiceField,
+)
 
 from access_atlas.core.tomselect import (
     job_template_tomselect_config,
@@ -51,8 +54,8 @@ class WorkProgrammeForm(forms.ModelForm):
 
 
 class AssignWorkProgrammeJobForm(forms.Form):
-    job = TomSelectModelChoiceField(
-        label="Job",
+    jobs = TomSelectModelMultipleChoiceField(
+        label="Jobs",
         config=unprogrammed_jobs_tomselect_config(),
     )
 

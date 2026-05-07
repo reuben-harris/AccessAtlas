@@ -231,13 +231,13 @@ class SiteVisitForm(forms.ModelForm):
 
 
 class AssignJobForm(forms.Form):
-    job = TomSelectModelChoiceField(required=True)
+    jobs = TomSelectModelMultipleChoiceField(required=True)
 
     def __init__(self, *args, **kwargs):
         site = kwargs.pop("site")
         super().__init__(*args, **kwargs)
-        self.fields["job"] = TomSelectModelChoiceField(
-            label="Job",
+        self.fields["jobs"] = TomSelectModelMultipleChoiceField(
+            label="Jobs",
             config=assignable_jobs_tomselect_config(site.pk),
         )
 
