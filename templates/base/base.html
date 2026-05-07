@@ -66,13 +66,16 @@
                   <i class="ti ti-plus" aria-hidden="true"></i>
                 </a>
               </li>
-              <li class="nav-item nav-item-with-actions{% if active_nav_item == 'jobs' %} active{% endif %}">
+              <li class="nav-item nav-item-with-actions nav-item-with-three-actions{% if active_nav_item == 'jobs' %} active{% endif %}">
                 <a class="nav-link" href="{% url 'job_list' %}"{% if active_nav_item == 'jobs' %} aria-current="page"{% endif %}>
                   <span class="nav-link-icon"><i class="ti ti-briefcase" aria-hidden="true"></i></span>
                   <span class="nav-link-title">Jobs</span>
                 </a>
-                <a class="nav-create-link nav-create-link-secondary nav-create-link-import" href="{% url 'job_import' %}" aria-label="Import jobs" title="Import jobs">
+                <a class="nav-create-link nav-create-link-tertiary nav-create-link-import" href="{% url 'job_import' %}" aria-label="Import jobs" title="Import jobs">
                   <i class="ti ti-upload" aria-hidden="true"></i>
+                </a>
+                <a class="nav-create-link nav-create-link-secondary nav-create-link-template" href="{% url 'job_create_from_template' %}" aria-label="New job from template" title="New job from template">
+                  <i class="ti ti-template" aria-hidden="true"></i>
                 </a>
                 <a class="nav-create-link" href="{% url 'job_create' %}" aria-label="New job" title="New job">
                   <i class="ti ti-plus" aria-hidden="true"></i>

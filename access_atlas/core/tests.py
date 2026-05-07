@@ -200,6 +200,18 @@ def test_sidebar_highlights_current_top_level_page(logged_in_client):
 
 
 @pytest.mark.django_db
+def test_jobs_sidebar_exposes_template_create_action(logged_in_client):
+    response = logged_in_client.get(reverse("job_list"))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert reverse("job_create_from_template") in content
+    assert 'aria-label="New job from template"' in content
+    assert "nav-create-link-template" in content
+    assert "ti ti-template" in content
+
+
+@pytest.mark.django_db
 def test_global_search_shows_total_counts_and_new_object_groups(logged_in_client, user):
     site = _site(external_id="001", code="AA-001", name="Ridge Site")
     Job.objects.create(site=site, title="Ridge Inspection")

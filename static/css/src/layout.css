@@ -30,6 +30,10 @@
   padding-right: 4.75rem;
 }
 
+.nav-item-with-three-actions .nav-link {
+  padding-right: 6.75rem;
+}
+
 .navbar-vertical .nav-item.active > .nav-link {
   color: #fff;
   background-color: rgba(255, 255, 255, 0.08);
@@ -55,6 +59,10 @@
   right: 2.5rem;
 }
 
+.nav-create-link-tertiary {
+  right: 4.5rem;
+}
+
 .nav-create-link:hover,
 .nav-create-link:focus {
   color: var(--tblr-success);
@@ -66,6 +74,12 @@
 .nav-create-link-import:focus {
   color: var(--tblr-orange);
   background-color: rgba(var(--tblr-orange-rgb), 0.12);
+}
+
+.nav-create-link-template:hover,
+.nav-create-link-template:focus {
+  color: var(--tblr-info);
+  background-color: rgba(var(--tblr-info-rgb), 0.12);
 }
 
 .search-icon-addon {
