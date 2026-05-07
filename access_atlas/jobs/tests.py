@@ -605,6 +605,19 @@ def test_invalid_job_from_template_post_keeps_selected_values(client):
 
     assert response.status_code == 200
     assert response.context["form"]["site"].value() == str(site.pk)
+    assert b"Unable to save changes" in response.content
+    assert b"Review the highlighted fields and try again." in response.content
+
+
+@pytest.mark.django_db
+def test_job_from_template_form_uses_server_side_validation(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.get(reverse("job_create_from_template"))
+
+    assert response.status_code == 200
+    assert b'<form method="post" novalidate>' in response.content
 
 
 @pytest.mark.django_db

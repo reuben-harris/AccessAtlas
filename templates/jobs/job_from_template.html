@@ -10,9 +10,10 @@
 <h2 class="page-title">Create Job From Template</h2>
 <div class="card">
   <div class="card-body">
-    <form method="post">
+    <form method="post" novalidate>
       {% csrf_token %}
       {% include "includes/form_fields.html" %}
+      {% include "includes/form_error_summary.html" %}
       <button class="btn btn-primary" type="submit">Create job</button>
     </form>
   </div>

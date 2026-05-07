@@ -36,18 +36,7 @@
         {% if form.photos.help_text %}<div class="form-hint">{{ form.photos.help_text }}</div>{% endif %}
         {% for error in form.photos.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
       </div>
-      {% if form.errors %}
-        <div class="alert alert-danger object-form-errors" role="alert">
-          <h4 class="alert-title">Unable to upload photos</h4>
-          <p class="mb-2">Review the highlighted fields and try again.</p>
-          <ul class="mb-0 ps-3">
-            {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
-            {% for field in form %}
-              {% for error in field.errors %}<li>{{ field.label }}: {{ error }}</li>{% endfor %}
-            {% endfor %}
-          </ul>
-        </div>
-      {% endif %}
+      {% include "includes/form_error_summary.html" with error_title="Unable to upload photos" %}
       <button class="btn btn-primary" type="submit">Upload</button>
     </form>
   </div>

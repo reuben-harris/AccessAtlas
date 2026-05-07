@@ -85,18 +85,7 @@
         </div>
       {% endif %}
 
-      {% if form.errors %}
-        <div class="alert alert-danger object-form-errors" role="alert">
-          <h4 class="alert-title">Unable to save changes</h4>
-          <p class="mb-2">Review the highlighted fields and try again.</p>
-          <ul class="mb-0 ps-3">
-            {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
-            {% for field in form %}
-              {% if field.errors %}<li>{{ field.label }}: {{ field.errors.0 }}</li>{% endif %}
-            {% endfor %}
-          </ul>
-        </div>
-      {% endif %}
+      {% include "includes/form_error_summary.html" %}
 
       <div class="btn-list">
         <button class="btn btn-primary" type="submit">Save</button>
