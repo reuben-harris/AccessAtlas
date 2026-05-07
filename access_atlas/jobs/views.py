@@ -640,6 +640,7 @@ def create_job_from_template_view(request):
         job = create_job_from_template(
             site=form.cleaned_data["site"],
             template=form.cleaned_data["template"],
+            work_programme=form.cleaned_data["work_programme"],
         )
         messages.success(request, f"Created job from template: {job.title}")
         return redirect(job)

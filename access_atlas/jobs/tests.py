@@ -525,11 +525,15 @@ def test_job_from_template_form_marks_site_select_as_searchable():
     form = JobFromTemplateForm(site_queryset=Site.objects.filter(pk=site.pk))
     site_widget = form.fields["site"].widget
     template_widget = form.fields["template"].widget
+    work_programme_widget = form.fields["work_programme"].widget
 
     assert site_widget.url == "autocomplete_sites"
     assert site_widget.label_field == "label"
     assert template_widget.url == "autocomplete_job_templates"
     assert template_widget.label_field == "title"
+    assert work_programme_widget.url == "autocomplete_work_programmes"
+    assert work_programme_widget.label_field == "label"
+    assert form.fields["work_programme"].required is False
 
 
 @pytest.mark.django_db
@@ -601,6 +605,29 @@ def test_invalid_job_from_template_post_keeps_selected_values(client):
 
     assert response.status_code == 200
     assert response.context["form"]["site"].value() == str(site.pk)
+
+
+@pytest.mark.django_db
+def test_create_job_from_template_can_assign_work_programme(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    template = JobTemplate.objects.create(title="Replace sensor")
+    work_programme = WorkProgramme.objects.create(name="2026 Field Work")
+
+    response = client.post(
+        reverse("job_create_from_template"),
+        {
+            "site": site.pk,
+            "template": template.pk,
+            "work_programme": work_programme.pk,
+        },
+    )
+
+    job = Job.objects.get()
+    assert response.status_code == 302
+    assert job.work_programme == work_programme
+    assert response.url == job.get_absolute_url()
 
 
 @pytest.mark.django_db

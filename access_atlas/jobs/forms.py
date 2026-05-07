@@ -99,6 +99,10 @@ class JobForm(forms.ModelForm):
 class JobFromTemplateForm(forms.Form):
     site = TomSelectModelChoiceField(config=site_tomselect_config())
     template = TomSelectModelChoiceField(config=job_template_tomselect_config())
+    work_programme = TomSelectModelChoiceField(
+        config=work_programme_tomselect_config(),
+        required=False,
+    )
 
     def __init__(self, *args, **kwargs):
         kwargs.pop("site_queryset")
