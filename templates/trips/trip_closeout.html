@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load form_extras %}
 
 {% block title %}Close {{ trip.name }} - Access Atlas{% endblock %}
 
@@ -18,7 +19,7 @@
     <div class="card-body">
       {% for field in form.site_visit_fields %}
         <div class="mb-3">
-          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% required_marker field %}</label>
           {{ field }}
           {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
         </div>
@@ -35,10 +36,10 @@
         <div class="mb-4">
           <div class="fw-bold">{{ group.assignment.job }}</div>
           <div class="text-secondary mb-2">{{ group.assignment.site_visit.site }}</div>
-          <label class="form-label" for="{{ group.outcome.id_for_label }}">Outcome</label>
+          <label class="form-label" for="{{ group.outcome.id_for_label }}">Outcome{% required_marker group.outcome %}</label>
           {{ group.outcome }}
           {% for error in group.outcome.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-          <label class="form-label mt-2" for="{{ group.reason.id_for_label }}">Closeout note</label>
+          <label class="form-label mt-2" for="{{ group.reason.id_for_label }}">Closeout note{% required_marker group.reason %}</label>
           {{ group.reason }}
           {% for error in group.reason.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
         </div>

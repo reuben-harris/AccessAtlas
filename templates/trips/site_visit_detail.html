@@ -1,5 +1,5 @@
 {% extends "base/base.html" %}
-{% load status_badges %}
+{% load form_extras status_badges %}
 
 {% block title %}{{ object.site.code }} Visit - Access Atlas{% endblock %}
 {% block head %}
@@ -77,7 +77,7 @@
     <div class="card-body">
       <form method="post" action="{% url 'assign_job' object.pk %}">
         {% csrf_token %}
-        {{ assign_form.as_p }}
+        {% include "includes/form_fields.html" with form=assign_form %}
         <button class="btn btn-primary" type="submit">Assign</button>
       </form>
     </div>

@@ -1,5 +1,6 @@
 from django import template
 from django.forms import CheckboxInput, Select, SelectMultiple
+from django.utils.safestring import mark_safe
 
 register = template.Library()
 
@@ -20,3 +21,13 @@ def render_form_field(field):
     if field.errors:
         css_class = f"{css_class} is-invalid"
     return field.as_widget(attrs={"class": css_class})
+
+
+@register.simple_tag
+def required_marker(field):
+    """Render the shared required-field marker beside visible field labels."""
+    if field.field.required:
+        return mark_safe(
+            '<span class="form-required-marker" aria-label="required">*</span>'
+        )
+    return ""

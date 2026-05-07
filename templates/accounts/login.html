@@ -1,4 +1,4 @@
-{% load static %}
+{% load form_extras static %}
 <!doctype html>
 <html lang="en" data-bs-theme="light">
   <head>
@@ -48,7 +48,7 @@
                     {{ form.non_field_errors }}
                   </div>
                 {% endif %}
-                {{ form.as_p }}
+                {% include "includes/form_fields.html" %}
                 <button class="btn btn-primary w-100" type="submit">Continue with email</button>
               </form>
             {% elif form.non_field_errors %}

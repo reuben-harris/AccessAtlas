@@ -1,0 +1,20 @@
+{% load form_extras %}
+{% for field in form.visible_fields %}
+  {% if field|field_widget_type == "CheckboxInput" %}
+    <div class="mb-3">
+      <label class="form-check">
+        {{ field|render_form_field }}
+        <span class="form-check-label">{{ field.label }}{% required_marker field %}</span>
+      </label>
+      {% if field.help_text %}<div class="form-hint">{{ field.help_text }}</div>{% endif %}
+      {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+    </div>
+  {% else %}
+    <div class="mb-3">
+      <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% required_marker field %}</label>
+      {{ field|render_form_field }}
+      {% if field.help_text %}<div class="form-hint">{{ field.help_text }}</div>{% endif %}
+      {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+    </div>
+  {% endif %}
+{% endfor %}

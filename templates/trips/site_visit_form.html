@@ -26,14 +26,14 @@
       {% csrf_token %}
 
       <div class="mb-3">
-        <label class="form-label" for="{{ form.site.id_for_label }}">{{ form.site.label }}</label>
+        <label class="form-label" for="{{ form.site.id_for_label }}">{{ form.site.label }}{% required_marker form.site %}</label>
         {{ form.site|render_form_field }}
         {% if form.site.help_text %}<div class="form-hint">{{ form.site.help_text }}</div>{% endif %}
         {% for error in form.site.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
       </div>
 
       <div class="mb-3">
-        <label class="form-label">{{ form.planned_day.label }}</label>
+        <label class="form-label">{{ form.planned_day.label }}{% required_marker form.planned_day %}</label>
         <div class="trip-day-picker" role="radiogroup" aria-label="{{ form.planned_day.label }}">
           {% for choice in form.planned_day %}
             <label class="trip-day-picker-item">
@@ -49,14 +49,14 @@
       <div class="row">
         <div class="col-md-6">
           <div class="mb-3">
-            <label class="form-label" for="{{ form.planned_start_time.id_for_label }}">{{ form.planned_start_time.label }}</label>
+            <label class="form-label" for="{{ form.planned_start_time.id_for_label }}">{{ form.planned_start_time.label }}{% required_marker form.planned_start_time %}</label>
             {{ form.planned_start_time|render_form_field }}
             {% for error in form.planned_start_time.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
           </div>
         </div>
         <div class="col-md-6">
           <div class="mb-3">
-            <label class="form-label" for="{{ form.planned_end_time.id_for_label }}">{{ form.planned_end_time.label }}</label>
+            <label class="form-label" for="{{ form.planned_end_time.id_for_label }}">{{ form.planned_end_time.label }}{% required_marker form.planned_end_time %}</label>
             {{ form.planned_end_time|render_form_field }}
             {% for error in form.planned_end_time.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
           </div>
@@ -64,13 +64,13 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label" for="{{ form.status.id_for_label }}">{{ form.status.label }}</label>
+        <label class="form-label" for="{{ form.status.id_for_label }}">{{ form.status.label }}{% required_marker form.status %}</label>
         {{ form.status|render_form_field }}
         {% for error in form.status.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
       </div>
 
       <div class="mb-3">
-        <label class="form-label" for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+        <label class="form-label" for="{{ form.notes.id_for_label }}">{{ form.notes.label }}{% required_marker form.notes %}</label>
         {{ form.notes|render_form_field }}
         {% for error in form.notes.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
       </div>
@@ -79,7 +79,7 @@
         <div class="form-check mb-3">
           {{ form.confirm_trip_approval_reset|render_form_field }}
           <label class="form-check-label" for="{{ form.confirm_trip_approval_reset.id_for_label }}">
-            {{ form.confirm_trip_approval_reset.label }}
+            {{ form.confirm_trip_approval_reset.label }}{% required_marker form.confirm_trip_approval_reset %}
           </label>
           {% for error in form.confirm_trip_approval_reset.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
         </div>

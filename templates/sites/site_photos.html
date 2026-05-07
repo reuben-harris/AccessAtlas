@@ -31,7 +31,7 @@
     <form method="post" enctype="multipart/form-data" novalidate>
       {% csrf_token %}
       <div class="mb-3">
-        <label class="form-label" for="{{ form.photos.id_for_label }}">{{ form.photos.label }}</label>
+        <label class="form-label" for="{{ form.photos.id_for_label }}">{{ form.photos.label }}{% required_marker form.photos %}</label>
         {{ form.photos|render_form_field }}
         {% if form.photos.help_text %}<div class="form-hint">{{ form.photos.help_text }}</div>{% endif %}
         {% for error in form.photos.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}

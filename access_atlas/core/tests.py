@@ -12,6 +12,7 @@ from access_atlas.accounts.preferences import (
     list_sort_preference_key,
 )
 from access_atlas.core.context_processors import active_nav_item
+from access_atlas.core.templatetags.form_extras import required_marker
 from access_atlas.core.templatetags.status_badges import status_badge_class
 from access_atlas.jobs.models import Job, JobTemplate, WorkProgramme
 from access_atlas.sites.models import (
@@ -44,6 +45,14 @@ def test_site_and_access_statuses_use_consistent_badge_colors():
     assert status_badge_class("active") == "bg-blue-lt"
     assert status_badge_class("stale") == "bg-secondary-lt"
     assert status_badge_class("retired") == "bg-yellow-lt"
+
+
+def test_required_marker_only_renders_for_required_fields():
+    required_field = SimpleNamespace(field=SimpleNamespace(required=True))
+    optional_field = SimpleNamespace(field=SimpleNamespace(required=False))
+
+    assert 'class="form-required-marker"' in str(required_marker(required_field))
+    assert required_marker(optional_field) == ""
 
 
 @pytest.fixture

@@ -41,6 +41,11 @@ input[type="time"].form-control.is-invalid {
   background-size: 16px 12px;
 }
 
+.form-required-marker {
+  margin-left: 0.125rem;
+  color: var(--tblr-danger);
+}
+
 .object-form-errors {
   display: block;
   text-align: left;
