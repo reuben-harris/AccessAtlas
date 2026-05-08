@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 from django.core.exceptions import ValidationError
@@ -7,7 +8,7 @@ from django.db import transaction
 from django.utils import timezone
 from simple_history.utils import update_change_reason
 
-from access_atlas.jobs.models import JobStatus
+from access_atlas.jobs.models import Job, JobStatus
 
 from .models import SiteVisitJob, SiteVisitStatus, Trip, TripApproval, TripStatus
 
@@ -140,6 +141,20 @@ def assign_job_to_site_visit(site_visit, job) -> SiteVisitJob:
     job.save(update_fields=["status", "updated_at"])
     update_change_reason(job, "Assigned to site visit")
     return assignment
+
+
+@transaction.atomic
+def assign_jobs_to_site_visit(site_visit, jobs: Iterable[Job], user) -> int:
+    """Assign selected jobs and reset approval as one planning change."""
+    selected_jobs = list(jobs)
+    for job in selected_jobs:
+        assign_job_to_site_visit(site_visit, job)
+    invalidate_trip_approval(
+        site_visit.trip,
+        user,
+        "Returned to submitted after job assignment change",
+    )
+    return len(selected_jobs)
 
 
 @transaction.atomic

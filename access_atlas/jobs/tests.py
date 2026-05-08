@@ -29,6 +29,7 @@ from access_atlas.jobs.models import (
 )
 from access_atlas.jobs.services import (
     assign_job_to_work_programme,
+    assign_jobs_to_work_programme,
     create_job_from_template,
 )
 from access_atlas.jobs.template_imports import parse_job_template_import_csv
@@ -247,6 +248,29 @@ def test_work_programme_assign_job_view_assigns_multiple_jobs(client):
 
 
 @pytest.mark.django_db
+def test_work_programme_assign_job_view_rejects_already_programmed_job(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    first_programme = WorkProgramme.objects.create(name="First Programme")
+    second_programme = WorkProgramme.objects.create(name="Second Programme")
+    job = Job.objects.create(
+        site=site,
+        title="Inspect cabinet",
+        work_programme=first_programme,
+    )
+
+    response = client.post(
+        reverse("work_programme_assign_job", kwargs={"pk": second_programme.pk}),
+        {"jobs": [job.pk]},
+    )
+
+    assert response.status_code == 302
+    job.refresh_from_db()
+    assert job.work_programme == first_programme
+
+
+@pytest.mark.django_db
 def test_work_programme_list_sorts_by_job_count(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -402,6 +426,30 @@ def test_assign_job_to_work_programme_rejects_already_programmed_job():
 
     with pytest.raises(ValidationError):
         assign_job_to_work_programme(job, second_programme)
+
+
+@pytest.mark.django_db
+def test_assign_jobs_to_work_programme_rolls_back_when_any_job_is_ineligible():
+    site = create_site()
+    first_programme = WorkProgramme.objects.create(name="First Programme")
+    second_programme = WorkProgramme.objects.create(name="Second Programme")
+    eligible_job = Job.objects.create(site=site, title="Inspect cabinet")
+    ineligible_job = Job.objects.create(
+        site=site,
+        title="Replace cable",
+        work_programme=first_programme,
+    )
+
+    with pytest.raises(ValidationError):
+        assign_jobs_to_work_programme(
+            [eligible_job, ineligible_job],
+            second_programme,
+        )
+
+    eligible_job.refresh_from_db()
+    ineligible_job.refresh_from_db()
+    assert eligible_job.work_programme is None
+    assert ineligible_job.work_programme == first_programme
 
 
 @pytest.mark.django_db
@@ -607,6 +655,7 @@ def test_invalid_job_from_template_post_keeps_selected_values(client):
     assert response.context["form"]["site"].value() == str(site.pk)
     assert b"Unable to save changes" in response.content
     assert b"Review the highlighted fields and try again." in response.content
+    assert b"Template: This field is required." in response.content
 
 
 @pytest.mark.django_db

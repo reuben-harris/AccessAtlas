@@ -30,18 +30,8 @@
     </dl>
   </div>
 </div>
-<div class="card mt-3">
-  <div class="card-header">
-    <h3 class="card-title">Assign Jobs</h3>
-  </div>
-  <div class="card-body">
-    <form method="post" action="{% url 'work_programme_assign_job' object.pk %}">
-      {% csrf_token %}
-      {% include "includes/form_fields.html" with form=assign_form %}
-      <button class="btn btn-primary" type="submit">Assign</button>
-    </form>
-  </div>
-</div>
+{% url 'work_programme_assign_job' object.pk as assign_jobs_url %}
+{% include "includes/assign_jobs_card.html" with form=assign_form action_url=assign_jobs_url title="Assign Jobs" %}
 <div class="card mt-3">
   <div class="card-header">
     <h3 class="card-title">Jobs</h3>

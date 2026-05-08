@@ -18,7 +18,10 @@ from access_atlas.trips.models import (
     TripApproval,
     TripStatus,
 )
-from access_atlas.trips.services import assign_job_to_site_visit
+from access_atlas.trips.services import (
+    assign_job_to_site_visit,
+    assign_jobs_to_site_visit,
+)
 
 
 @pytest.mark.django_db
@@ -603,6 +606,116 @@ def test_assigning_multiple_jobs_to_site_visit(client):
     assert first_job.status == JobStatus.ASSIGNED
     assert second_job.status == JobStatus.ASSIGNED
     assert SiteVisitJob.objects.filter(site_visit=site_visit).count() == 2
+
+
+@pytest.mark.django_db
+def test_assign_job_view_rejects_non_unassigned_job(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(
+        site=site,
+        title="Completed job",
+        status=JobStatus.COMPLETED,
+        closeout_note="Done",
+    )
+    client.force_login(user)
+
+    response = client.post(
+        reverse("assign_job", kwargs={"pk": site_visit.pk}),
+        {"jobs": [job.pk]},
+    )
+
+    assert response.status_code == 302
+    assert not SiteVisitJob.objects.filter(job=job).exists()
+    job.refresh_from_db()
+    assert job.status == JobStatus.COMPLETED
+
+
+@pytest.mark.django_db
+def test_assign_jobs_to_site_visit_rolls_back_when_any_job_is_ineligible():
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    eligible_job = Job.objects.create(site=site, title="Unassigned job")
+    ineligible_job = Job.objects.create(
+        site=site,
+        title="Completed job",
+        status=JobStatus.COMPLETED,
+        closeout_note="Done",
+    )
+
+    with pytest.raises(ValidationError):
+        assign_jobs_to_site_visit(site_visit, [eligible_job, ineligible_job], user)
+
+    eligible_job.refresh_from_db()
+    ineligible_job.refresh_from_db()
+    assert eligible_job.status == JobStatus.UNASSIGNED
+    assert ineligible_job.status == JobStatus.COMPLETED
+    assert SiteVisitJob.objects.filter(site_visit=site_visit).count() == 0
+
+
+@pytest.mark.django_db
+def test_assign_jobs_to_site_visit_resets_approved_trip():
+    leader = User.objects.create_user(email="leader@example.com")
+    approver = User.objects.create_user(email="approver@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=leader,
+        status=TripStatus.APPROVED,
+        approval_round=1,
+    )
+    TripApproval.objects.create(trip=trip, approver=approver, approval_round=1)
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    first_job = Job.objects.create(site=site, title="First job")
+    second_job = Job.objects.create(site=site, title="Second job")
+
+    assigned_count = assign_jobs_to_site_visit(
+        site_visit,
+        [first_job, second_job],
+        leader,
+    )
+
+    trip.refresh_from_db()
+    assert assigned_count == 2
+    assert trip.status == TripStatus.SUBMITTED
+    assert trip.approval_round == 2
 
 
 @pytest.mark.django_db

@@ -1,4 +1,7 @@
+from collections.abc import Iterable
+
 from django.core.exceptions import ValidationError
+from django.db import transaction
 
 from access_atlas.sites.models import Site
 
@@ -48,3 +51,15 @@ def assign_job_to_work_programme(job: Job, work_programme: WorkProgramme) -> Job
     job._change_reason = "Assigned job to work programme"
     job.save()
     return job
+
+
+@transaction.atomic
+def assign_jobs_to_work_programme(
+    jobs: Iterable[Job],
+    work_programme: WorkProgramme,
+) -> int:
+    """Attach multiple jobs to a work programme as one workflow."""
+    selected_jobs = list(jobs)
+    for job in selected_jobs:
+        assign_job_to_work_programme(job, work_programme)
+    return len(selected_jobs)

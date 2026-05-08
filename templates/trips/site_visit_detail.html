@@ -71,20 +71,6 @@
     </table>
   </div>
 </div>
-{% if assign_form %}
-  <div class="card mt-3">
-    <div class="card-header"><h3 class="card-title">Assign Jobs</h3></div>
-    <div class="card-body">
-      <form method="post" action="{% url 'assign_job' object.pk %}">
-        {% csrf_token %}
-        {% include "includes/form_fields.html" with form=assign_form %}
-        <button class="btn btn-primary" type="submit">Assign</button>
-      </form>
-    </div>
-  </div>
-{% else %}
-  <div class="alert alert-info mt-3" role="status">
-    Jobs cannot be assigned to site visits on completed or cancelled trips.
-  </div>
-{% endif %}
+{% url 'assign_job' object.pk as assign_jobs_url %}
+{% include "includes/assign_jobs_card.html" with form=assign_form action_url=assign_jobs_url title="Assign Jobs" unavailable_message="Jobs cannot be assigned to site visits on completed or cancelled trips." %}
 {% endblock %}

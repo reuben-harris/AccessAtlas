@@ -62,30 +62,38 @@ def work_programme_tomselect_config(
     )
 
 
+def _job_assignment_tomselect_config(
+    *,
+    url: str,
+    placeholder: str = "Search jobs",
+    filter_by: list[Const] | None = None,
+) -> TomSelectConfig:
+    """Shared TomSelect presentation for assigning existing jobs."""
+
+    return TomSelectConfig(
+        url=url,
+        css_framework="bootstrap5",
+        label_field="label",
+        placeholder=placeholder,
+        minimum_query_length=0,
+        preload="focus",
+        filter_by=filter_by or (),
+        plugin_remove_button=PluginRemoveButton(),
+    )
+
+
 def assignable_jobs_tomselect_config(site_id: int) -> TomSelectConfig:
     """Filter unassigned-job autocomplete results down to one site."""
 
-    return TomSelectConfig(
+    return _job_assignment_tomselect_config(
         url="autocomplete_unassigned_jobs",
-        css_framework="bootstrap5",
-        label_field="label",
-        placeholder="Search jobs",
-        minimum_query_length=0,
-        preload="focus",
         filter_by=[Const(str(site_id), "site_id")],
-        plugin_remove_button=PluginRemoveButton(),
     )
 
 
 def unprogrammed_jobs_tomselect_config() -> TomSelectConfig:
     """Standard config for assigning existing jobs to a work programme."""
 
-    return TomSelectConfig(
+    return _job_assignment_tomselect_config(
         url="autocomplete_unprogrammed_jobs",
-        css_framework="bootstrap5",
-        label_field="label",
-        placeholder="Search jobs",
-        minimum_query_length=0,
-        preload="focus",
-        plugin_remove_button=PluginRemoveButton(),
     )

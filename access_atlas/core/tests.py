@@ -200,15 +200,21 @@ def test_sidebar_highlights_current_top_level_page(logged_in_client):
 
 
 @pytest.mark.django_db
-def test_jobs_sidebar_exposes_template_create_action(logged_in_client):
+def test_jobs_sidebar_exposes_all_compact_actions(logged_in_client):
     response = logged_in_client.get(reverse("job_list"))
 
     assert response.status_code == 200
     content = response.content.decode()
+    assert reverse("job_import") in content
+    assert 'aria-label="Import jobs"' in content
     assert reverse("job_create_from_template") in content
     assert 'aria-label="New job from template"' in content
+    assert reverse("job_create") in content
+    assert 'aria-label="New job"' in content
     assert "nav-create-link-template" in content
+    assert "ti ti-upload" in content
     assert "ti ti-template" in content
+    assert "ti ti-plus" in content
 
 
 @pytest.mark.django_db

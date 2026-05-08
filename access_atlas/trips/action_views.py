@@ -10,7 +10,7 @@ from .forms import AssignJobForm, TripCloseoutForm
 from .models import SiteVisit, SiteVisitJob, Trip, TripStatus
 from .services import (
     approve_trip,
-    assign_job_to_site_visit,
+    assign_jobs_to_site_visit,
     cancel_trip,
     close_trip,
     get_trip_cancel_summary,
@@ -59,21 +59,11 @@ def assign_job(request, pk):
     if form.is_valid():
         jobs = form.cleaned_data["jobs"]
         try:
-            with transaction.atomic():
-                # The assignment and approval reset are one state transition.
-                # Keep them in one transaction so bulk assignment never partly
-                # succeeds without also moving the trip back to submitted.
-                for job in jobs:
-                    assign_job_to_site_visit(site_visit, job)
-                invalidate_trip_approval(
-                    site_visit.trip,
-                    request.user,
-                    "Returned to submitted after job assignment change",
-                )
+            assigned_count = assign_jobs_to_site_visit(site_visit, jobs, request.user)
         except ValidationError as exc:
             messages.error(request, exc.message)
         else:
-            messages.success(request, f"Assigned {len(jobs)} job(s).")
+            messages.success(request, f"Assigned {assigned_count} job(s).")
     else:
         messages.error(request, "Select one or more unassigned jobs for this site.")
     return redirect(site_visit)

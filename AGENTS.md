@@ -112,6 +112,8 @@ Do not add direct write-back to the source system unless the user explicitly cha
 - Prefer practical object pages over elaborate planning surfaces unless the user explicitly asks to expand them.
 - Preserve a consistent feel across list, detail, and edit views.
 - Status, history, and planning relationships should be visible without requiring deep navigation.
+- Prefer small reusable blocks once a UI or workflow pattern appears in more than one place. Use template includes for repeated markup, helper functions for repeated configuration such as TomSelect setup, and services for repeated business workflows. Avoid abstracting one-off layouts, and keep shared blocks narrow enough that local page intent stays clear.
+- Normal Django forms should use the shared form field and error summary includes unless a page needs a deliberate custom layout. Custom layouts should still preserve required markers and server-side error summaries where practical.
 - When adding or reorganizing CSS, include concise comments around sections or non-obvious rules so a human can navigate the stylesheet quickly later.
 - When adding or changing non-trivial Python logic, include concise comments or docstrings around workflow-heavy code paths, adapter layers, or policy decisions so a Django engineer can understand why the flow exists without reverse-engineering it from tests.
 - Apply the same standard to JavaScript: add concise comments around non-obvious state flow, third-party library integration points, preference persistence, and rendering adapters. Avoid narrating obvious DOM reads, loops, or event wiring.
