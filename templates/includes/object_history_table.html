@@ -1,7 +1,6 @@
 {% load history_extras %}
 {% load querystring %}
 
-{% if history_records %}
 <div class="card{% if card_class %} {{ card_class }}{% endif %}">
   <div class="card-header">
     <h3 class="card-title">{{ history_title|default:"History" }}</h3>
@@ -40,10 +39,13 @@
             <td>{{ record|change_reason }}</td>
             <td>{{ record.history_user|default:"System" }}</td>
           </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4" class="text-secondary">No history records found.</td>
+          </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
 {% include "includes/pagination_footer.html" %}
-{% endif %}

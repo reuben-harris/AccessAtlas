@@ -1,8 +1,20 @@
-{% extends "base/history.html" %}
+{% extends "base/base.html" %}
 
 {% block title %}{{ object.name }} History - Access Atlas{% endblock %}
 
-{% block history_title %}{{ object.name }} History{% endblock %}
-{% block history_nav %}
-  {% include "includes/detail_section_nav.html" %}
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">{{ object.name }}</h2>
+    </div>
+    <div class="col-auto ms-auto">
+      <a class="btn btn-warning" href="{% url 'work_programme_update' object.pk %}">
+        Edit
+      </a>
+    </div>
+  </div>
+</div>
+{% include "includes/detail_section_nav.html" %}
+{% include "includes/object_history_table.html" with history_records=history_records %}
 {% endblock %}
