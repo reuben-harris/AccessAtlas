@@ -373,7 +373,6 @@
       fitFeatures(drawnLayers);
     },
     {
-      controlClassName: "site-map-home-control",
       title: "Reset map view",
       ariaLabel: "Reset map view",
     },

@@ -49,8 +49,6 @@
 
 /* Home/reset controls should render consistently anywhere we add them. */
 .access-atlas-map-home-control button,
-.job-map-home-control button,
-.site-map-home-control button,
 .leaflet-control-fullscreen a {
   display: flex;
   align-items: center;
@@ -64,9 +62,7 @@
   cursor: pointer;
 }
 
-.access-atlas-map-home-control button i,
-.job-map-home-control button i,
-.site-map-home-control button i {
+.access-atlas-map-home-control button i {
   font-size: 1rem;
 }
 
@@ -78,10 +74,6 @@
 
 .access-atlas-map-home-control button:hover,
 .access-atlas-map-home-control button:focus-visible,
-.job-map-home-control button:hover,
-.job-map-home-control button:focus-visible,
-.site-map-home-control button:hover,
-.site-map-home-control button:focus-visible,
 .leaflet-control-fullscreen a:hover,
 .leaflet-control-fullscreen a:focus-visible {
   background: #f4f4f4;
@@ -114,8 +106,6 @@
 }
 
 [data-bs-theme="dark"] .access-atlas-map-home-control button,
-[data-bs-theme="dark"] .job-map-home-control button,
-[data-bs-theme="dark"] .site-map-home-control button,
 [data-bs-theme="dark"] .leaflet-control-fullscreen a {
   color: var(--tblr-body-color);
   background-color: var(--tblr-bg-surface);
@@ -124,10 +114,6 @@
 
 [data-bs-theme="dark"] .access-atlas-map-home-control button:hover,
 [data-bs-theme="dark"] .access-atlas-map-home-control button:focus-visible,
-[data-bs-theme="dark"] .job-map-home-control button:hover,
-[data-bs-theme="dark"] .job-map-home-control button:focus-visible,
-[data-bs-theme="dark"] .site-map-home-control button:hover,
-[data-bs-theme="dark"] .site-map-home-control button:focus-visible,
 [data-bs-theme="dark"] .leaflet-control-fullscreen a:hover,
 [data-bs-theme="dark"] .leaflet-control-fullscreen a:focus-visible {
   background-color: var(--tblr-bg-surface-secondary);

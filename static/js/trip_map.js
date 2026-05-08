@@ -218,7 +218,7 @@
   tileController.apply();
   layers = drawFeatures();
   resetView();
-  addHomeControl(map, resetView, { controlClassName: "job-map-home-control" });
+  addHomeControl(map, resetView);
   addFullscreenControl(map);
   settleMapLayout(map, resetView);
 })();

@@ -185,14 +185,10 @@
     fitLayersOrDefault(map, markers, defaultCenter, defaultZoom);
   }
 
-  addHomeControl(
-    map,
-    () => {
-      fitLayersOrDefault(map, markers, defaultCenter, defaultZoom);
-      savePreference();
-    },
-    { controlClassName: "job-map-home-control" },
-  );
+  addHomeControl(map, () => {
+    fitLayersOrDefault(map, markers, defaultCenter, defaultZoom);
+    savePreference();
+  });
   addFullscreenControl(map);
   tileController.apply();
   markers = drawMarkers();

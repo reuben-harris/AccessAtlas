@@ -234,14 +234,10 @@
   }
 
   function mountHomeControl() {
-    sharedAddHomeControl(
-      map,
-      () => {
-        fitMarkers(visibleMarkers);
-        savePreference();
-      },
-      { controlClassName: "job-map-home-control" },
-    );
+    sharedAddHomeControl(map, () => {
+      fitMarkers(visibleMarkers);
+      savePreference();
+    });
   }
 
   buildStatusControls();
