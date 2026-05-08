@@ -4,7 +4,11 @@ from dataclasses import dataclass
 
 from django.db import transaction
 
-from access_atlas.core.imports import has_import_row_errors, read_uploaded_csv_rows
+from access_atlas.core.imports import (
+    has_import_row_errors,
+    read_csv_text_rows,
+    read_uploaded_csv_rows,
+)
 
 from .models import JobTemplate, Priority
 
@@ -16,6 +20,7 @@ OPTIONAL_HEADERS = [
     "is_active",
 ]
 SESSION_KEY = "job_template_import_rows"
+CSV_SESSION_KEY = "job_template_import_csv"
 TRUTHY_VALUES = {"1", "true", "yes", "y", "on"}
 FALSY_VALUES = {"0", "false", "no", "n", "off"}
 
@@ -81,12 +86,10 @@ def parse_optional_bool(value: str) -> tuple[bool, str]:
     return True, "is_active must be true or false."
 
 
-def parse_job_template_import_csv(uploaded_file) -> list[JobTemplateImportRow]:
-    rows, error = read_uploaded_csv_rows(
-        uploaded_file,
-        required_headers=REQUIRED_HEADERS,
-        optional_headers=OPTIONAL_HEADERS,
-    )
+def build_job_template_import_rows(
+    rows: list[dict[str, str]] | None,
+    error: str,
+) -> list[JobTemplateImportRow]:
     if error:
         return [
             JobTemplateImportRow(
@@ -96,6 +99,7 @@ def parse_job_template_import_csv(uploaded_file) -> list[JobTemplateImportRow]:
             )
         ]
 
+    rows = rows or []
     existing_titles = {
         title.casefold()
         for title in JobTemplate.objects.values_list("title", flat=True)
@@ -151,6 +155,24 @@ def parse_job_template_import_csv(uploaded_file) -> list[JobTemplateImportRow]:
         ]
 
     return result
+
+
+def parse_job_template_import_csv(uploaded_file) -> list[JobTemplateImportRow]:
+    rows, error = read_uploaded_csv_rows(
+        uploaded_file,
+        required_headers=REQUIRED_HEADERS,
+        optional_headers=OPTIONAL_HEADERS,
+    )
+    return build_job_template_import_rows(rows, error)
+
+
+def parse_job_template_import_csv_text(text: str) -> list[JobTemplateImportRow]:
+    rows, error = read_csv_text_rows(
+        text,
+        required_headers=REQUIRED_HEADERS,
+        optional_headers=OPTIONAL_HEADERS,
+    )
+    return build_job_template_import_rows(rows, error)
 
 
 def has_template_import_errors(rows: list[JobTemplateImportRow]) -> bool:

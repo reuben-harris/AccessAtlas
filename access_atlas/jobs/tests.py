@@ -40,6 +40,11 @@ from access_atlas.sites.models import Site
 from access_atlas.trips.models import SiteVisit, Trip
 from access_atlas.trips.services import assign_job_to_site_visit
 
+IMPORT_FIX_ALERT = (
+    "Upload a corrected CSV, or fix referenced app data and refresh the review "
+    "before importing."
+)
+
 
 def create_site(code="AA-001"):
     return Site.objects.create(
@@ -50,6 +55,12 @@ def create_site(code="AA-001"):
         latitude=-41.1,
         longitude=174.1,
     )
+
+
+def assert_import_create_button_disabled(content, label):
+    assert IMPORT_FIX_ALERT in content
+    assert label in content
+    assert 'type="button" disabled' in content
 
 
 @pytest.mark.django_db
@@ -1508,7 +1519,7 @@ def test_job_import_rejects_unknown_site(client):
     content = response.content.decode()
     assert response.status_code == 200
     assert "Unknown site_code" in content
-    assert "Create jobs" not in content
+    assert_import_create_button_disabled(content, "Create jobs")
 
 
 @pytest.mark.django_db
@@ -1548,7 +1559,7 @@ def test_job_import_rejects_assigned_status(client):
     content = response.content.decode()
     assert response.status_code == 200
     assert "Assigned jobs must be planned through a site visit." in content
-    assert "Create jobs" not in content
+    assert_import_create_button_disabled(content, "Create jobs")
 
 
 @pytest.mark.django_db
@@ -1568,7 +1579,38 @@ def test_job_import_requires_closeout_note_for_terminal_status(client):
     content = response.content.decode()
     assert response.status_code == 200
     assert "closeout_note is required for completed or cancelled jobs." in content
-    assert "Create jobs" not in content
+    assert_import_create_button_disabled(content, "Create jobs")
+
+
+@pytest.mark.django_db
+def test_job_import_refresh_revalidates_retained_csv_against_current_data(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    JobTemplate.objects.create(title="Replace sensor", is_active=True)
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        b"site_code,template_title\nAA-001,Replace sensor\n",
+        content_type="text/csv",
+    )
+    client.post(reverse("job_import"), {"csv_file": csv_file})
+    create_site()
+
+    response = client.post(
+        reverse("job_import"),
+        {"import_action": "refresh"},
+        follow=True,
+    )
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Ready" in content
+    assert "Unknown site_code" not in content
+    assert "Create jobs" in content
+
+    response = client.post(reverse("job_import_confirm"))
+
+    assert response.status_code == 302
+    assert Job.objects.count() == 1
 
 
 @pytest.mark.django_db
@@ -1809,7 +1851,7 @@ def test_job_template_import_rejects_existing_title(client):
     content = response.content.decode()
     assert response.status_code == 200
     assert "A job template with this title already exists." in content
-    assert "Create job templates" not in content
+    assert_import_create_button_disabled(content, "Create job templates")
 
 
 @pytest.mark.django_db
@@ -1827,7 +1869,7 @@ def test_job_template_import_rejects_duplicate_title_in_file(client):
     content = response.content.decode()
     assert response.status_code == 200
     assert "Duplicate title in this file." in content
-    assert "Create job templates" not in content
+    assert_import_create_button_disabled(content, "Create job templates")
 
 
 @pytest.mark.django_db
@@ -1845,7 +1887,7 @@ def test_job_template_import_rejects_invalid_priority(client):
     content = response.content.decode()
     assert response.status_code == 200
     assert "Unknown default_priority." in content
-    assert "Create job templates" not in content
+    assert_import_create_button_disabled(content, "Create job templates")
 
 
 @pytest.mark.django_db
@@ -1863,7 +1905,7 @@ def test_job_template_import_rejects_invalid_estimate(client):
     content = response.content.decode()
     assert response.status_code == 200
     assert "estimated_duration_minutes must be a positive integer." in content
-    assert "Create job templates" not in content
+    assert_import_create_button_disabled(content, "Create job templates")
 
 
 @pytest.mark.django_db
@@ -1881,6 +1923,30 @@ def test_job_template_import_rejects_invalid_active_flag(client):
     content = response.content.decode()
     assert response.status_code == 200
     assert "is_active must be true or false." in content
+    assert_import_create_button_disabled(content, "Create job templates")
+
+
+@pytest.mark.django_db
+def test_job_template_import_discard_clears_retained_review(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    csv_file = SimpleUploadedFile(
+        "job_templates.csv",
+        b"title\nAsset Renewal Alloy\n",
+        content_type="text/csv",
+    )
+    client.post(reverse("job_template_import"), {"csv_file": csv_file})
+
+    response = client.post(
+        reverse("job_template_import"),
+        {"import_action": "discard"},
+        follow=True,
+    )
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Ready" not in content
+    assert "Review Import" not in content
     assert "Create job templates" not in content
 
 

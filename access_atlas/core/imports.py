@@ -35,7 +35,20 @@ def read_uploaded_csv_rows(
         text = content.decode("utf-8-sig")
     except UnicodeDecodeError:
         return None, "CSV file must be UTF-8 encoded."
+    return read_csv_text_rows(
+        text,
+        required_headers=required_headers,
+        optional_headers=optional_headers,
+    )
 
+
+def read_csv_text_rows(
+    text: str,
+    *,
+    required_headers: Sequence[str],
+    optional_headers: Sequence[str],
+) -> tuple[list[dict[str, str]] | None, str]:
+    """Parse retained CSV text and validate the header contract."""
     reader = csv.DictReader(StringIO(text))
     headers = reader.fieldnames or []
     supported_headers = [*required_headers, *optional_headers]
@@ -44,6 +57,16 @@ def read_uploaded_csv_rows(
     ):
         return None, csv_header_error(required_headers, optional_headers)
     return list(reader), ""
+
+
+def decode_uploaded_csv(uploaded_file) -> tuple[str, str]:
+    """Return uploaded CSV text so views can retain and revalidate it later."""
+
+    content = uploaded_file.read()
+    try:
+        return content.decode("utf-8-sig"), ""
+    except UnicodeDecodeError:
+        return "", "CSV file must be UTF-8 encoded."
 
 
 def csv_header_error(
@@ -85,6 +108,17 @@ def load_import_rows[RowT: ImportRow](
 
 def clear_import_rows(request: HttpRequest, *, session_key: str) -> None:
     request.session.pop(session_key, None)
+    request.session.modified = True
+
+
+def clear_import_review(
+    request: HttpRequest,
+    *,
+    rows_session_key: str,
+    csv_session_key: str,
+) -> None:
+    request.session.pop(rows_session_key, None)
+    request.session.pop(csv_session_key, None)
     request.session.modified = True
 
 

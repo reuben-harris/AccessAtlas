@@ -5,7 +5,11 @@ from dataclasses import dataclass
 from django.db import transaction
 from django.db.models import Q
 
-from access_atlas.core.imports import has_import_row_errors, read_uploaded_csv_rows
+from access_atlas.core.imports import (
+    has_import_row_errors,
+    read_csv_text_rows,
+    read_uploaded_csv_rows,
+)
 from access_atlas.sites.models import Site
 
 from .models import Job, JobStatus, JobTemplate, WorkProgramme
@@ -19,6 +23,7 @@ IMPORTABLE_STATUSES = {
     JobStatus.CANCELLED,
 }
 SESSION_KEY = "job_import_rows"
+CSV_SESSION_KEY = "job_import_csv"
 
 
 @dataclass(frozen=True)
@@ -136,12 +141,9 @@ def build_job_import_lookups(rows: list[dict[str, str]]) -> JobImportLookups:
     )
 
 
-def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
-    rows, error = read_uploaded_csv_rows(
-        uploaded_file,
-        required_headers=REQUIRED_HEADERS,
-        optional_headers=OPTIONAL_HEADERS,
-    )
+def build_job_import_rows(
+    rows: list[dict[str, str]] | None, error: str
+) -> list[JobImportRow]:
     if error:
         return [
             JobImportRow(
@@ -151,7 +153,7 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
                 error=error,
             )
         ]
-
+    rows = rows or []
     lookups = build_job_import_lookups(rows)
     result = []
     for index, row in enumerate(rows, start=2):
@@ -315,6 +317,24 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
         ]
 
     return result
+
+
+def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
+    rows, error = read_uploaded_csv_rows(
+        uploaded_file,
+        required_headers=REQUIRED_HEADERS,
+        optional_headers=OPTIONAL_HEADERS,
+    )
+    return build_job_import_rows(rows, error)
+
+
+def parse_job_import_csv_text(text: str) -> list[JobImportRow]:
+    rows, error = read_csv_text_rows(
+        text,
+        required_headers=REQUIRED_HEADERS,
+        optional_headers=OPTIONAL_HEADERS,
+    )
+    return build_job_import_rows(rows, error)
 
 
 def has_import_errors(rows: list[JobImportRow]) -> bool:

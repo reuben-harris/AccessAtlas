@@ -21,7 +21,8 @@ from access_atlas.accounts.preferences import (
 )
 from access_atlas.core.history import HistoryReasonMixin
 from access_atlas.core.imports import (
-    clear_import_rows,
+    clear_import_review,
+    decode_uploaded_csv,
     import_review_context,
     load_import_rows,
     store_import_rows,
@@ -49,12 +50,16 @@ from .forms import (
     WorkProgrammeForm,
 )
 from .imports import (
+    CSV_SESSION_KEY as JOB_IMPORT_CSV_SESSION_KEY,
+)
+from .imports import (
     SESSION_KEY as JOB_IMPORT_SESSION_KEY,
 )
 from .imports import (
+    build_job_import_rows,
     create_jobs_from_import_rows,
     has_import_errors,
-    parse_job_import_csv,
+    parse_job_import_csv_text,
     rows_from_session,
 )
 from .models import (
@@ -68,14 +73,39 @@ from .models import (
 from .services import assign_jobs_to_work_programme, create_job_from_template
 from .status_display import JOB_STATUS_COLORS
 from .template_imports import (
+    CSV_SESSION_KEY as JOB_TEMPLATE_IMPORT_CSV_SESSION_KEY,
+)
+from .template_imports import (
     SESSION_KEY as JOB_TEMPLATE_IMPORT_SESSION_KEY,
 )
 from .template_imports import (
+    build_job_template_import_rows,
     create_job_templates_from_import_rows,
     has_template_import_errors,
-    parse_job_template_import_csv,
+    parse_job_template_import_csv_text,
     template_rows_from_session,
 )
+
+IMPORT_ACTION_REFRESH = "refresh"
+IMPORT_ACTION_DISCARD = "discard"
+
+
+def store_import_review(
+    request,
+    *,
+    rows_session_key: str,
+    csv_session_key: str,
+    rows,
+    csv_text: str | None,
+) -> None:
+    """Persist both the review rows and original CSV text for manual refresh."""
+
+    store_import_rows(request, session_key=rows_session_key, rows=rows)
+    if csv_text is None:
+        request.session.pop(csv_session_key, None)
+    else:
+        request.session[csv_session_key] = csv_text
+    request.session.modified = True
 
 
 class JobTemplateListView(
@@ -318,13 +348,45 @@ class JobTemplateUpdateView(
 def import_job_templates_view(request):
     form = JobTemplateImportUploadForm(request.POST or None, request.FILES or None)
     rows = None
-    if request.method == "POST" and form.is_valid():
-        rows = parse_job_template_import_csv(form.cleaned_data["csv_file"])
-        store_import_rows(
-            request,
-            session_key=JOB_TEMPLATE_IMPORT_SESSION_KEY,
-            rows=rows,
-        )
+    if request.method == "POST":
+        action = request.POST.get("import_action")
+        if action == IMPORT_ACTION_DISCARD:
+            clear_import_review(
+                request,
+                rows_session_key=JOB_TEMPLATE_IMPORT_SESSION_KEY,
+                csv_session_key=JOB_TEMPLATE_IMPORT_CSV_SESSION_KEY,
+            )
+            messages.info(request, "Discarded the retained job template import review.")
+            return redirect("job_template_import")
+        if action == IMPORT_ACTION_REFRESH:
+            csv_text = request.session.get(JOB_TEMPLATE_IMPORT_CSV_SESSION_KEY)
+            if not csv_text:
+                messages.error(request, "Upload a CSV before refreshing the review.")
+                return redirect("job_template_import")
+            rows = parse_job_template_import_csv_text(str(csv_text))
+            store_import_review(
+                request,
+                rows_session_key=JOB_TEMPLATE_IMPORT_SESSION_KEY,
+                csv_session_key=JOB_TEMPLATE_IMPORT_CSV_SESSION_KEY,
+                rows=rows,
+                csv_text=str(csv_text),
+            )
+            messages.success(request, "Refreshed the job template import review.")
+            return redirect("job_template_import")
+        if form.is_valid():
+            csv_text, csv_error = decode_uploaded_csv(form.cleaned_data["csv_file"])
+            rows = (
+                build_job_template_import_rows(None, csv_error)
+                if csv_error
+                else parse_job_template_import_csv_text(csv_text)
+            )
+            store_import_review(
+                request,
+                rows_session_key=JOB_TEMPLATE_IMPORT_SESSION_KEY,
+                csv_session_key=JOB_TEMPLATE_IMPORT_CSV_SESSION_KEY,
+                rows=rows,
+                csv_text=None if csv_error else csv_text,
+            )
     elif request.method == "GET":
         rows = load_import_rows(
             request,
@@ -340,6 +402,9 @@ def import_job_templates_view(request):
             "example_path": "docs/examples/job-template-test-import.csv",
             "confirm_url_name": "job_template_import_confirm",
             "confirm_button_label": "Create job templates",
+            "retained_csv_available": bool(
+                request.session.get(JOB_TEMPLATE_IMPORT_CSV_SESSION_KEY)
+            ),
             **import_review_context(
                 request,
                 rows=rows,
@@ -377,7 +442,11 @@ def confirm_job_templates_import_view(request):
         )
         return redirect("job_template_import")
     templates = create_job_templates_from_import_rows(rows)
-    clear_import_rows(request, session_key=JOB_TEMPLATE_IMPORT_SESSION_KEY)
+    clear_import_review(
+        request,
+        rows_session_key=JOB_TEMPLATE_IMPORT_SESSION_KEY,
+        csv_session_key=JOB_TEMPLATE_IMPORT_CSV_SESSION_KEY,
+    )
     messages.success(request, f"Imported {len(templates)} job templates.")
     return redirect("job_template_list")
 
@@ -646,9 +715,45 @@ def create_job_from_template_view(request):
 def import_jobs_view(request):
     form = JobImportUploadForm(request.POST or None, request.FILES or None)
     rows = None
-    if request.method == "POST" and form.is_valid():
-        rows = parse_job_import_csv(form.cleaned_data["csv_file"])
-        store_import_rows(request, session_key=JOB_IMPORT_SESSION_KEY, rows=rows)
+    if request.method == "POST":
+        action = request.POST.get("import_action")
+        if action == IMPORT_ACTION_DISCARD:
+            clear_import_review(
+                request,
+                rows_session_key=JOB_IMPORT_SESSION_KEY,
+                csv_session_key=JOB_IMPORT_CSV_SESSION_KEY,
+            )
+            messages.info(request, "Discarded the retained jobs import review.")
+            return redirect("job_import")
+        if action == IMPORT_ACTION_REFRESH:
+            csv_text = request.session.get(JOB_IMPORT_CSV_SESSION_KEY)
+            if not csv_text:
+                messages.error(request, "Upload a CSV before refreshing the review.")
+                return redirect("job_import")
+            rows = parse_job_import_csv_text(str(csv_text))
+            store_import_review(
+                request,
+                rows_session_key=JOB_IMPORT_SESSION_KEY,
+                csv_session_key=JOB_IMPORT_CSV_SESSION_KEY,
+                rows=rows,
+                csv_text=str(csv_text),
+            )
+            messages.success(request, "Refreshed the jobs import review.")
+            return redirect("job_import")
+        if form.is_valid():
+            csv_text, csv_error = decode_uploaded_csv(form.cleaned_data["csv_file"])
+            rows = (
+                build_job_import_rows(None, csv_error)
+                if csv_error
+                else parse_job_import_csv_text(csv_text)
+            )
+            store_import_review(
+                request,
+                rows_session_key=JOB_IMPORT_SESSION_KEY,
+                csv_session_key=JOB_IMPORT_CSV_SESSION_KEY,
+                rows=rows,
+                csv_text=None if csv_error else csv_text,
+            )
     elif request.method == "GET":
         rows = load_import_rows(
             request,
@@ -664,6 +769,9 @@ def import_jobs_view(request):
             "example_path": "docs/examples/job-test-import.csv",
             "confirm_url_name": "job_import_confirm",
             "confirm_button_label": "Create jobs",
+            "retained_csv_available": bool(
+                request.session.get(JOB_IMPORT_CSV_SESSION_KEY)
+            ),
             **import_review_context(
                 request,
                 rows=rows,
@@ -696,7 +804,11 @@ def confirm_jobs_import_view(request):
         messages.error(request, "Upload and review a valid jobs CSV before importing.")
         return redirect("job_import")
     jobs = create_jobs_from_import_rows(rows)
-    clear_import_rows(request, session_key=JOB_IMPORT_SESSION_KEY)
+    clear_import_review(
+        request,
+        rows_session_key=JOB_IMPORT_SESSION_KEY,
+        csv_session_key=JOB_IMPORT_CSV_SESSION_KEY,
+    )
     messages.success(request, f"Imported {len(jobs)} jobs.")
     return redirect("job_list")
 
