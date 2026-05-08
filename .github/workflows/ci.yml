@@ -93,8 +93,6 @@ jobs:
       SECRET_KEY: ci-secret-key
       DEBUG: "false"
       ALLOWED_HOSTS: localhost,127.0.0.1
-      SITE_FEED_URL: http://127.0.0.1:8000/dummy/site-feed.json
-      SITE_FEED_TOKEN: ci-token
 
     steps:
       - name: Check out repository

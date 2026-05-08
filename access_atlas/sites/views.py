@@ -25,7 +25,7 @@ from .site_page_views import (
     SitePhotoBulkHideView,
     SitePhotosView,
 )
-from .sync_views import dummy_site_feed, readonly_site_response, sync_sites_view
+from .sync_views import sync_sites_view
 
 __all__ = [
     "SiteListView",
@@ -50,6 +50,4 @@ __all__ = [
     "access_record_version_geojson_download",
     "access_record_version_kml_download",
     "sync_sites_view",
-    "dummy_site_feed",
-    "readonly_site_response",
 ]

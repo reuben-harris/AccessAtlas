@@ -1,7 +1,5 @@
 from django.urls import path
 
-from access_atlas.sites.views import dummy_site_feed
-
 from . import views
 from .autocomplete_views import (
     JobTemplateAutocompleteView,
@@ -46,5 +44,4 @@ urlpatterns = [
         UnprogrammedJobAutocompleteView.as_view(),
         name="autocomplete_unprogrammed_jobs",
     ),
-    path("dummy/site-feed.json", dummy_site_feed, name="dummy_site_feed"),
 ]

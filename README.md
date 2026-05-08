@@ -38,7 +38,7 @@ erDiagram
 
 Access Atlas does not own canonical site identity, descriptions, tags, coordinates, or addresses.
 
-It consumes one configured HTTP JSON feed and upserts local site references from that feed. Synced site fields stay read-only in Access Atlas. Access-start coordinates are owned per Access Record revision (GeoJSON), not by the site sync feed. If no external feed is configured, the app can use its own dummy feed for local development and evaluation.
+It consumes one configured HTTP JSON feed and upserts local site references from that feed. Synced site fields stay read-only in Access Atlas. Access-start coordinates are owned per Access Record revision (GeoJSON), not by the site sync feed.
 
 Sites present in the latest feed are marked `active`. Previously synced sites
 missing from the latest feed are marked `stale` and remain visible for history
@@ -91,8 +91,8 @@ Example feed:
 Configure site sync through `.env`:
 
 ```env
-SITE_FEED_URL=http://127.0.0.1:8000/dummy/site-feed.json
-SITE_FEED_TOKEN=dev-token
+SITE_FEED_URL=https://example.com/access-atlas/site-feed.json
+SITE_FEED_TOKEN=change-me
 ```
 
 ## Development
