@@ -42,7 +42,6 @@ class JobTemplate(models.Model):
         choices=Priority.choices,
         default=Priority.NORMAL,
     )
-    notes = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -179,7 +178,6 @@ class Job(models.Model):
         default=JobStatus.UNASSIGNED,
     )
     closeout_note = models.TextField(blank=True)
-    notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     history = HistoricalRecords()

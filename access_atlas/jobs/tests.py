@@ -59,7 +59,6 @@ def test_create_job_from_template_copies_template_and_requirements():
         title="Replace sensor",
         description="Replace the field sensor.",
         estimated_duration_minutes=90,
-        notes="Bring spares.",
     )
     TemplateRequirement.objects.create(
         job_template=template,
@@ -374,7 +373,6 @@ def test_job_template_form_shows_duplicate_title_error(client):
             "description": "",
             "estimated_duration_minutes": "",
             "priority": "normal",
-            "notes": "",
             "is_active": "on",
         },
     )
@@ -539,7 +537,6 @@ def test_job_update_sets_and_clears_work_programme(client):
             "priority": "normal",
             "status": JobStatus.UNASSIGNED,
             "closeout_note": "",
-            "notes": "",
         },
     )
 
@@ -558,7 +555,6 @@ def test_job_update_sets_and_clears_work_programme(client):
             "priority": "normal",
             "status": JobStatus.UNASSIGNED,
             "closeout_note": "",
-            "notes": "",
         },
     )
 
@@ -600,7 +596,6 @@ def test_editing_assigned_job_on_approved_trip_requires_confirmation_and_resubmi
             "estimated_duration_minutes": "",
             "priority": "normal",
             "status": JobStatus.ASSIGNED,
-            "notes": "",
         },
     )
 
@@ -617,7 +612,6 @@ def test_editing_assigned_job_on_approved_trip_requires_confirmation_and_resubmi
             "estimated_duration_minutes": "",
             "priority": "normal",
             "status": JobStatus.ASSIGNED,
-            "notes": "",
             "confirm_trip_approval_reset": "on",
         },
     )
@@ -693,7 +687,6 @@ def test_invalid_job_post_keeps_selected_site(client):
             "priority": "normal",
             "status": JobStatus.UNASSIGNED,
             "closeout_note": "",
-            "notes": "",
         },
     )
 
@@ -1630,8 +1623,8 @@ def test_job_template_import_upload_reviews_valid_csv_without_creating_templates
     csv_file = SimpleUploadedFile(
         "job_templates.csv",
         (
-            b"title,description,estimated_duration_minutes,default_priority,notes,is_active\n"
-            b"Asset Renewal Alloy,Replace fittings,120,high,Bring spares,true\n"
+            b"title,description,estimated_duration_minutes,default_priority,is_active\n"
+            b"Asset Renewal Alloy,Replace fittings,120,high,true\n"
         ),
         content_type="text/csv",
     )
@@ -1656,7 +1649,7 @@ def test_job_template_import_parser_rejects_unsupported_headers():
 
     assert rows[0].error == (
         "CSV headers must include title and may also include "
-        "description,estimated_duration_minutes,default_priority,notes,is_active."
+        "description,estimated_duration_minutes,default_priority,is_active."
     )
 
 
@@ -1671,7 +1664,7 @@ def test_job_template_import_parser_rejects_missing_required_headers():
 
     assert rows[0].error == (
         "CSV headers must include title and may also include "
-        "description,estimated_duration_minutes,default_priority,notes,is_active."
+        "description,estimated_duration_minutes,default_priority,is_active."
     )
 
 
@@ -1762,7 +1755,7 @@ def test_job_template_import_page_includes_specification_and_example_path(client
     content = response.content.decode()
     assert response.status_code == 200
     assert (
-        "title,description,estimated_duration_minutes,default_priority,notes,is_active"
+        "title,description,estimated_duration_minutes,default_priority,is_active"
         in content
     )
     assert "docs/examples/job-template-test-import.csv" in content
@@ -1776,9 +1769,9 @@ def test_job_template_import_confirm_creates_templates_from_reviewed_rows(client
     csv_file = SimpleUploadedFile(
         "job_templates.csv",
         (
-            b"title,description,estimated_duration_minutes,default_priority,notes,is_active\n"
-            b"Asset Renewal Alloy,Replace fittings,120,high,Bring spares,false\n"
-            b"GDSP SIM swap,Swap SIM,45,normal,,true\n"
+            b"title,description,estimated_duration_minutes,default_priority,is_active\n"
+            b"Asset Renewal Alloy,Replace fittings,120,high,false\n"
+            b"GDSP SIM swap,Swap SIM,45,normal,true\n"
         ),
         content_type="text/csv",
     )

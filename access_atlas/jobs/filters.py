@@ -173,9 +173,7 @@ class JobTemplateFilterSet(AccessAtlasFilterSet):
         if not value:
             return queryset
         return queryset.filter(
-            Q(title__icontains=value)
-            | Q(description__icontains=value)
-            | Q(notes__icontains=value)
+            Q(title__icontains=value) | Q(description__icontains=value)
         )
 
     def filter_is_active(
@@ -474,7 +472,6 @@ class JobFilterSet(AccessAtlasFilterSet):
         return queryset.filter(
             Q(title__icontains=value)
             | Q(description__icontains=value)
-            | Q(notes__icontains=value)
             | Q(site__code__icontains=value)
             | Q(site__name__icontains=value)
         )

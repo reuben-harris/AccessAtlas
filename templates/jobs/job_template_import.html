@@ -20,13 +20,13 @@
         <h3 class="card-title">CSV Specification</h3>
       </div>
       <div class="card-body">
-        <p>The CSV must include <code>title</code>. It can also include <code>description</code>, <code>estimated_duration_minutes</code>, <code>default_priority</code>, <code>notes</code>, and <code>is_active</code>.</p>
-        <pre class="mb-3"><code>title,description,estimated_duration_minutes,default_priority,notes,is_active</code></pre>
+        <p>The CSV must include <code>title</code>. It can also include <code>description</code>, <code>estimated_duration_minutes</code>, <code>default_priority</code>, and <code>is_active</code>.</p>
+        <pre class="mb-3"><code>title,description,estimated_duration_minutes,default_priority,is_active</code></pre>
         <p>Titles must be unique and cannot already exist. Default priority can be <code>low</code>, <code>normal</code>, <code>high</code>, or <code>urgent</code>.</p>
         <p>Example CSV: <code>{{ example_path }}</code></p>
-        <pre class="mb-0"><code>title,description,estimated_duration_minutes,default_priority,notes,is_active
-Asset Renewal Alloy,Replace ageing alloy fittings,120,high,Check current asset records,true
-GDSP SIM swap,Swap GDSP modem SIM,45,normal,,true</code></pre>
+        <pre class="mb-0"><code>title,description,estimated_duration_minutes,default_priority,is_active
+Asset Renewal Alloy,Replace ageing alloy fittings,120,high,true
+GDSP SIM swap,Swap GDSP modem SIM,45,normal,true</code></pre>
       </div>
     </div>
   </div>

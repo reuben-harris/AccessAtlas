@@ -17,7 +17,7 @@ class RequirementInline(admin.TabularInline):
 @admin.register(JobTemplate)
 class JobTemplateAdmin(SimpleHistoryAdmin):
     list_display = ["title", "priority", "estimated_duration_minutes", "is_active"]
-    search_fields = ["title", "description", "notes"]
+    search_fields = ["title", "description"]
     inlines = [TemplateRequirementInline]
 
 
@@ -41,7 +41,6 @@ class JobAdmin(SimpleHistoryAdmin):
     search_fields = [
         "title",
         "description",
-        "notes",
         "site__code",
         "site__name",
         "work_programme__name",

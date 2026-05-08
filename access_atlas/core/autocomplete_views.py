@@ -68,7 +68,7 @@ class JobTemplateAutocompleteView(AccessAtlasAutocompleteView):
 
     model = JobTemplate
     permission_required = None
-    search_lookups = ["title__icontains", "description__icontains", "notes__icontains"]
+    search_lookups = ["title__icontains", "description__icontains"]
     ordering = ["title"]
     value_fields = ["id", "title"]
 

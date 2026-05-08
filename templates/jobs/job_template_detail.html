@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load status_badges %}
 
 {% block title %}{{ object.title }} - Access Atlas{% endblock %}
 
@@ -18,12 +19,11 @@
 {% include "includes/detail_section_nav.html" %}
 <div class="card">
   <div class="card-body">
-    <p>{{ object.description|linebreaksbr }}</p>
     <dl class="row">
+      <dt class="col-sm-3">Description</dt><dd class="col-sm-9">{{ object.description|linebreaksbr|default:"-" }}</dd>
       <dt class="col-sm-3">Default Priority</dt><dd class="col-sm-9">{{ object.get_priority_display }}</dd>
       <dt class="col-sm-3">Estimate</dt><dd class="col-sm-9">{{ object.estimated_duration_minutes|default:"-" }} min</dd>
-      <dt class="col-sm-3">Active</dt><dd class="col-sm-9">{{ object.is_active|yesno:"Yes,No" }}</dd>
-      <dt class="col-sm-3">Notes</dt><dd class="col-sm-9">{{ object.notes|linebreaksbr }}</dd>
+      <dt class="col-sm-3">Active</dt><dd class="col-sm-9"><span class="badge {{ object.is_active|yesno:'active,retired'|status_badge_class }}">{{ object.is_active|yesno:"Yes,No" }}</span></dd>
     </dl>
   </div>
 </div>

@@ -23,7 +23,6 @@ def create_job_from_template(
         description=template.description,
         estimated_duration_minutes=template.estimated_duration_minutes,
         priority=template.priority,
-        notes=template.notes,
     )
     job._change_reason = change_reason
     job.save()

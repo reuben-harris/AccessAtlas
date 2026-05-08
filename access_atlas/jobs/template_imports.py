@@ -13,7 +13,6 @@ OPTIONAL_HEADERS = [
     "description",
     "estimated_duration_minutes",
     "default_priority",
-    "notes",
     "is_active",
 ]
 SESSION_KEY = "job_template_import_rows"
@@ -28,7 +27,6 @@ class JobTemplateImportRow:
     description: str = ""
     estimated_duration_minutes: int | None = None
     priority: str = Priority.NORMAL
-    notes: str = ""
     is_active: bool = True
     error: str = ""
 
@@ -43,7 +41,6 @@ class JobTemplateImportRow:
             "description": self.description,
             "estimated_duration_minutes": self.estimated_duration_minutes,
             "priority": self.priority,
-            "notes": self.notes,
             "is_active": self.is_active,
             "error": self.error,
         }
@@ -112,7 +109,6 @@ def parse_job_template_import_csv(uploaded_file) -> list[JobTemplateImportRow]:
             row.get("estimated_duration_minutes") or ""
         )
         priority = (row.get("default_priority") or Priority.NORMAL).strip().lower()
-        notes = (row.get("notes") or "").strip()
         is_active, active_error = parse_optional_bool(row.get("is_active") or "")
         folded_title = title.casefold()
 
@@ -140,7 +136,6 @@ def parse_job_template_import_csv(uploaded_file) -> list[JobTemplateImportRow]:
                 description=description,
                 estimated_duration_minutes=estimate,
                 priority=priority,
-                notes=notes,
                 is_active=is_active,
                 error=error,
             )
@@ -177,7 +172,6 @@ def template_rows_from_session(
                 if estimate not in (None, "")
                 else None,
                 priority=str(row.get("priority") or Priority.NORMAL),
-                notes=str(row.get("notes") or ""),
                 is_active=bool(row.get("is_active", True)),
                 error=str(row.get("error") or ""),
             )
@@ -198,7 +192,6 @@ def create_job_templates_from_import_rows(
             description=row.description,
             estimated_duration_minutes=row.estimated_duration_minutes,
             priority=row.priority,
-            notes=row.notes,
             is_active=row.is_active,
         )
         template._change_reason = "Imported job template from CSV"
