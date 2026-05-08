@@ -26,17 +26,17 @@
 
 <div class="access-atlas-map-page access-atlas-map-page--expanded">
   {% include "jobs/_job_view_toolbar.html" with active_job_view="map" %}
-
-  <div
-    id="job-map-status-controls"
-    class="job-map-toolbar"
-    data-preference-url="{% url 'account_preference' %}"
-    aria-label="Job status map filters"
-  ></div>
+  {% include "includes/list_controls.html" with filter_layout="map_offcanvas" %}
 
   <div class="card job-map-card access-atlas-map-card--fill">
     <div class="card-body p-0">
-      <div id="job-map" class="job-map" aria-label="Map of active jobs by site"></div>
+      <div
+        id="job-map"
+        class="job-map"
+        data-filter-count="{{ active_filter_chips|length }}"
+        data-preference-url="{% url 'account_preference' %}"
+        aria-label="Map of active jobs by site"
+      ></div>
     </div>
   </div>
 </div>

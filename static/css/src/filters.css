@@ -1,0 +1,232 @@
+/* Shared object-list filter controls. */
+.list-filter-form {
+  --filter-operator-width: 12rem;
+}
+
+.list-controls-card .card-header {
+  position: relative;
+  z-index: 1;
+}
+
+.list-controls-card .nav-tabs {
+  border-bottom: 0;
+}
+
+.list-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.list-filter-chip {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.25rem;
+  text-decoration: none;
+}
+
+.list-filter-compact-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.list-filter-compact-summary .list-filter-chips {
+  flex: 1 1 18rem;
+}
+
+.list-filter-compact-summary .btn {
+  flex: 0 0 auto;
+}
+
+.list-filter-offcanvas {
+  --tblr-offcanvas-width: min(64rem, calc(100vw - 1rem));
+}
+
+.list-filter-offcanvas--map-fullscreen {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  height: 100%;
+  z-index: 10000;
+  visibility: visible;
+  transition: transform 0.3s ease-in-out;
+}
+
+.list-filter-offcanvas-form {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.list-filter-offcanvas .offcanvas-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.list-filter-fields {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.list-filter-fields--inline {
+  gap: 1rem;
+}
+
+.list-filter-row {
+  display: grid;
+  grid-template-columns: minmax(7.5rem, 10rem) minmax(0, 1fr);
+  gap: 0.5rem 0.75rem;
+  align-items: start;
+}
+
+.list-filter-actions-row {
+  align-items: center;
+}
+
+.list-filter-row-label {
+  padding-top: 0.625rem;
+}
+
+.list-filter-input-group .list-filter-operator {
+  flex: 0 0 var(--filter-operator-width);
+  max-width: var(--filter-operator-width);
+}
+
+.list-filter-input-group .ts-wrapper {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  background: transparent;
+}
+
+.list-filter-input-group .ts-wrapper.multi .ts-control,
+.list-filter-input-group .ts-wrapper.single .ts-control,
+.list-filter-input-group .ts-wrapper.single.input-active .ts-control {
+  width: 100%;
+  min-height: 2.375rem;
+  max-height: 5.25rem;
+  overflow-y: auto;
+  border-color: var(--tblr-border-color);
+  background: var(--tblr-bg-forms);
+  color: var(--tblr-body-color);
+  box-shadow: none;
+}
+
+.list-filter-input-group .ts-wrapper.multi .ts-control {
+  padding-right: 2.25rem;
+}
+
+.list-filter-input-group .ts-wrapper.multi::after {
+  position: absolute;
+  top: 50%;
+  right: 0.875rem;
+  z-index: 3;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  color: var(--tblr-secondary-color);
+  content: "";
+  pointer-events: none;
+  transform: translateY(-65%) rotate(45deg);
+}
+
+.list-filter-input-group .ts-wrapper.multi.dropdown-active::after {
+  transform: translateY(-35%) rotate(225deg);
+}
+
+.list-filter-input-group .list-filter-operator + .ts-wrapper .ts-control {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.list-filter-input-group .list-filter-operator + .ts-wrapper {
+  margin-left: calc(-1 * var(--tblr-border-width));
+}
+
+.list-filter-input-group .ts-control > input {
+  min-width: 6rem;
+}
+
+.list-filter-input-group .ts-wrapper.multi .ts-control > div.list-filter-colored-item {
+  border-color: var(--list-filter-item-color);
+  background: var(--list-filter-item-color);
+  color: #fff;
+}
+
+.list-filter-input-group
+  .ts-wrapper.plugin-remove_button:not(.rtl)
+  .ts-control
+  > div.list-filter-colored-item
+  .remove {
+  border-left-color: rgba(255, 255, 255, 0.28);
+  color: inherit;
+}
+
+.list-filter-input-group
+  .ts-wrapper.plugin-remove_button
+  .ts-control
+  > div.list-filter-colored-item
+  .remove:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.list-filter-input-group .list-filter-value[multiple] {
+  min-height: 2.375rem;
+  max-height: 7.5rem;
+}
+
+.list-filter-offcanvas-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 1rem;
+  border-top: var(--tblr-border-width) solid var(--tblr-border-color);
+  background: var(--tblr-bg-surface);
+}
+
+.leaflet-container .list-filter-offcanvas .btn-outline-secondary {
+  color: var(--tblr-secondary);
+  border-color: var(--tblr-secondary);
+}
+
+.leaflet-container .list-filter-offcanvas .btn-outline-secondary:hover,
+.leaflet-container .list-filter-offcanvas .btn-outline-secondary:focus-visible {
+  color: var(--tblr-secondary-fg, #fff);
+  background-color: var(--tblr-secondary);
+  border-color: var(--tblr-secondary);
+  text-decoration: none;
+}
+
+[data-bs-theme="dark"] .list-filter-input-group .ts-wrapper.multi .ts-control,
+[data-bs-theme="dark"] .list-filter-input-group .ts-wrapper.single .ts-control,
+[data-bs-theme="dark"]
+  .list-filter-input-group
+  .ts-wrapper.single.input-active
+  .ts-control {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: var(--tblr-bg-forms);
+  color: #eff3f8;
+}
+
+@media (max-width: 767.98px) {
+  .list-filter-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .list-filter-row-label {
+    padding-top: 0;
+  }
+
+  .list-filter-input-group .list-filter-operator {
+    flex-basis: 10rem;
+    max-width: 10rem;
+  }
+}

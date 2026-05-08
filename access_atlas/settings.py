@@ -84,6 +84,7 @@ INSTALLED_APPS = [
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.openid_connect",
+    "django_filters",
     "django_tomselect",
     "simple_history",
     "storages",

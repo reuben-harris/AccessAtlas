@@ -107,35 +107,43 @@ def build_site_list_map_data(
     return payload
 
 
-def site_list_views(active_view: str) -> list[dict[str, str | bool]]:
+def site_list_views(
+    active_view: str,
+    query_string: str = "",
+) -> list[dict[str, str | bool]]:
+    suffix = f"?{query_string}" if query_string else ""
     return [
         {
             "label": "Table",
             "icon": "ti-table",
-            "url": reverse("site_list"),
+            "url": f"{reverse('site_list')}{suffix}",
             "is_active": active_view == "table",
         },
         {
             "label": "Map",
             "icon": "ti-map",
-            "url": reverse("site_map"),
+            "url": f"{reverse('site_map')}{suffix}",
             "is_active": active_view == "map",
         },
     ]
 
 
-def access_record_list_views(active_view: str) -> list[dict[str, str | bool]]:
+def access_record_list_views(
+    active_view: str,
+    query_string: str = "",
+) -> list[dict[str, str | bool]]:
+    suffix = f"?{query_string}" if query_string else ""
     return [
         {
             "label": "Table",
             "icon": "ti-table",
-            "url": reverse("access_record_list"),
+            "url": f"{reverse('access_record_list')}{suffix}",
             "is_active": active_view == "table",
         },
         {
             "label": "Map",
             "icon": "ti-map",
-            "url": reverse("access_record_global_map"),
+            "url": f"{reverse('access_record_global_map')}{suffix}",
             "is_active": active_view == "map",
         },
     ]

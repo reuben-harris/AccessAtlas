@@ -9,9 +9,11 @@ from django.utils.html import escape
 from access_atlas.accounts.models import User
 from access_atlas.accounts.preferences import (
     get_user_preference,
+    list_filter_preference_key,
     list_sort_preference_key,
 )
 from access_atlas.core.context_processors import active_nav_item
+from access_atlas.core.list_filters import FILTER_STATE_PARAM, FILTER_STATE_UPDATE
 from access_atlas.core.templatetags.form_extras import required_marker
 from access_atlas.core.templatetags.status_badges import status_badge_class
 from access_atlas.jobs.models import Job, JobTemplate, WorkProgramme
@@ -591,6 +593,61 @@ def test_global_history_supports_search_and_pagination(logged_in_client):
     assert response.status_code == 200
     assert len(response.context["entries"]) == 10
     assert response.context["paginator"].num_pages >= 3
+
+
+@pytest.mark.django_db
+def test_global_history_filters_by_object_type_action_and_user(client, user):
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="History Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    site.name = "Updated History Site"
+    site._history_user = user
+    site.save()
+    JobTemplate.objects.create(title="History Template")
+
+    response = client.get(
+        reverse("global_history"),
+        {
+            "object_type": "Site",
+            "action": "Changed",
+            "user": str(user.pk),
+        },
+    )
+
+    assert response.status_code == 200
+    entries = list(response.context["entries"])
+    assert [entry.object_display for entry in entries] == [
+        "AA-001 - Updated History Site"
+    ]
+    assert response.context["active_filter_chips"]
+
+
+@pytest.mark.django_db
+def test_global_history_filter_update_marker_saves_filter_preference(client, user):
+    client.force_login(user)
+
+    response = client.get(
+        reverse("global_history"),
+        {
+            FILTER_STATE_PARAM: FILTER_STATE_UPDATE,
+            "object_type": "Site",
+            "action": "Created",
+        },
+    )
+
+    assert response.status_code == 302
+    assert response.url == (
+        f"{reverse('global_history')}?object_type=Site&action=Created"
+    )
+    assert get_user_preference(user, list_filter_preference_key("history")) == {
+        "params": {"object_type": ["Site"], "action": ["Created"]}
+    }
 
 
 @pytest.mark.django_db

@@ -10,12 +10,28 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import TemplateView
 
+from access_atlas.accounts.models import User
 from access_atlas.core.global_history import (
+    HISTORY_ACTION_CHOICES,
     build_global_history_entries,
     filter_global_history_entries,
+    history_object_type_choices,
+    history_user_choices,
     sort_global_history_entries,
 )
-from access_atlas.core.mixins import SearchablePaginatedListMixin, SortableListMixin
+from access_atlas.core.history_filters import GlobalHistoryFilterSet
+from access_atlas.core.list_filters import (
+    FILTER_STATE_PARAM,
+    FILTER_STATE_UPDATE,
+    cleaned_values,
+    preserved_query_items,
+    query_string_without_page,
+)
+from access_atlas.core.mixins import (
+    FilterPreferenceMixin,
+    SearchablePaginatedListMixin,
+    SortableListMixin,
+)
 from access_atlas.core.pagination import normalize_per_page, page_size_options_for
 from access_atlas.core.search import (
     SEARCH_LOOKUP_OPTIONS,
@@ -186,12 +202,15 @@ def search(request):
 
 
 class GlobalHistoryView(
+    FilterPreferenceMixin,
     SortableListMixin,
     SearchablePaginatedListMixin,
     TemplateView,
 ):
     template_name = "core/history.html"
     search_placeholder = "Search history"
+    filterset_class = GlobalHistoryFilterSet
+    filter_preference_page_key = "history"
     sort_preference_page_key = "history"
     default_sort = "-date"
     sort_field_map = {
@@ -202,11 +221,48 @@ class GlobalHistoryView(
         "user": "user",
     }
 
+    def get_filterset(self):
+        return self.filterset_class(
+            data=self.request.GET.copy(),
+            queryset=User.objects.none(),
+            request=self.request,
+        )
+
+    def get_history_filter_values(self, filterset):
+        data = filterset.data
+        object_types = cleaned_values(data.getlist("object_type")) or None
+        excluded_object_types = cleaned_values(data.getlist("object_type__not"))
+        actions = cleaned_values(data.getlist("action")) or None
+        excluded_actions = cleaned_values(data.getlist("action__not"))
+        users = cleaned_values(data.getlist("user")) or None
+        excluded_users = cleaned_values(data.getlist("user__not"))
+
+        if excluded_object_types:
+            all_object_types = {
+                value for value, _label in history_object_type_choices()
+            }
+            object_types = sorted(all_object_types - set(excluded_object_types))
+        if excluded_actions:
+            all_actions = {value for value, _label in HISTORY_ACTION_CHOICES}
+            actions = sorted(all_actions - set(excluded_actions))
+        if excluded_users:
+            all_users = {value for value, _label in history_user_choices()}
+            users = sorted(all_users - set(excluded_users))
+
+        return {
+            "object_types": object_types,
+            "actions": actions,
+            "users": users,
+        }
+
     def get_context_data(self, **kwargs):
+        filterset = self.get_filterset()
+        history_filters = self.get_history_filter_values(filterset)
         entries = sort_global_history_entries(
             filter_global_history_entries(
                 build_global_history_entries(),
                 self.get_search_query(),
+                **history_filters,
             ),
             self.get_sort_value(),
         )
@@ -221,6 +277,22 @@ class GlobalHistoryView(
         context.update(
             {
                 "entries": page_obj.object_list,
+                "filterset": filterset,
+                "filter_controls": filterset.filter_controls(),
+                "active_filter_chips": filterset.active_chips(self.request),
+                "filter_clear_all_url": filterset.clear_all_url(self.request),
+                "filter_state_param": FILTER_STATE_PARAM,
+                "filter_state_update": FILTER_STATE_UPDATE,
+                "filter_preserved_query_items": preserved_query_items(
+                    self.request,
+                    exclude=(filterset.filter_parameter_names() - {"q"})
+                    | {"page", FILTER_STATE_PARAM},
+                ),
+                "search_preserved_query_items": preserved_query_items(
+                    self.request,
+                    exclude={"q", "page", FILTER_STATE_PARAM},
+                ),
+                "list_view_query_string": query_string_without_page(self.request),
             }
         )
         return context

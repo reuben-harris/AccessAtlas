@@ -10,18 +10,22 @@ from .models import SiteVisit, Trip, TripStatus
 from .services import user_can_approve_trip
 
 
-def trip_list_views(active_view: str) -> list[dict[str, str | bool]]:
+def trip_list_views(
+    active_view: str,
+    query_string: str = "",
+) -> list[dict[str, str | bool]]:
+    suffix = f"?{query_string}" if query_string else ""
     return [
         {
             "label": "Table",
             "icon": "ti-table",
-            "url": reverse("trip_list"),
+            "url": f"{reverse('trip_list')}{suffix}",
             "is_active": active_view == "table",
         },
         {
             "label": "Gantt",
             "icon": "ti-chart-bar",
-            "url": reverse("trip_gantt"),
+            "url": f"{reverse('trip_gantt')}{suffix}",
             "is_active": active_view == "gantt",
         },
     ]

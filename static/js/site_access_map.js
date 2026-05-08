@@ -14,7 +14,10 @@
   const createThemeTileController = window.AccessAtlas?.createThemeTileController;
   const fitLayersOrDefault = window.AccessAtlas?.fitLayersOrDefault;
   const sharedAddHomeControl = window.AccessAtlas?.addHomeControl;
+  const addFilterControl = window.AccessAtlas?.addFilterControl;
   const addFullscreenControl = window.AccessAtlas?.addFullscreenControl;
+  const createFullscreenSafeOffcanvasController =
+    window.AccessAtlas?.createFullscreenSafeOffcanvasController;
   const settleMapLayout = window.AccessAtlas?.settleMapLayout;
   const createLongitudeNormalizer = window.AccessAtlas?.createLongitudeNormalizer;
   const normalizeLatLng = window.AccessAtlas?.normalizeLatLng;
@@ -45,6 +48,7 @@
   const preference = JSON.parse(preferenceElement.textContent);
   const savedPreference = preference.value || {};
   const postJSON = window.AccessAtlas?.postJSON;
+  const initialFilterCount = Number(mapElement.dataset.filterCount || 0);
   const points = Array.isArray(mapData.points) ? mapData.points : [];
   const tracks = Array.isArray(mapData.tracks) ? mapData.tracks : [];
   const tileLayer = JSON.parse(tileLayerElement.textContent);
@@ -131,6 +135,10 @@
     [siteLatitude, displaySiteLongitude],
     initialZoom,
   );
+  const filterPanel =
+    typeof createFullscreenSafeOffcanvasController === "function"
+      ? createFullscreenSafeOffcanvasController(mapElement)
+      : null;
   configureMapConstraints(map);
   featureLayer.addTo(map);
   const tileController = createThemeTileController(map, tileLayer);
@@ -378,6 +386,11 @@
     },
   );
   addFullscreenControl(map);
+  if (filterPanel && typeof addFilterControl === "function") {
+    addFilterControl(map, filterPanel.show, {
+      count: initialFilterCount,
+    });
+  }
   map.addControl(new TrackAnimationControl({ position: "topright" }));
   let drawnLayers = drawFeatures();
   fitFeatures(drawnLayers);

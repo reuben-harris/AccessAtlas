@@ -319,6 +319,80 @@ def test_trip_list_search_filters_results(client):
 
 
 @pytest.mark.django_db
+def test_trip_list_filters_by_status_and_preserves_gantt_link(client):
+    user = User.objects.create_user(email="user@example.com", display_name="Alex")
+    Trip.objects.create(
+        name="Draft trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    Trip.objects.create(
+        name="Submitted trip",
+        start_date=date(2026, 4, 23),
+        end_date=date(2026, 4, 24),
+        trip_leader=user,
+        status=TripStatus.SUBMITTED,
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("trip_list"), {"status": TripStatus.SUBMITTED})
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert [trip.name for trip in object_list] == ["Submitted trip"]
+    gantt_view = next(
+        view for view in response.context["trip_list_views"] if view["label"] == "Gantt"
+    )
+    assert gantt_view["url"] == f"{reverse('trip_gantt')}?status=submitted"
+
+
+@pytest.mark.django_db
+def test_trip_list_summarizes_all_selected_status_filters(client):
+    user = User.objects.create_user(email="user@example.com", display_name="Alex")
+    Trip.objects.create(
+        name="Draft trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("trip_list"), {"status": TripStatus.values})
+
+    assert response.status_code == 200
+    assert [chip["label"] for chip in response.context["active_filter_chips"]] == [
+        "Status is all statuses"
+    ]
+
+
+@pytest.mark.django_db
+def test_trip_gantt_applies_shared_filters(client):
+    user = User.objects.create_user(email="user@example.com")
+    Trip.objects.create(
+        name="Draft trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    Trip.objects.create(
+        name="Completed trip",
+        start_date=date(2026, 4, 23),
+        end_date=date(2026, 4, 24),
+        trip_leader=user,
+        status=TripStatus.COMPLETED,
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("trip_gantt"), {"status": TripStatus.COMPLETED})
+
+    assert response.status_code == 200
+    assert [row["tripName"] for row in response.context["trip_gantt_rows"]] == [
+        "Completed trip"
+    ]
+
+
+@pytest.mark.django_db
 def test_trip_gantt_view_separates_scheduled_and_unscheduled_site_visits(client):
     user = User.objects.create_user(email="user@example.com")
     site = Site.objects.create(

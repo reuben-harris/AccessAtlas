@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from itertools import chain
 
+from access_atlas.accounts.models import User
 from access_atlas.core.history import history_reason
 from access_atlas.jobs.models import Job, JobTemplate, Requirement, TemplateRequirement
 from access_atlas.sites.models import Site, SitePhoto
@@ -31,6 +32,28 @@ HISTORY_MODELS = [
     SiteVisit,
     SiteVisitJob,
 ]
+HISTORY_ACTION_CHOICES = (
+    ("Created", "Created"),
+    ("Changed", "Changed"),
+    ("Deleted", "Deleted"),
+)
+SYSTEM_HISTORY_USER_VALUE = "__system__"
+
+
+def history_object_type_choices() -> list[tuple[str, str]]:
+    return [
+        (model._meta.verbose_name.title(), model._meta.verbose_name.title())
+        for model in HISTORY_MODELS
+    ]
+
+
+def history_user_choices() -> list[tuple[str, str]]:
+    choices = [(SYSTEM_HISTORY_USER_VALUE, "System")]
+    choices.extend(
+        (str(user.pk), str(user))
+        for user in User.objects.order_by("email", "display_name")
+    )
+    return choices
 
 
 def build_history_entry(record) -> HistoryEntry:
@@ -61,7 +84,31 @@ def build_global_history_entries() -> list[HistoryEntry]:
 def filter_global_history_entries(
     entries: list[HistoryEntry],
     search_query: str,
+    *,
+    object_types: list[str] | None = None,
+    actions: list[str] | None = None,
+    users: list[str] | None = None,
 ) -> list[HistoryEntry]:
+    if object_types is not None:
+        allowed_object_types = set(object_types)
+        entries = [
+            entry for entry in entries if entry.object_type in allowed_object_types
+        ]
+    if actions is not None:
+        allowed_actions = set(actions)
+        entries = [entry for entry in entries if entry.action in allowed_actions]
+    if users is not None:
+        allowed_users = set(users)
+        entries = [
+            entry
+            for entry in entries
+            if (
+                str(entry.user.pk)
+                if entry.user is not None
+                else SYSTEM_HISTORY_USER_VALUE
+            )
+            in allowed_users
+        ]
     if not search_query:
         return entries
     search_value = search_query.casefold()

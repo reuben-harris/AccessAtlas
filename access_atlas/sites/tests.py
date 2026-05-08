@@ -13,10 +13,12 @@ from access_atlas.accounts.models import User
 from access_atlas.accounts.preferences import (
     SITES_MAP_PREFERENCE_KEY,
     get_user_preference,
+    list_filter_preference_key,
     list_sort_preference_key,
     set_user_preference,
     site_access_map_preference_key,
 )
+from access_atlas.core.list_filters import FILTER_STATE_PARAM, FILTER_STATE_UPDATE
 from access_atlas.core.test_utils import parse_json_script
 from access_atlas.sites.access_records import (
     AccessRecordGeoJSONError,
@@ -429,6 +431,144 @@ def test_site_list_search_filters_results(client):
 
 
 @pytest.mark.django_db
+def test_site_list_hides_stale_sites_by_default(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    Site.objects.create(
+        source_name="dummy",
+        external_id="active",
+        code="AA-001",
+        name="Active",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    Site.objects.create(
+        source_name="dummy",
+        external_id="stale",
+        code="AA-002",
+        name="Stale",
+        sync_status=SiteSyncStatus.STALE,
+        latitude=-42.1,
+        longitude=175.1,
+    )
+
+    response = client.get(reverse("site_list"))
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert [site.name for site in object_list] == ["Active"]
+    chips = response.context["active_filter_chips"]
+    assert any(chip["label"] == "Status is Active" for chip in chips)
+    assert "sync_status=active" in response.context["filter_clear_all_url"]
+    assert "sync_status=stale" in response.context["filter_clear_all_url"]
+
+
+@pytest.mark.django_db
+def test_site_list_can_explicitly_include_stale_sites(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    Site.objects.create(
+        source_name="dummy",
+        external_id="active",
+        code="AA-001",
+        name="Active",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    Site.objects.create(
+        source_name="dummy",
+        external_id="stale",
+        code="AA-002",
+        name="Stale",
+        sync_status=SiteSyncStatus.STALE,
+        latitude=-42.1,
+        longitude=175.1,
+    )
+
+    response = client.get(
+        reverse("site_list"),
+        {"sync_status": [SiteSyncStatus.ACTIVE, SiteSyncStatus.STALE]},
+    )
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert [site.name for site in object_list] == ["Active", "Stale"]
+    assert [chip["label"] for chip in response.context["active_filter_chips"]] == [
+        "Status is all statuses"
+    ]
+
+
+@pytest.mark.django_db
+def test_site_clear_all_saves_all_sync_statuses_as_filter_preference(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.get(
+        reverse("site_list"),
+        {
+            FILTER_STATE_PARAM: FILTER_STATE_UPDATE,
+            "sync_status": [SiteSyncStatus.ACTIVE, SiteSyncStatus.STALE],
+        },
+    )
+
+    assert response.status_code == 302
+    assert response.url == (
+        f"{reverse('site_list')}?sync_status=active&sync_status=stale"
+    )
+    assert get_user_preference(user, list_filter_preference_key("sites")) == {
+        "params": {"sync_status": [SiteSyncStatus.ACTIVE, SiteSyncStatus.STALE]}
+    }
+
+    response = client.get(reverse("site_list"))
+
+    assert response.status_code == 302
+    assert response.url == (
+        f"{reverse('site_list')}?sync_status=active&sync_status=stale"
+    )
+
+
+@pytest.mark.django_db
+def test_site_list_filters_by_any_tag(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    Site.objects.create(
+        source_name="dummy",
+        external_id="remote",
+        code="AA-001",
+        name="Remote",
+        tags=[{"label": "Remote", "color": "orange"}],
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    Site.objects.create(
+        source_name="dummy",
+        external_id="coastal",
+        code="AA-002",
+        name="Coastal",
+        tags=[{"label": "Coastal", "color": "blue"}],
+        latitude=-42.1,
+        longitude=175.1,
+    )
+    Site.objects.create(
+        source_name="dummy",
+        external_id="plain",
+        code="AA-003",
+        name="Plain",
+        latitude=-43.1,
+        longitude=176.1,
+    )
+
+    response = client.get(
+        reverse("site_list"),
+        {"tags": ["Remote", "Coastal"]},
+    )
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert [site.name for site in object_list] == ["Remote", "Coastal"]
+
+
+@pytest.mark.django_db
 def test_site_list_sorts_by_name_and_saves_preference(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -469,6 +609,43 @@ def test_site_list_links_to_map_view(client):
 
     assert response.status_code == 200
     assert reverse("site_map") in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_site_map_applies_shared_filters_and_preserves_table_link(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    Site.objects.create(
+        source_name="dummy",
+        external_id="active",
+        code="AA-001",
+        name="Active",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    Site.objects.create(
+        source_name="dummy",
+        external_id="stale",
+        code="AA-002",
+        name="Stale",
+        sync_status=SiteSyncStatus.STALE,
+        latitude=-42.1,
+        longitude=175.1,
+    )
+
+    response = client.get(reverse("site_map"), {"sync_status": SiteSyncStatus.STALE})
+
+    assert response.status_code == 200
+    site_map_sites = parse_json_script(response.content.decode(), "site-list-map-data")
+    assert [site["name"] for site in site_map_sites] == ["Stale"]
+    content = response.content.decode()
+    assert 'id="list-filter-offcanvas"' in content
+    assert "list-controls-card" not in content
+    assert 'id="list-search-input"' not in content
+    table_view = next(
+        view for view in response.context["site_list_views"] if view["label"] == "Table"
+    )
+    assert table_view["url"] == f"{reverse('site_list')}?sync_status=stale"
 
 
 @pytest.mark.django_db
@@ -513,7 +690,10 @@ def test_site_map_includes_sites_and_warning_state(client):
         uploaded_by=user,
     )
 
-    response = client.get(reverse("site_map"))
+    response = client.get(
+        reverse("site_map"),
+        {"sync_status": [SiteSyncStatus.ACTIVE, SiteSyncStatus.STALE]},
+    )
 
     assert response.status_code == 200
     content = response.content.decode()
@@ -622,6 +802,54 @@ def test_access_record_list_search_filters_by_site(client):
 
 
 @pytest.mark.django_db
+def test_access_record_list_filters_by_status_arrival_and_site_tags(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    remote_site = Site.objects.create(
+        source_name="dummy",
+        external_id="remote",
+        code="AA-001",
+        name="Remote",
+        tags=[{"label": "Remote", "color": "orange"}],
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    plain_site = Site.objects.create(
+        source_name="dummy",
+        external_id="plain",
+        code="AA-002",
+        name="Plain",
+        latitude=-42.1,
+        longitude=175.1,
+    )
+    AccessRecord.objects.create(
+        site=remote_site,
+        name="Retired helicopter access",
+        arrival_method=ArrivalMethod.HELI,
+        status=AccessRecordStatus.RETIRED,
+    )
+    AccessRecord.objects.create(
+        site=plain_site,
+        name="Active road access",
+        arrival_method=ArrivalMethod.ROAD,
+        status=AccessRecordStatus.ACTIVE,
+    )
+
+    response = client.get(
+        reverse("access_record_list"),
+        {
+            "status": AccessRecordStatus.RETIRED,
+            "arrival_method": ArrivalMethod.HELI,
+            "site_tags": "Remote",
+        },
+    )
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert [record.name for record in object_list] == ["Retired helicopter access"]
+
+
+@pytest.mark.django_db
 def test_access_record_global_map_includes_access_features(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -666,6 +894,64 @@ def test_access_record_global_map_includes_access_features(client):
     assert payload["points"][0]["recordId"] == access_record.pk
     assert payload["points"][0]["siteCode"] == "AA-001"
     assert payload["points"][0]["recordName"] == "Road access"
+
+
+@pytest.mark.django_db
+def test_access_record_global_map_applies_filters_and_preserves_table_link(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    active_record = AccessRecord.objects.create(site=site, name="Active road access")
+    retired_record = AccessRecord.objects.create(
+        site=site,
+        name="Retired access",
+        status=AccessRecordStatus.RETIRED,
+    )
+    for access_record in [active_record, retired_record]:
+        AccessRecordVersion.objects.create(
+            access_record=access_record,
+            version_number=1,
+            geojson={
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": [174.25, -41.25],
+                        },
+                        "properties": {"access_atlas:type": "access_start"},
+                    }
+                ],
+            },
+            change_note="Initial upload",
+            uploaded_by=user,
+        )
+
+    response = client.get(
+        reverse("access_record_global_map"),
+        {"status": AccessRecordStatus.RETIRED},
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    payload = parse_json_script(content, "site-access-map-data")
+    assert [point["recordName"] for point in payload["points"]] == ["Retired access"]
+    assert 'id="list-filter-offcanvas"' in content
+    assert 'data-filter-count="1"' in content
+    table_view = next(
+        view
+        for view in response.context["access_record_views"]
+        if view["label"] == "Table"
+    )
+    assert table_view["url"] == f"{reverse('access_record_list')}?status=retired"
 
 
 @pytest.mark.django_db

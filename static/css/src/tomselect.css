@@ -3,14 +3,15 @@
    changes have one obvious place to inspect. */
 
 .ts-wrapper {
+  position: relative;
   width: 100%;
 }
 
 .ts-wrapper.form-select,
 .ts-wrapper.form-control {
-  padding: 0;
-  border: 0;
-  background: transparent;
+  border-color: var(--tblr-border-color);
+  background-color: var(--tblr-bg-forms);
+  color: var(--tblr-body-color);
   box-shadow: none;
 }
 
@@ -38,6 +39,26 @@
 .ts-wrapper.multi .ts-control {
   align-items: center;
   gap: 0.25rem;
+  --ts-pr-min: 2.25rem;
+}
+
+.ts-wrapper.multi::after {
+  position: absolute;
+  top: 50%;
+  right: 0.875rem;
+  z-index: 3;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  color: var(--tblr-secondary-color);
+  content: "";
+  pointer-events: none;
+  transform: translateY(-65%) rotate(45deg);
+}
+
+.ts-wrapper.multi.dropdown-active::after {
+  transform: translateY(-35%) rotate(225deg);
 }
 
 .ts-wrapper.multi.has-items .ts-control {
@@ -45,6 +66,12 @@
 }
 
 .ts-wrapper.focus .ts-control {
+  border-color: rgba(var(--tblr-primary-rgb), 0.48);
+  box-shadow: 0 0 0 0.125rem rgba(var(--tblr-primary-rgb), 0.18);
+}
+
+.ts-wrapper.form-select.focus,
+.ts-wrapper.form-control.focus {
   border-color: rgba(var(--tblr-primary-rgb), 0.48);
   box-shadow: 0 0 0 0.125rem rgba(var(--tblr-primary-rgb), 0.18);
 }
@@ -158,7 +185,14 @@
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.03),
     0 1px 2px rgba(0, 0, 0, 0.18);
-  background: #151c2c;
+  background: var(--tblr-bg-forms);
+  color: #eff3f8;
+}
+
+[data-bs-theme="dark"] .ts-wrapper.form-select,
+[data-bs-theme="dark"] .ts-wrapper.form-control {
+  border-color: rgba(255, 255, 255, 0.12);
+  background-color: var(--tblr-bg-forms);
   color: #eff3f8;
 }
 

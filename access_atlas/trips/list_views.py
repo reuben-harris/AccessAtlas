@@ -2,8 +2,13 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import F
 from django.views.generic import ListView
 
-from access_atlas.core.mixins import SearchablePaginatedListMixin, SortableListMixin
+from access_atlas.core.mixins import (
+    FilteredListMixin,
+    SearchablePaginatedListMixin,
+    SortableListMixin,
+)
 
+from .filters import TripFilterSet
 from .models import Trip
 from .view_helpers import trip_list_views
 
@@ -11,13 +16,15 @@ from .view_helpers import trip_list_views
 class TripListView(
     LoginRequiredMixin,
     SortableListMixin,
+    FilteredListMixin,
     SearchablePaginatedListMixin,
     ListView,
 ):
     model = Trip
     template_name = "trips/trip_list.html"
-    search_fields = ("name", "notes", "trip_leader__email", "trip_leader__display_name")
     search_placeholder = "Search trips"
+    filterset_class = TripFilterSet
+    filter_preference_page_key = "trips"
     sort_preference_page_key = "trips"
     default_sort = "start-date"
     sort_field_map = {
@@ -30,24 +37,29 @@ class TripListView(
 
     def get_queryset(self):
         queryset = super().get_queryset().select_related("trip_leader")
-        return self.apply_sort(self.apply_search(queryset))
+        return self.apply_sort(self.apply_filters(queryset))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["trip_list_views"] = trip_list_views("table")
+        context["trip_list_views"] = trip_list_views(
+            "table",
+            context.get("list_view_query_string", ""),
+        )
         return context
 
 
-class TripGanttView(LoginRequiredMixin, ListView):
+class TripGanttView(FilteredListMixin, LoginRequiredMixin, ListView):
     model = Trip
     template_name = "trips/trip_gantt.html"
+    filterset_class = TripFilterSet
+    search_placeholder = "Search trips"
+    filter_preference_page_key = "trips"
 
     def get_queryset(self):
-        return (
-            Trip.objects.select_related("trip_leader")
-            .prefetch_related("site_visits__site")
-            .order_by("start_date", "name")
+        queryset = Trip.objects.select_related("trip_leader").prefetch_related(
+            "site_visits__site"
         )
+        return self.apply_filters(queryset).order_by("start_date", "name")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -102,7 +114,10 @@ class TripGanttView(LoginRequiredMixin, ListView):
                 }
             )
 
-        context["trip_list_views"] = trip_list_views("gantt")
+        context["trip_list_views"] = trip_list_views(
+            "gantt",
+            context.get("list_view_query_string", ""),
+        )
         context["trip_gantt_rows"] = trip_rows
         context["unscheduled_site_visits"] = unscheduled_visits
         return context

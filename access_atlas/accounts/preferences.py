@@ -4,8 +4,6 @@ from typing import Any
 
 from django.core.exceptions import ValidationError
 
-from access_atlas.jobs.models import JobStatus
-
 from .models import User, UserPreference
 
 JOBS_MAP_PREFERENCE_KEY = "jobs.map"
@@ -13,6 +11,7 @@ SITES_MAP_PREFERENCE_KEY = "sites.map"
 UI_THEME_PREFERENCE_KEY = "ui.theme"
 SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX = "sites.map."
 LIST_SORT_PREFERENCE_KEY_PREFIX = "lists.sort."
+LIST_FILTER_PREFERENCE_KEY_PREFIX = "lists.filters."
 MAX_PREFERENCE_KEY_LENGTH = 120
 
 ALLOWED_PREFERENCE_KEYS = {
@@ -29,14 +28,22 @@ ALLOWED_LIST_SORT_PREFERENCE_PAGES = {
     "access-records",
     "history",
 }
-ALLOWED_JOB_STATUSES = set(JobStatus.values)
+ALLOWED_LIST_FILTER_PREFERENCE_PAGES = {
+    "access-records",
+    "history",
+    "job-templates",
+    "jobs",
+    "sites",
+    "trips",
+    "work-programmes",
+}
 ALLOWED_THEME_MODES = {"system", "light", "dark"}
 MIN_MAP_VIEWPORT_LONGITUDE = -540
 MAX_MAP_VIEWPORT_LONGITUDE = 540
 
 
 def default_jobs_map_preference() -> dict[str, Any]:
-    return {"visible_statuses": [JobStatus.UNASSIGNED, JobStatus.ASSIGNED]}
+    return {}
 
 
 def default_sites_map_preference() -> dict[str, Any]:
@@ -55,12 +62,19 @@ def list_sort_preference_key(page_key: str) -> str:
     return f"{LIST_SORT_PREFERENCE_KEY_PREFIX}{page_key}"
 
 
+def list_filter_preference_key(page_key: str) -> str:
+    return f"{LIST_FILTER_PREFERENCE_KEY_PREFIX}{page_key}"
+
+
 def is_allowed_preference_key(key: str) -> bool:
     if key in ALLOWED_PREFERENCE_KEYS:
         return True
     if key.startswith(LIST_SORT_PREFERENCE_KEY_PREFIX):
         page_key = key.removeprefix(LIST_SORT_PREFERENCE_KEY_PREFIX)
         return page_key in ALLOWED_LIST_SORT_PREFERENCE_PAGES
+    if key.startswith(LIST_FILTER_PREFERENCE_KEY_PREFIX):
+        page_key = key.removeprefix(LIST_FILTER_PREFERENCE_KEY_PREFIX)
+        return page_key in ALLOWED_LIST_FILTER_PREFERENCE_PAGES
     if not key.startswith(SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX):
         return False
     site_id = key.removeprefix(SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX)
@@ -85,16 +99,7 @@ def validate_preference(key: str, value: object) -> dict[str, Any]:
         raise ValidationError("Preference value must be an object.")
 
     if key == JOBS_MAP_PREFERENCE_KEY:
-        visible_statuses = value.get("visible_statuses")
-        if not isinstance(visible_statuses, list):
-            raise ValidationError("visible_statuses must be a list.")
-        cleaned_statuses = []
-        for status in visible_statuses:
-            if not isinstance(status, str) or status not in ALLOWED_JOB_STATUSES:
-                raise ValidationError("visible_statuses contains an unknown status.")
-            if status not in cleaned_statuses:
-                cleaned_statuses.append(status)
-        cleaned_value: dict[str, Any] = {"visible_statuses": cleaned_statuses}
+        cleaned_value: dict[str, Any] = {}
 
         viewport = value.get("viewport")
         if viewport is not None:
@@ -150,6 +155,33 @@ def validate_preference(key: str, value: object) -> dict[str, Any]:
         if not isinstance(sort_value, str) or not sort_value.strip():
             raise ValidationError("value must be a non-empty string.")
         return {"value": sort_value.strip()}
+
+    if key.startswith(LIST_FILTER_PREFERENCE_KEY_PREFIX):
+        params = value.get("params")
+        if not isinstance(params, dict):
+            raise ValidationError("params must be an object.")
+        cleaned_params: dict[str, list[str]] = {}
+        for param_name, param_values in params.items():
+            if not isinstance(param_name, str) or not param_name.strip():
+                raise ValidationError("params contains an invalid parameter name.")
+            if len(param_name) > 80:
+                raise ValidationError(
+                    "params contains a parameter name that is too long."
+                )
+            if not isinstance(param_values, list):
+                raise ValidationError("params values must be lists.")
+            cleaned_values: list[str] = []
+            for param_value in param_values:
+                if not isinstance(param_value, str):
+                    raise ValidationError("params values must be strings.")
+                cleaned_value = param_value.strip()
+                if len(cleaned_value) > 500:
+                    raise ValidationError("params contains a value that is too long.")
+                if cleaned_value and cleaned_value not in cleaned_values:
+                    cleaned_values.append(cleaned_value)
+            if cleaned_values:
+                cleaned_params[param_name.strip()] = cleaned_values
+        return {"params": cleaned_params}
 
     if key.startswith(SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX):
         visible_record_ids = value.get("visible_record_ids")

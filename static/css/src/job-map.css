@@ -1,38 +1,5 @@
 /* Jobs map */
 
-.job-map-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-
-.job-map-status-button {
-  --job-map-status-color: var(--tblr-secondary);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  min-height: 2rem;
-  padding: 0.3125rem 0.75rem;
-  color: var(--tblr-muted);
-  background: var(--tblr-bg-surface);
-  border: var(--tblr-border-width) solid var(--tblr-border-color);
-  border-radius: var(--tblr-border-radius);
-  font-weight: 500;
-}
-
-.job-map-status-button:hover,
-.job-map-status-button:focus {
-  color: var(--tblr-body-color);
-  border-color: var(--job-map-status-color);
-}
-
-.job-map-status-button.is-active {
-  color: #fff;
-  background: var(--job-map-status-color);
-  border-color: var(--job-map-status-color);
-}
-
 .job-map-card {
   margin-bottom: 0;
 }

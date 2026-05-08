@@ -8,9 +8,12 @@ from django.utils.dateparse import parse_date
 from access_atlas.accounts.models import User
 from access_atlas.accounts.preferences import (
     JOBS_MAP_PREFERENCE_KEY,
+    get_user_preference,
+    list_filter_preference_key,
     list_sort_preference_key,
     set_user_preference,
 )
+from access_atlas.core.list_filters import FILTER_STATE_PARAM, FILTER_STATE_UPDATE
 from access_atlas.core.test_utils import parse_json_script
 from access_atlas.jobs.forms import (
     AssignWorkProgrammeJobForm,
@@ -313,6 +316,35 @@ def test_work_programme_list_sorts_by_job_count(client):
     programmes = list(response.context["object_list"])
     assert programmes[0] == busy_programme
     assert programmes[1] == light_programme
+
+
+@pytest.mark.django_db
+def test_work_programme_list_filters_by_due_date_and_job_count(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    light_programme = WorkProgramme.objects.create(
+        name="Light Programme",
+        start_date="2026-01-01",
+        end_date="2026-06-30",
+    )
+    busy_programme = WorkProgramme.objects.create(
+        name="Busy Programme",
+        start_date="2026-01-01",
+        end_date="2026-12-31",
+    )
+    Job.objects.create(site=site, work_programme=busy_programme, title="Job 1")
+    Job.objects.create(site=site, work_programme=busy_programme, title="Job 2")
+    Job.objects.create(site=site, work_programme=light_programme, title="Job 3")
+
+    response = client.get(
+        reverse("work_programme_list"),
+        {"end_date__gte": "2026-07-01", "job_count__gte": "2"},
+    )
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert [programme.name for programme in object_list] == ["Busy Programme"]
 
 
 @pytest.mark.django_db
@@ -752,6 +784,31 @@ def test_job_template_list_search_filters_results(client):
 
 
 @pytest.mark.django_db
+def test_job_template_list_filters_by_active_state_and_priority(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    JobTemplate.objects.create(
+        title="Inactive low priority",
+        priority=Priority.LOW,
+        is_active=False,
+    )
+    JobTemplate.objects.create(
+        title="Active urgent",
+        priority=Priority.URGENT,
+        is_active=True,
+    )
+
+    response = client.get(
+        reverse("job_template_list"),
+        {"is_active": "false", "priority": Priority.LOW},
+    )
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert [template.title for template in object_list] == ["Inactive low priority"]
+
+
+@pytest.mark.django_db
 def test_job_template_list_links_to_import(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -807,6 +864,214 @@ def test_job_list_filters_any_supported_status(client):
     assert response.status_code == 200
     object_list = list(response.context["object_list"])
     assert [job.title for job in object_list] == ["Visible assigned job"]
+
+
+@pytest.mark.django_db
+def test_job_list_saves_and_restores_filter_preference(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    assigned_job = Job(
+        site=site,
+        title="Saved assigned job",
+        status=JobStatus.ASSIGNED,
+    )
+    assigned_job.save(skip_validation=True)
+    Job.objects.create(
+        site=site,
+        title="Saved completed job",
+        status=JobStatus.COMPLETED,
+        closeout_note="Completed in the field.",
+    )
+
+    response = client.get(reverse("job_list"), {"status": JobStatus.ASSIGNED})
+
+    assert response.status_code == 200
+    assert get_user_preference(user, list_filter_preference_key("jobs")) == {
+        "params": {"status": [JobStatus.ASSIGNED]}
+    }
+
+    response = client.get(reverse("job_list"))
+
+    assert response.status_code == 302
+    assert response.url == f"{reverse('job_list')}?status=assigned"
+
+    response = client.get(response.url)
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert [job.title for job in object_list] == ["Saved assigned job"]
+
+
+@pytest.mark.django_db
+def test_job_list_filter_update_marker_clears_saved_filter_preference(client):
+    user = User.objects.create_user(email="user@example.com")
+    set_user_preference(
+        user,
+        list_filter_preference_key("jobs"),
+        {"params": {"status": [JobStatus.ASSIGNED]}},
+    )
+    client.force_login(user)
+
+    response = client.get(
+        reverse("job_list"),
+        {FILTER_STATE_PARAM: FILTER_STATE_UPDATE},
+    )
+
+    assert response.status_code == 302
+    assert response.url == reverse("job_list")
+    assert get_user_preference(user, list_filter_preference_key("jobs")) == {
+        "params": {}
+    }
+
+
+@pytest.mark.django_db
+def test_job_map_filter_submit_saves_filter_preference_for_table(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.get(
+        reverse("job_map"),
+        {
+            FILTER_STATE_PARAM: FILTER_STATE_UPDATE,
+            "status": JobStatus.COMPLETED,
+        },
+    )
+
+    assert response.status_code == 302
+    assert response.url == f"{reverse('job_map')}?status=completed"
+    assert get_user_preference(user, list_filter_preference_key("jobs")) == {
+        "params": {"status": [JobStatus.COMPLETED]}
+    }
+
+    response = client.get(reverse("job_list"))
+
+    assert response.status_code == 302
+    assert response.url == f"{reverse('job_list')}?status=completed"
+
+
+@pytest.mark.django_db
+def test_job_list_summarizes_all_selected_status_filters(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    assigned_job = Job(
+        site=site,
+        title="Assigned job",
+        status=JobStatus.ASSIGNED,
+    )
+    assigned_job.save(skip_validation=True)
+    Job.objects.create(
+        site=site,
+        title="Completed job",
+        status=JobStatus.COMPLETED,
+        closeout_note="Completed in the field.",
+    )
+
+    response = client.get(reverse("job_list"), {"status": JobStatus.values})
+
+    assert response.status_code == 200
+    assert [chip["label"] for chip in response.context["active_filter_chips"]] == [
+        "Status is all statuses"
+    ]
+    content = response.content.decode()
+    assert 'id="list-filter-offcanvas"' not in content
+    assert "list-filter-inline-form" in content
+    assert 'data-filter-item-color="#206bc4"' in content
+    assert 'data-filter-item-color="#2fb344"' in content
+    assert content.count("data-list-filter-form") == 1
+
+
+@pytest.mark.django_db
+def test_job_list_filters_by_any_site_tag(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    remote_site = Site.objects.create(
+        source_name="dummy",
+        external_id="remote",
+        code="AA-001",
+        name="Remote",
+        tags=[{"label": "Remote", "color": "orange"}],
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    coastal_site = Site.objects.create(
+        source_name="dummy",
+        external_id="coastal",
+        code="AA-002",
+        name="Coastal",
+        tags=[{"label": "Coastal", "color": "blue"}],
+        latitude=-42.1,
+        longitude=175.1,
+    )
+    untagged_site = Site.objects.create(
+        source_name="dummy",
+        external_id="plain",
+        code="AA-003",
+        name="Plain",
+        latitude=-43.1,
+        longitude=176.1,
+    )
+    Job.objects.create(site=remote_site, title="Remote job")
+    Job.objects.create(site=coastal_site, title="Coastal job")
+    Job.objects.create(site=untagged_site, title="Plain job")
+
+    response = client.get(
+        reverse("job_list"),
+        {"site_tags": ["Remote", "Coastal"]},
+    )
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert [job.title for job in object_list] == ["Coastal job", "Remote job"]
+    assert any(
+        chip["label"] == "Site tags has these tags Remote"
+        for chip in response.context["active_filter_chips"]
+    )
+
+
+@pytest.mark.django_db
+def test_job_map_applies_shared_status_filter(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    assigned_job = Job(
+        site=site,
+        title="Assigned job",
+        status=JobStatus.ASSIGNED,
+    )
+    assigned_job.save(skip_validation=True)
+    Job.objects.create(
+        site=site,
+        title="Completed job",
+        status=JobStatus.COMPLETED,
+        closeout_note="Completed in the field.",
+    )
+
+    response = client.get(reverse("job_map"), {"status": JobStatus.COMPLETED})
+
+    assert response.status_code == 200
+    map_sites = parse_json_script(response.content.decode(), "job-map-data")
+    assert [job["title"] for job in map_sites[0]["jobs"]] == ["Completed job"]
+    status_layers = parse_json_script(
+        response.content.decode(),
+        "job-map-status-layers",
+    )
+    completed_layer = next(
+        layer for layer in status_layers if layer["value"] == JobStatus.COMPLETED
+    )
+    assigned_layer = next(
+        layer for layer in status_layers if layer["value"] == JobStatus.ASSIGNED
+    )
+    assert completed_layer["color"] == "#2fb344"
+    assert assigned_layer["color"] == "#206bc4"
+    content = response.content.decode()
+    assert 'id="list-filter-offcanvas"' in content
+    assert 'data-filter-count="1"' in content
+    assert 'id="job-map-status-controls"' not in content
+    assert "list-controls-card" not in content
+    assert 'id="list-results-tab"' not in content
+    assert 'id="list-search-input"' not in content
 
 
 @pytest.mark.django_db
@@ -907,8 +1172,7 @@ def test_job_map_includes_jobs_and_status_layers(client):
     assert "Closed work" in content
     assert "Cancelled work" in content
     status_layers = parse_json_script(content, "job-map-status-layers")
-    assert any(layer["visible"] is True for layer in status_layers)
-    assert any(layer["visible"] is False for layer in status_layers)
+    assert {layer["value"] for layer in status_layers} == set(JobStatus.values)
 
 
 @pytest.mark.django_db
@@ -930,13 +1194,12 @@ def test_job_map_status_layers_prioritize_open_work_for_marker_color(client):
 
 
 @pytest.mark.django_db
-def test_job_map_uses_saved_status_preference(client):
+def test_job_map_uses_saved_viewport_preference(client):
     user = User.objects.create_user(email="user@example.com")
     set_user_preference(
         user,
         JOBS_MAP_PREFERENCE_KEY,
         {
-            "visible_statuses": [JobStatus.COMPLETED],
             "viewport": {"lat": -41.2, "lng": 174.7, "zoom": 8},
         },
     )
@@ -946,15 +1209,6 @@ def test_job_map_uses_saved_status_preference(client):
 
     assert response.status_code == 200
     content = response.content.decode()
-    status_layers = parse_json_script(content, "job-map-status-layers")
-    completed_layer = next(
-        layer for layer in status_layers if layer["value"] == JobStatus.COMPLETED
-    )
-    assigned_layer = next(
-        layer for layer in status_layers if layer["value"] == JobStatus.ASSIGNED
-    )
-    assert completed_layer["visible"] is True
-    assert assigned_layer["visible"] is False
     map_preference = parse_json_script(content, "job-map-preference")
     assert map_preference["value"]["viewport"] == {
         "lat": -41.2,

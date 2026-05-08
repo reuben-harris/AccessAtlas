@@ -5,6 +5,7 @@ from django.urls import reverse
 from access_atlas.accounts.models import User, UserPreference
 from access_atlas.accounts.preferences import (
     JOBS_MAP_PREFERENCE_KEY,
+    LIST_FILTER_PREFERENCE_KEY_PREFIX,
     LIST_SORT_PREFERENCE_KEY_PREFIX,
     SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX,
     SITES_MAP_PREFERENCE_KEY,
@@ -113,7 +114,6 @@ def test_preference_view_saves_allowed_preference(client):
         {
             "key": JOBS_MAP_PREFERENCE_KEY,
             "value": {
-                "visible_statuses": ["assigned", "completed", "assigned"],
                 "viewport": {"lat": -41.2, "lng": 174.7, "zoom": 8},
             },
         },
@@ -123,7 +123,6 @@ def test_preference_view_saves_allowed_preference(client):
     assert response.status_code == 200
     preference = UserPreference.objects.get(user=user, key=JOBS_MAP_PREFERENCE_KEY)
     assert preference.value == {
-        "visible_statuses": ["assigned", "completed"],
         "viewport": {"lat": -41.2, "lng": 174.7, "zoom": 8},
     }
 
@@ -138,7 +137,6 @@ def test_preference_view_saves_wrapped_job_map_viewport(client):
         {
             "key": JOBS_MAP_PREFERENCE_KEY,
             "value": {
-                "visible_statuses": ["assigned"],
                 "viewport": {"lat": -33.9, "lng": 490.2, "zoom": 5},
             },
         },
@@ -166,24 +164,6 @@ def test_preference_view_rejects_unknown_key(client):
 
 
 @pytest.mark.django_db
-def test_preference_view_rejects_unknown_job_status(client):
-    user = User.objects.create_user(email="user@example.com")
-    client.force_login(user)
-
-    response = client.post(
-        reverse("account_preference"),
-        {
-            "key": JOBS_MAP_PREFERENCE_KEY,
-            "value": {"visible_statuses": ["assigned", "unknown"]},
-        },
-        content_type="application/json",
-    )
-
-    assert response.status_code == 400
-    assert not UserPreference.objects.exists()
-
-
-@pytest.mark.django_db
 def test_preference_view_rejects_invalid_map_viewport(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -193,7 +173,6 @@ def test_preference_view_rejects_invalid_map_viewport(client):
         {
             "key": JOBS_MAP_PREFERENCE_KEY,
             "value": {
-                "visible_statuses": ["assigned"],
                 "viewport": {"lat": -100, "lng": 174.7, "zoom": 8},
             },
         },
@@ -339,6 +318,42 @@ def test_preference_view_rejects_invalid_list_sort_preference(client):
     response = client.post(
         reverse("account_preference"),
         {"key": key, "value": {"value": ""}},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert not UserPreference.objects.filter(user=user, key=key).exists()
+
+
+@pytest.mark.django_db
+def test_preference_view_saves_list_filter_preference(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    key = f"{LIST_FILTER_PREFERENCE_KEY_PREFIX}jobs"
+
+    response = client.post(
+        reverse("account_preference"),
+        {
+            "key": key,
+            "value": {"params": {"status": ["assigned", "assigned", "completed"]}},
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    preference = UserPreference.objects.get(user=user, key=key)
+    assert preference.value == {"params": {"status": ["assigned", "completed"]}}
+
+
+@pytest.mark.django_db
+def test_preference_view_rejects_invalid_list_filter_preference(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    key = f"{LIST_FILTER_PREFERENCE_KEY_PREFIX}jobs"
+
+    response = client.post(
+        reverse("account_preference"),
+        {"key": key, "value": {"params": {"status": "assigned"}}},
         content_type="application/json",
     )
 

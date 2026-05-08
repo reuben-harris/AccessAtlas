@@ -1,11 +1,21 @@
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 
 from access_atlas.accounts.preferences import (
     get_user_preference,
+    list_filter_preference_key,
     list_sort_preference_key,
     set_user_preference,
+)
+from access_atlas.core.list_filters import (
+    FILTER_STATE_PARAM,
+    FILTER_STATE_UPDATE,
+    AccessAtlasFilterSet,
+    preserved_query_items,
+    query_string_without_page,
+    querydict_url,
 )
 
 
@@ -99,6 +109,164 @@ class SearchablePaginatedListMixin:
             context["page_range"] = page_obj.paginator.get_elided_page_range(
                 number=page_obj.number
             )
+        return context
+
+
+class FilterPreferenceMixin:
+    """Persist URL-backed filter state as the user's default for a list page."""
+
+    filterset_class: type[AccessAtlasFilterSet] | None = None
+    filter_preference_page_key = ""
+
+    def get_filter_parameter_names(self) -> set[str]:
+        if self.filterset_class is None:
+            return set()
+        return self.filterset_class.filter_parameter_names() - {"q"}
+
+    def get_filter_preference_key(self) -> str:
+        return list_filter_preference_key(self.filter_preference_page_key)
+
+    def filter_preferences_enabled(self) -> bool:
+        return bool(
+            self.filter_preference_page_key and self.request.user.is_authenticated
+        )
+
+    def filter_query_params(self, query) -> dict[str, list[str]]:
+        params: dict[str, list[str]] = {}
+        for parameter_name in self.get_filter_parameter_names():
+            values = [
+                str(value).strip()
+                for value in query.getlist(parameter_name)
+                if str(value).strip()
+            ]
+            if values:
+                params[parameter_name] = values
+        return params
+
+    def request_has_filter_state(self, query) -> bool:
+        return any(
+            parameter_name in query
+            for parameter_name in self.get_filter_parameter_names()
+        )
+
+    def saved_filter_params(self) -> dict[str, list[str]]:
+        preference = get_user_preference(
+            self.request.user,
+            self.get_filter_preference_key(),
+        )
+        params = preference.get("params")
+        if not isinstance(params, dict):
+            return {}
+        allowed_parameters = self.get_filter_parameter_names()
+        return {
+            key: [str(value) for value in values]
+            for key, values in params.items()
+            if key in allowed_parameters and isinstance(values, list)
+        }
+
+    def filter_state_redirect(self, query) -> HttpResponseRedirect:
+        query.pop(FILTER_STATE_PARAM, None)
+        query.pop("page", None)
+        return HttpResponseRedirect(querydict_url(self.request, query))
+
+    def dispatch(self, request, *args, **kwargs):
+        if not self.filter_preferences_enabled():
+            return super().dispatch(request, *args, **kwargs)
+
+        query = request.GET.copy()
+        marker = query.get(FILTER_STATE_PARAM)
+        current_params = self.filter_query_params(query)
+        has_filter_state = self.request_has_filter_state(query)
+
+        if marker == FILTER_STATE_UPDATE:
+            set_user_preference(
+                request.user,
+                self.get_filter_preference_key(),
+                {"params": current_params},
+            )
+            return self.filter_state_redirect(query)
+
+        if has_filter_state:
+            set_user_preference(
+                request.user,
+                self.get_filter_preference_key(),
+                {"params": current_params},
+            )
+            return super().dispatch(request, *args, **kwargs)
+
+        saved_params = self.saved_filter_params()
+        if saved_params:
+            query.pop("page", None)
+            for parameter_name, values in saved_params.items():
+                query.setlist(parameter_name, values)
+            return HttpResponseRedirect(querydict_url(request, query))
+
+        return super().dispatch(request, *args, **kwargs)
+
+
+class FilteredListMixin(FilterPreferenceMixin):
+    """Apply a shared django-filter FilterSet and expose filter UI context."""
+
+    def get_filter_data(self):
+        return self.request.GET.copy()
+
+    def get_filterset(self, queryset):
+        if self.filterset_class is None:
+            msg = "FilteredListMixin requires filterset_class."
+            raise AttributeError(msg)
+        return self.filterset_class(
+            data=self.get_filter_data(),
+            queryset=queryset,
+            request=self.request,
+        )
+
+    def apply_filters(self, queryset):
+        self._filterset = self.get_filterset(queryset)
+        return self._filterset.qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        filterset = getattr(self, "_filterset", None)
+        if filterset is None:
+            object_list = context.get("object_list")
+            if object_list is None:
+                object_list = self.model.objects.none()
+            filterset = self.get_filterset(object_list)
+            self._filterset = filterset
+
+        filter_parameter_names = filterset.filter_parameter_names()
+        controls = filterset.filter_controls()
+        chips = filterset.active_chips(self.request)
+        context["filterset"] = filterset
+        context["filter_controls"] = controls
+        context["active_filter_chips"] = chips
+        context["filter_clear_all_url"] = filterset.clear_all_url(self.request)
+        context["filter_state_param"] = FILTER_STATE_PARAM
+        context["filter_state_update"] = FILTER_STATE_UPDATE
+        context["list_filter_preference_key"] = (
+            self.get_filter_preference_key() if self.filter_preference_page_key else ""
+        )
+        context["filter_preserved_query_items"] = preserved_query_items(
+            self.request,
+            exclude=(filter_parameter_names - {"q"}) | {"page", FILTER_STATE_PARAM},
+        )
+        context["search_preserved_query_items"] = preserved_query_items(
+            self.request,
+            exclude={"q", "page", FILTER_STATE_PARAM},
+        )
+        context["list_view_query_string"] = query_string_without_page(self.request)
+        context.setdefault("search_query", self.request.GET.get("q", "").strip())
+        context.setdefault("search_param", "q")
+        context.setdefault("search_placeholder", "Search")
+        if context.get("paginator") is not None:
+            context.setdefault("search_result_count", context["paginator"].count)
+        else:
+            object_list = context.get("object_list", [])
+            try:
+                result_count = object_list.count()
+            except TypeError:
+                result_count = len(object_list)
+            context.setdefault("search_result_count", result_count)
         return context
 
 

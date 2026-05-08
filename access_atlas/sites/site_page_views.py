@@ -13,11 +13,13 @@ from access_atlas.accounts.preferences import (
     get_user_preference,
 )
 from access_atlas.core.mixins import (
+    FilteredListMixin,
     PaginatedObjectHistoryMixin,
     SearchablePaginatedListMixin,
     SortableListMixin,
 )
 
+from .filters import SiteFilterSet
 from .forms import SitePhotoUploadForm
 from .models import Site, SitePhoto
 from .photo_services import (
@@ -37,14 +39,16 @@ from .view_helpers import (
 
 class SiteListView(
     SortableListMixin,
+    FilteredListMixin,
     SearchablePaginatedListMixin,
     LoginRequiredMixin,
     ListView,
 ):
     model = Site
     template_name = "sites/site_list.html"
-    search_fields = ("code", "name", "description", "external_id", "source_name")
     search_placeholder = "Search sites"
+    filterset_class = SiteFilterSet
+    filter_preference_page_key = "sites"
     sort_preference_page_key = "sites"
     default_sort = "code"
     sort_field_map = {
@@ -56,25 +60,30 @@ class SiteListView(
 
     def get_queryset(self):
         queryset = Site.objects.prefetch_related("access_records__versions")
-        return self.apply_sort(self.apply_search(queryset))
+        return self.apply_sort(self.apply_filters(queryset))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["warning_site_ids"] = site_warning_site_ids(
             list(context["object_list"])
         )
-        context["site_list_views"] = site_list_views("table")
+        context["site_list_views"] = site_list_views(
+            "table",
+            context.get("list_view_query_string", ""),
+        )
         return context
 
 
-class SiteMapView(LoginRequiredMixin, ListView):
+class SiteMapView(FilteredListMixin, LoginRequiredMixin, ListView):
     model = Site
     template_name = "sites/site_map.html"
+    filterset_class = SiteFilterSet
+    search_placeholder = "Search sites"
+    filter_preference_page_key = "sites"
 
     def get_queryset(self):
-        return Site.objects.prefetch_related("access_records__versions").order_by(
-            "code"
-        )
+        queryset = Site.objects.prefetch_related("access_records__versions")
+        return self.apply_filters(queryset).order_by("code")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -85,7 +94,10 @@ class SiteMapView(LoginRequiredMixin, ListView):
             SITES_MAP_PREFERENCE_KEY,
             default_sites_map_preference(),
         )
-        context["site_list_views"] = site_list_views("map")
+        context["site_list_views"] = site_list_views(
+            "map",
+            context.get("list_view_query_string", ""),
+        )
         context["site_map_sites"] = build_site_list_map_data(
             sites,
             warning_site_ids,

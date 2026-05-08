@@ -158,7 +158,8 @@
         button.innerHTML = `<i class="ti ${iconClass}" aria-hidden="true"></i>`;
 
         L.DomEvent.disableClickPropagation(container);
-        L.DomEvent.on(button, "click", () => {
+        L.DomEvent.on(button, "click", (event) => {
+          L.DomEvent.stop(event);
           onClick();
         });
 
@@ -167,6 +168,202 @@
     });
 
     map.addControl(new HomeControl({ position }));
+  }
+
+  function addFilterControl(map, onClick, options = {}) {
+    const position = options.position || "topright";
+    const title = options.title || "Open filters";
+    const ariaLabel = options.ariaLabel || "Open filters";
+    const initialCount = Number(options.count || 0);
+
+    const FilterControl = L.Control.extend({
+      onAdd() {
+        const container = L.DomUtil.create(
+          "div",
+          "leaflet-bar access-atlas-map-filter-control",
+        );
+        const button = L.DomUtil.create("button", "", container);
+        button.type = "button";
+        button.title = title;
+        button.setAttribute("aria-label", ariaLabel);
+        button.innerHTML =
+          '<i class="ti ti-adjustments-horizontal" aria-hidden="true"></i>';
+        this._badge = L.DomUtil.create("span", "access-atlas-map-filter-badge", button);
+
+        L.DomEvent.disableClickPropagation(container);
+        L.DomEvent.on(button, "click", (event) => {
+          L.DomEvent.stop(event);
+          onClick();
+        });
+
+        this.setCount(initialCount);
+        return container;
+      },
+      setCount(count) {
+        const normalizedCount = Number(count);
+        const badgeCount = Number.isFinite(normalizedCount)
+          ? Math.max(0, normalizedCount)
+          : 0;
+        if (!this._badge) {
+          return;
+        }
+        this._badge.textContent = String(badgeCount);
+        this._badge.hidden = badgeCount === 0;
+      },
+    });
+
+    const control = new FilterControl({ position });
+    map.addControl(control);
+    return control;
+  }
+
+  function createFullscreenSafeOffcanvasController(
+    mapElement,
+    offcanvasId = "list-filter-offcanvas",
+  ) {
+    const offcanvasElement = document.getElementById(offcanvasId);
+    if (!offcanvasElement || !mapElement) {
+      return null;
+    }
+
+    const originalParent = offcanvasElement.parentNode;
+    const placeholder = document.createComment("list filter offcanvas");
+    let fullscreenPanelVisible = false;
+    let fallbackHideTimeout = null;
+    originalParent.insertBefore(placeholder, offcanvasElement);
+    offcanvasElement.setAttribute("data-bs-backdrop", "false");
+
+    function mapIsFullscreen() {
+      return (
+        document.fullscreenElement === mapElement ||
+        mapElement.matches(":fullscreen") ||
+        mapElement.classList.contains("leaflet-pseudo-fullscreen")
+      );
+    }
+
+    function moveForFullscreen() {
+      if (mapIsFullscreen() && offcanvasElement.parentNode !== mapElement) {
+        mapElement.appendChild(offcanvasElement);
+      }
+    }
+
+    function restoreParent() {
+      if (
+        offcanvasElement.parentNode !== originalParent &&
+        placeholder.parentNode === originalParent
+      ) {
+        originalParent.insertBefore(offcanvasElement, placeholder.nextSibling);
+      }
+    }
+
+    function getOffcanvasConstructor() {
+      return globalThis.bootstrap?.Offcanvas || window.bootstrap?.Offcanvas;
+    }
+
+    function fallbackShow() {
+      offcanvasElement.classList.add("show");
+      offcanvasElement.style.visibility = "visible";
+      offcanvasElement.removeAttribute("aria-hidden");
+      offcanvasElement.setAttribute("aria-modal", "true");
+      offcanvasElement.setAttribute("role", "dialog");
+    }
+
+    function finishFullscreenHide() {
+      window.clearTimeout(fallbackHideTimeout);
+      fallbackHideTimeout = null;
+      fullscreenPanelVisible = false;
+      offcanvasElement.classList.remove("list-filter-offcanvas--map-fullscreen");
+      offcanvasElement.style.removeProperty("visibility");
+      offcanvasElement.removeAttribute("aria-modal");
+      offcanvasElement.setAttribute("aria-hidden", "true");
+      restoreParent();
+    }
+
+    function hideFullscreenPanel() {
+      if (!fullscreenPanelVisible) {
+        return;
+      }
+      offcanvasElement.classList.remove("show");
+      offcanvasElement.addEventListener("transitionend", finishFullscreenHide, {
+        once: true,
+      });
+      fallbackHideTimeout = window.setTimeout(finishFullscreenHide, 400);
+    }
+
+    function fallbackHide() {
+      offcanvasElement.classList.remove("show");
+      offcanvasElement.style.removeProperty("visibility");
+      offcanvasElement.removeAttribute("aria-modal");
+      offcanvasElement.setAttribute("aria-hidden", "true");
+      restoreParent();
+    }
+
+    function showFullscreenPanel() {
+      moveForFullscreen();
+      offcanvasElement.classList.add("list-filter-offcanvas--map-fullscreen");
+      offcanvasElement.classList.remove("show");
+      offcanvasElement.style.visibility = "visible";
+      offcanvasElement.removeAttribute("aria-hidden");
+      offcanvasElement.setAttribute("aria-modal", "true");
+      offcanvasElement.setAttribute("role", "dialog");
+      offcanvasElement.getBoundingClientRect();
+      window.requestAnimationFrame(() => {
+        fullscreenPanelVisible = true;
+        offcanvasElement.classList.add("show");
+      });
+    }
+
+    function show() {
+      if (mapIsFullscreen()) {
+        showFullscreenPanel();
+        return;
+      }
+
+      moveForFullscreen();
+      const Offcanvas = getOffcanvasConstructor();
+      if (typeof Offcanvas !== "function") {
+        fallbackShow();
+        return;
+      }
+
+      // Bootstrap calculates the offcanvas transition from its current DOM
+      // position. In fullscreen the panel may have just moved into the map
+      // element, so wait one frame before showing it to preserve animation.
+      window.requestAnimationFrame(() => {
+        try {
+          Offcanvas.getOrCreateInstance(offcanvasElement, {
+            backdrop: false,
+            scroll: true,
+          }).show();
+        } catch (_error) {
+          fallbackShow();
+        }
+      });
+    }
+
+    offcanvasElement.addEventListener("hidden.bs.offcanvas", restoreParent);
+    offcanvasElement.addEventListener("click", (event) => {
+      const dismissButton = event.target.closest('[data-bs-dismiss="offcanvas"]');
+      if (dismissButton && fullscreenPanelVisible) {
+        event.preventDefault();
+        event.stopPropagation();
+        hideFullscreenPanel();
+        return;
+      }
+      if (!dismissButton || typeof getOffcanvasConstructor() === "function") {
+        return;
+      }
+      event.preventDefault();
+      fallbackHide();
+    });
+    document.addEventListener("fullscreenchange", () => {
+      if (!document.fullscreenElement) {
+        hideFullscreenPanel();
+        restoreParent();
+      }
+    });
+
+    return { show };
   }
 
   function addFullscreenControl(map, options = {}) {
@@ -264,6 +461,9 @@
   accessAtlas.configureMapConstraints = configureMapConstraints;
   accessAtlas.markerScaleForZoom = markerScaleForZoom;
   accessAtlas.addHomeControl = addHomeControl;
+  accessAtlas.addFilterControl = addFilterControl;
+  accessAtlas.createFullscreenSafeOffcanvasController =
+    createFullscreenSafeOffcanvasController;
   accessAtlas.addFullscreenControl = addFullscreenControl;
   accessAtlas.settleMapLayout = settleMapLayout;
 })();

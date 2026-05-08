@@ -27,6 +27,7 @@ from access_atlas.core.imports import (
     store_import_rows,
 )
 from access_atlas.core.mixins import (
+    FilteredListMixin,
     ObjectFormMixin,
     PaginatedObjectHistoryMixin,
     SearchablePaginatedListMixin,
@@ -35,6 +36,7 @@ from access_atlas.core.mixins import (
 from access_atlas.sites.models import Site
 from access_atlas.trips.approval import ApprovedTripChangeMixin
 
+from .filters import JobFilterSet, JobTemplateFilterSet, WorkProgrammeFilterSet
 from .forms import (
     AssignWorkProgrammeJobForm,
     JobForm,
@@ -64,6 +66,7 @@ from .models import (
     WorkProgramme,
 )
 from .services import assign_jobs_to_work_programme, create_job_from_template
+from .status_display import JOB_STATUS_COLORS
 from .template_imports import (
     SESSION_KEY as JOB_TEMPLATE_IMPORT_SESSION_KEY,
 )
@@ -77,14 +80,16 @@ from .template_imports import (
 
 class JobTemplateListView(
     SortableListMixin,
+    FilteredListMixin,
     SearchablePaginatedListMixin,
     LoginRequiredMixin,
     ListView,
 ):
     model = JobTemplate
     template_name = "jobs/job_template_list.html"
-    search_fields = ("title", "description", "notes")
     search_placeholder = "Search job templates"
+    filterset_class = JobTemplateFilterSet
+    filter_preference_page_key = "job-templates"
     sort_preference_page_key = "job-templates"
     default_sort = "title"
     sort_field_map = {
@@ -95,19 +100,21 @@ class JobTemplateListView(
     }
 
     def get_queryset(self):
-        return self.apply_sort(self.apply_search(super().get_queryset()))
+        return self.apply_sort(self.apply_filters(super().get_queryset()))
 
 
 class WorkProgrammeListView(
     SortableListMixin,
+    FilteredListMixin,
     SearchablePaginatedListMixin,
     LoginRequiredMixin,
     ListView,
 ):
     model = WorkProgramme
     template_name = "jobs/work_programme_list.html"
-    search_fields = ("name", "description")
     search_placeholder = "Search work programmes"
+    filterset_class = WorkProgrammeFilterSet
+    filter_preference_page_key = "work-programmes"
     sort_preference_page_key = "work-programmes"
     default_sort = "start-date"
     sort_field_map = {
@@ -119,7 +126,7 @@ class WorkProgrammeListView(
 
     def get_queryset(self):
         queryset = super().get_queryset().annotate(job_count=Count("jobs"))
-        return self.apply_sort(self.apply_search(queryset))
+        return self.apply_sort(self.apply_filters(queryset))
 
 
 def _job_template_detail_sections(
@@ -441,14 +448,16 @@ class TemplateRequirementDeleteView(LoginRequiredMixin, DeleteView):
 
 class JobListView(
     SortableListMixin,
+    FilteredListMixin,
     SearchablePaginatedListMixin,
     LoginRequiredMixin,
     ListView,
 ):
     model = Job
     template_name = "jobs/job_list.html"
-    search_fields = ("title", "description", "notes", "site__code", "site__name")
     search_placeholder = "Search jobs"
+    filterset_class = JobFilterSet
+    filter_preference_page_key = "jobs"
     sort_preference_page_key = "jobs"
     default_sort = "title"
     sort_field_map = {
@@ -471,27 +480,21 @@ class JobListView(
                 "work_programme",
             )
         )
-        status = self.request.GET.get("status")
-        if status == JobStatus.UNASSIGNED:
-            queryset = queryset.filter(
-                status=JobStatus.UNASSIGNED,
-                site_visit_assignment__isnull=True,
-            )
-        elif status in JobStatus.values:
-            queryset = queryset.filter(status=status)
-        return self.apply_sort(self.apply_search(queryset))
+        return self.apply_sort(self.apply_filters(queryset))
 
 
-class JobMapView(LoginRequiredMixin, ListView):
+class JobMapView(FilteredListMixin, LoginRequiredMixin, ListView):
     model = Job
     template_name = "jobs/job_map.html"
+    filterset_class = JobFilterSet
+    search_placeholder = "Search jobs"
+    filter_preference_page_key = "jobs"
 
     def get_queryset(self):
-        return (
-            Job.objects.select_related("site", "work_programme")
-            .filter(status__in=JobStatus.values)
-            .order_by("site__code", "title")
+        queryset = Job.objects.select_related("site", "work_programme").filter(
+            status__in=JobStatus.values
         )
+        return self.apply_filters(queryset).order_by("site__code", "title")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -500,7 +503,6 @@ class JobMapView(LoginRequiredMixin, ListView):
             JOBS_MAP_PREFERENCE_KEY,
             default_jobs_map_preference(),
         )
-        visible_statuses = set(map_preference.get("visible_statuses", []))
         sites = {}
         for job in context["object_list"]:
             site = job.site
@@ -535,30 +537,26 @@ class JobMapView(LoginRequiredMixin, ListView):
             {
                 "value": JobStatus.UNASSIGNED,
                 "label": JobStatus.UNASSIGNED.label,
-                "color": "#667382",
+                "color": JOB_STATUS_COLORS[JobStatus.UNASSIGNED],
                 "rank": 40,
-                "visible": JobStatus.UNASSIGNED in visible_statuses,
             },
             {
                 "value": JobStatus.ASSIGNED,
                 "label": JobStatus.ASSIGNED.label,
-                "color": "#206bc4",
+                "color": JOB_STATUS_COLORS[JobStatus.ASSIGNED],
                 "rank": 30,
-                "visible": JobStatus.ASSIGNED in visible_statuses,
             },
             {
                 "value": JobStatus.COMPLETED,
                 "label": JobStatus.COMPLETED.label,
-                "color": "#2fb344",
+                "color": JOB_STATUS_COLORS[JobStatus.COMPLETED],
                 "rank": 20,
-                "visible": JobStatus.COMPLETED in visible_statuses,
             },
             {
                 "value": JobStatus.CANCELLED,
                 "label": JobStatus.CANCELLED.label,
-                "color": "#d63939",
+                "color": JOB_STATUS_COLORS[JobStatus.CANCELLED],
                 "rank": 10,
-                "visible": JobStatus.CANCELLED in visible_statuses,
             },
         ]
         context["map_preference"] = {

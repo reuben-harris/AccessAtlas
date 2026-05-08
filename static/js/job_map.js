@@ -1,7 +1,6 @@
 (() => {
   const mapElement = document.getElementById("job-map");
   const dataElement = document.getElementById("job-map-data");
-  const statusControlsElement = document.getElementById("job-map-status-controls");
   const statusLayersElement = document.getElementById("job-map-status-layers");
   const preferenceElement = document.getElementById("job-map-preference");
   const tileLayerElement = document.getElementById("job-map-tile-layer");
@@ -9,7 +8,10 @@
   const createThemeTileController = window.AccessAtlas?.createThemeTileController;
   const fitLayersOrDefault = window.AccessAtlas?.fitLayersOrDefault;
   const sharedAddHomeControl = window.AccessAtlas?.addHomeControl;
+  const addFilterControl = window.AccessAtlas?.addFilterControl;
   const addFullscreenControl = window.AccessAtlas?.addFullscreenControl;
+  const createFullscreenSafeOffcanvasController =
+    window.AccessAtlas?.createFullscreenSafeOffcanvasController;
   const settleMapLayout = window.AccessAtlas?.settleMapLayout;
   const createLongitudeNormalizer = window.AccessAtlas?.createLongitudeNormalizer;
   const normalizeLatLng = window.AccessAtlas?.normalizeLatLng;
@@ -19,7 +21,6 @@
   if (
     !mapElement ||
     !dataElement ||
-    !statusControlsElement ||
     !statusLayersElement ||
     !preferenceElement ||
     !tileLayerElement ||
@@ -27,7 +28,9 @@
     typeof createThemeTileController !== "function" ||
     typeof fitLayersOrDefault !== "function" ||
     typeof sharedAddHomeControl !== "function" ||
+    typeof addFilterControl !== "function" ||
     typeof addFullscreenControl !== "function" ||
+    typeof createFullscreenSafeOffcanvasController !== "function" ||
     typeof settleMapLayout !== "function" ||
     typeof createLongitudeNormalizer !== "function" ||
     typeof normalizeLatLng !== "function" ||
@@ -44,21 +47,15 @@
   const tileLayer = JSON.parse(tileLayerElement.textContent);
   const savedPreference = preference.value || {};
   const postJSON = window.AccessAtlas?.postJSON;
+  const initialFilterCount = Number(mapElement.dataset.filterCount || 0);
   const statusByValue = new Map(
     statusLayers.map((statusLayer) => [statusLayer.value, statusLayer]),
   );
   const longitudeNormalizer = createLongitudeNormalizer(
     sites.map((entry) => entry.site?.longitude),
   );
-  const visibleStatuses = new Set(
-    statusLayers
-      .filter((statusLayer) => statusLayer.visible)
-      .map((statusLayer) => statusLayer.value),
-  );
-  // Visibility is persisted as a user preference so the map can reopen in the
-  // same operational state the user last chose.
-
   const map = L.map(mapElement).setView([-41.2865, 174.7762], 5);
+  const filterPanel = createFullscreenSafeOffcanvasController(mapElement);
   configureMapConstraints(map);
   const markerLayer = L.layerGroup().addTo(map);
   const tileController = createThemeTileController(map, tileLayer);
@@ -75,7 +72,7 @@
   }
 
   function savePreference() {
-    const url = statusControlsElement.dataset.preferenceUrl;
+    const url = mapElement.dataset.preferenceUrl;
 
     if (!url) {
       return;
@@ -88,7 +85,6 @@
     postJSON(url, {
       key: preference.key,
       value: {
-        visible_statuses: Array.from(visibleStatuses),
         viewport: currentViewport(),
       },
     }).catch(() => {});
@@ -135,10 +131,6 @@
       .sort((first, second) => second.rank - first.rank)[0];
   }
 
-  function getVisibleJobs(jobs) {
-    return jobs.filter((job) => visibleStatuses.has(job.statusValue));
-  }
-
   function buildPopup(site, jobs) {
     const jobList = jobs
       .map((job) => {
@@ -167,7 +159,7 @@
 
     for (const entry of sites) {
       const site = entry.site;
-      const jobs = getVisibleJobs(entry.jobs);
+      const jobs = entry.jobs;
       const latitude = Number(site.latitude);
       const longitude = Number(site.longitude);
       const dominantStatus = getDominantStatus(jobs);
@@ -201,38 +193,6 @@
     fitLayersOrDefault(map, markers, [-41.2865, 174.7762], 5);
   }
 
-  function updateStatusButton(button, enabled) {
-    button.classList.toggle("is-active", enabled);
-    button.setAttribute("aria-pressed", enabled ? "true" : "false");
-  }
-
-  function buildStatusControls() {
-    statusControlsElement.replaceChildren();
-
-    for (const statusLayer of statusLayers) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "job-map-status-button";
-      button.style.setProperty("--job-map-status-color", statusLayer.color);
-      button.textContent = statusLayer.label;
-      updateStatusButton(button, visibleStatuses.has(statusLayer.value));
-
-      button.addEventListener("click", () => {
-        if (visibleStatuses.has(statusLayer.value)) {
-          visibleStatuses.delete(statusLayer.value);
-          updateStatusButton(button, false);
-        } else {
-          visibleStatuses.add(statusLayer.value);
-          updateStatusButton(button, true);
-        }
-        visibleMarkers = drawMarkers();
-        savePreference();
-      });
-
-      statusControlsElement.appendChild(button);
-    }
-  }
-
   function mountHomeControl() {
     sharedAddHomeControl(map, () => {
       fitMarkers(visibleMarkers);
@@ -240,9 +200,13 @@
     });
   }
 
-  buildStatusControls();
   mountHomeControl();
   addFullscreenControl(map);
+  if (filterPanel) {
+    addFilterControl(map, filterPanel.show, {
+      count: initialFilterCount,
+    });
+  }
   tileController.apply();
   visibleMarkers = drawMarkers();
 

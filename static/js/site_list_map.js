@@ -7,7 +7,10 @@
   const createThemeTileController = window.AccessAtlas?.createThemeTileController;
   const fitLayersOrDefault = window.AccessAtlas?.fitLayersOrDefault;
   const addHomeControl = window.AccessAtlas?.addHomeControl;
+  const addFilterControl = window.AccessAtlas?.addFilterControl;
   const addFullscreenControl = window.AccessAtlas?.addFullscreenControl;
+  const createFullscreenSafeOffcanvasController =
+    window.AccessAtlas?.createFullscreenSafeOffcanvasController;
   const settleMapLayout = window.AccessAtlas?.settleMapLayout;
   const createLongitudeNormalizer = window.AccessAtlas?.createLongitudeNormalizer;
   const normalizeLatLng = window.AccessAtlas?.normalizeLatLng;
@@ -24,7 +27,9 @@
     typeof createThemeTileController !== "function" ||
     typeof fitLayersOrDefault !== "function" ||
     typeof addHomeControl !== "function" ||
+    typeof addFilterControl !== "function" ||
     typeof addFullscreenControl !== "function" ||
+    typeof createFullscreenSafeOffcanvasController !== "function" ||
     typeof settleMapLayout !== "function" ||
     typeof createLongitudeNormalizer !== "function" ||
     typeof normalizeLatLng !== "function" ||
@@ -41,7 +46,9 @@
   const savedPreference = preference.value || {};
   const defaultCenter = [-41.2865, 174.7762];
   const defaultZoom = 5;
+  const initialFilterCount = Number(mapElement.dataset.filterCount || 0);
   const map = L.map(mapElement).setView(defaultCenter, defaultZoom);
+  const filterPanel = createFullscreenSafeOffcanvasController(mapElement);
   configureMapConstraints(map);
   const markerLayer = L.layerGroup().addTo(map);
   const tileController = createThemeTileController(map, tileLayer);
@@ -190,6 +197,9 @@
     savePreference();
   });
   addFullscreenControl(map);
+  if (filterPanel) {
+    addFilterControl(map, filterPanel.show, { count: initialFilterCount });
+  }
   tileController.apply();
   markers = drawMarkers();
   applySavedViewport();

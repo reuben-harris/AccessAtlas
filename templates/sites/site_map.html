@@ -25,6 +25,7 @@
 
 <div class="access-atlas-map-page access-atlas-map-page--expanded">
   {% include "sites/_site_view_toolbar.html" %}
+  {% include "includes/list_controls.html" with filter_layout="map_offcanvas" %}
 
   <div class="card access-atlas-map-card--fill">
     <div class="card-body p-0">
@@ -32,6 +33,7 @@
         id="site-list-map"
         class="site-list-map"
         data-preference-url="{% url 'account_preference' %}"
+        data-filter-count="{{ active_filter_chips|length }}"
         aria-label="Map of synced sites"
       ></div>
     </div>

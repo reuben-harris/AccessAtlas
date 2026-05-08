@@ -22,10 +22,16 @@
 
 <div class="access-atlas-map-page access-atlas-map-page--expanded">
   {% include "sites/_access_record_view_toolbar.html" %}
+  {% include "includes/list_controls.html" with filter_layout="map_offcanvas" %}
 
   <div class="card site-access-map-card access-atlas-map-card--fill">
     <div class="card-body p-0">
-      <div id="site-access-map" class="site-access-map" aria-label="Map of access record features"></div>
+      <div
+        id="site-access-map"
+        class="site-access-map"
+        data-filter-count="{{ active_filter_chips|length }}"
+        aria-label="Map of access record features"
+      ></div>
     </div>
   </div>
 </div>

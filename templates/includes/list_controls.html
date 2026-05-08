@@ -1,61 +1,399 @@
-{% load querystring %}
-<div class="card mb-3">
-  <div class="card-body">
-    <div class="row g-3 align-items-end">
-      <div class="col-md">
-        <form method="get" class="d-flex gap-2 align-items-end">
-          {% for key, value in search_preserved_query_items %}
-            <input type="hidden" name="{{ key }}" value="{{ value }}">
-          {% endfor %}
-          <div class="flex-fill">
-            <label class="form-label mb-1 d-flex align-items-center gap-2" for="list-search-input">
-              <span>Search</span>
-              <span class="badge bg-secondary-lt text-secondary-emphasis">
-                {{ search_result_count }} Result{{ search_result_count|pluralize }}
-              </span>
-            </label>
-            <input
-              id="list-search-input"
-              class="form-control"
-              type="search"
-              name="{{ search_param }}"
-              value="{{ search_query }}"
-              placeholder="{{ search_placeholder }}"
-            >
-          </div>
-          {% if search_query %}
-            <a
-              class="btn btn-icon btn-outline-secondary"
-              href="{% query_update q='' page='' %}"
-              aria-label="Clear search"
-              title="Clear search"
-            >
-              <i class="ti ti-x" aria-hidden="true"></i>
-            </a>
-          {% endif %}
-          <button class="btn btn-primary" type="submit">Search</button>
-        </form>
-      </div>
-      <div class="col-md-auto">
-        <form method="get" class="d-flex gap-2 align-items-end">
-          {% for key, value in per_page_preserved_query_items %}
-            <input type="hidden" name="{{ key }}" value="{{ value }}">
-          {% endfor %}
-          <div>
-            <label class="form-label mb-1" for="list-per-page-select">Per page</label>
-            <select
-              id="list-per-page-select"
-              class="form-select"
-              name="{{ page_size_param }}"
-            >
-              {% for option in page_size_options %}
-                <option value="{{ option }}"{% if option == per_page %} selected{% endif %}>{{ option }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <button class="btn btn-outline-primary" type="submit">Apply</button>
-        </form>
-      </div>
+{% load querystring static %}
+{% if filter_controls %}
+  <script src="{% static 'django_tomselect/js/django-tomselect.min.js' %}"></script>
+{% endif %}
+{% if filter_layout != "map_offcanvas" %}
+<div class="card mb-3{% if filter_controls %} list-controls-card{% endif %}">
+  {% if filter_controls %}
+    <div class="card-header">
+      <ul class="nav nav-tabs card-header-tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button
+            id="list-results-tab"
+            class="nav-link active"
+            type="button"
+            role="tab"
+            data-bs-toggle="tab"
+            data-bs-target="#list-results-pane"
+            aria-controls="list-results-pane"
+            aria-selected="true"
+          >
+            <span>Results</span>
+            <span class="badge bg-secondary-lt text-secondary-emphasis ms-1">{{ search_result_count }}</span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button
+            id="list-filters-tab"
+            class="nav-link"
+            type="button"
+            role="tab"
+            data-bs-toggle="tab"
+            data-bs-target="#list-filters-pane"
+            aria-controls="list-filters-pane"
+            aria-selected="false"
+          >
+            <span>Filters</span>
+            {% if active_filter_chips %}
+              <span class="badge bg-primary-lt text-primary-emphasis ms-1">{{ active_filter_chips|length }}</span>
+            {% endif %}
+          </button>
+        </li>
+      </ul>
     </div>
+  {% endif %}
+  <div class="card-body">
+    {% if filter_controls %}
+      <div class="tab-content">
+        <div
+          id="list-results-pane"
+          class="tab-pane active show"
+          role="tabpanel"
+          aria-labelledby="list-results-tab"
+          tabindex="0"
+        >
+          <div class="row g-3 align-items-end">
+            <div class="col-md">
+              <form method="get" class="d-flex gap-2 align-items-end">
+                {% for key, value in search_preserved_query_items %}
+                  <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endfor %}
+                <div class="flex-fill">
+                  <label class="form-label mb-1" for="list-search-input">Quick search</label>
+                  <input
+                    id="list-search-input"
+                    class="form-control"
+                    type="search"
+                    name="{{ search_param }}"
+                    value="{{ search_query }}"
+                    placeholder="{{ search_placeholder }}"
+                  >
+                </div>
+                {% if search_query %}
+                  <a
+                    class="btn btn-icon btn-outline-secondary"
+                    href="{% query_update q='' page='' %}"
+                    aria-label="Clear search"
+                    title="Clear search"
+                  >
+                    <i class="ti ti-x" aria-hidden="true"></i>
+                  </a>
+                {% endif %}
+                <button class="btn btn-primary" type="submit">Search</button>
+              </form>
+            </div>
+            {% if page_size_options %}
+              <div class="col-md-auto">
+                <form method="get" class="d-flex gap-2 align-items-end">
+                  {% for key, value in per_page_preserved_query_items %}
+                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                  {% endfor %}
+                  <div>
+                    <label class="form-label mb-1" for="list-per-page-select">Per page</label>
+                    <select
+                      id="list-per-page-select"
+                      class="form-select"
+                      name="{{ page_size_param }}"
+                    >
+                      {% for option in page_size_options %}
+                        <option value="{{ option }}"{% if option == per_page %} selected{% endif %}>{{ option }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <button class="btn btn-outline-primary" type="submit">Apply</button>
+                </form>
+              </div>
+            {% endif %}
+          </div>
+          {% if filter_layout == "offcanvas" and active_filter_chips %}
+            <div class="list-filter-compact-summary mt-3">
+              <div class="list-filter-chips" aria-label="Applied filters">
+                {% for chip in active_filter_chips %}
+                  <a class="badge bg-primary-lt text-primary-emphasis list-filter-chip" href="{{ chip.clear_url }}">
+                    <span>{{ chip.label }}</span>
+                    <i class="ti ti-x" aria-hidden="true"></i>
+                  </a>
+                {% endfor %}
+                <a class="badge bg-danger-lt text-danger-emphasis list-filter-chip" href="{{ filter_clear_all_url }}">
+                  <span>Clear all</span>
+                  <i class="ti ti-filter-x" aria-hidden="true"></i>
+                </a>
+              </div>
+              <button
+                class="btn btn-outline-primary"
+                type="button"
+                data-bs-toggle="offcanvas"
+                data-bs-target="#list-filter-offcanvas"
+                aria-controls="list-filter-offcanvas"
+              >
+                <i class="ti ti-adjustments-horizontal" aria-hidden="true"></i>
+                <span>Edit filters</span>
+              </button>
+            </div>
+          {% endif %}
+          {% if filter_layout != "offcanvas" and active_filter_chips %}
+            <div class="list-filter-chips mt-3" aria-label="Applied filters">
+              {% for chip in active_filter_chips %}
+                <a class="badge bg-primary-lt text-primary-emphasis list-filter-chip" href="{{ chip.clear_url }}">
+                  <span>{{ chip.label }}</span>
+                  <i class="ti ti-x" aria-hidden="true"></i>
+                </a>
+              {% endfor %}
+              <a class="badge bg-danger-lt text-danger-emphasis list-filter-chip" href="{{ filter_clear_all_url }}">
+                <span>Clear all</span>
+                <i class="ti ti-filter-x" aria-hidden="true"></i>
+              </a>
+            </div>
+          {% endif %}
+        </div>
+        <div
+          id="list-filters-pane"
+          class="tab-pane"
+          role="tabpanel"
+          aria-labelledby="list-filters-tab"
+          tabindex="0"
+        >
+          {% if filter_layout == "offcanvas" %}
+            <div class="list-filter-compact-summary">
+              {% if active_filter_chips %}
+                <div class="list-filter-chips" aria-label="Applied filters">
+                  {% for chip in active_filter_chips %}
+                    <a class="badge bg-primary-lt text-primary-emphasis list-filter-chip" href="{{ chip.clear_url }}">
+                      <span>{{ chip.label }}</span>
+                      <i class="ti ti-x" aria-hidden="true"></i>
+                    </a>
+                  {% endfor %}
+                  <a class="badge bg-danger-lt text-danger-emphasis list-filter-chip" href="{{ filter_clear_all_url }}">
+                    <span>Clear all</span>
+                    <i class="ti ti-filter-x" aria-hidden="true"></i>
+                  </a>
+                </div>
+              {% else %}
+                <div class="text-secondary">No filters applied</div>
+              {% endif %}
+              <button
+                class="btn btn-outline-primary"
+                type="button"
+                data-bs-toggle="offcanvas"
+                data-bs-target="#list-filter-offcanvas"
+                aria-controls="list-filter-offcanvas"
+              >
+                <i class="ti ti-adjustments-horizontal" aria-hidden="true"></i>
+                <span>Filters</span>
+              </button>
+            </div>
+          {% else %}
+            <form method="get" class="list-filter-form list-filter-inline-form" data-list-filter-form>
+              <input type="hidden" name="{{ filter_state_param }}" value="{{ filter_state_update }}">
+              {% for key, value in filter_preserved_query_items %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+              {% endfor %}
+              <div class="list-filter-fields list-filter-fields--inline">
+                {% for control in filter_controls %}
+                  <div class="list-filter-row" data-filter-field>
+                    <label class="form-label list-filter-row-label" for="filter-value-{{ control.name }}">{{ control.label }}</label>
+                    <div class="input-group list-filter-input-group">
+                      {% if control.operators|length > 1 %}
+                        <select
+                          class="form-select list-filter-operator"
+                          aria-label="{{ control.label }} operator"
+                          data-filter-operator
+                        >
+                          {% for operator in control.operators %}
+                            <option
+                              value="{{ operator.value }}"
+                              data-param-suffix="{{ operator.suffix }}"
+                              data-no-value="{{ operator.no_value|yesno:'true,false' }}"
+                              data-submitted-value="{{ operator.submitted_value }}"
+                              {% if operator.selected %}selected{% endif %}
+                            >{{ operator.label }}</option>
+                          {% endfor %}
+                        </select>
+                      {% endif %}
+                      {% if control.input_type == "multiselect" %}
+                        <select
+                          id="filter-value-{{ control.name }}"
+                          class="form-select list-filter-value"
+                          name="{{ control.name }}"
+                          data-filter-value
+                          data-filter-tomselect
+                          multiple
+                        >
+                          {% for choice in control.choices %}
+                            <option
+                              value="{{ choice.value }}"
+                              {% if choice.selected %}selected{% endif %}
+                              {% if choice.color %}data-filter-item-color="{{ choice.color }}"{% endif %}
+                            >{{ choice.label }}</option>
+                          {% endfor %}
+                        </select>
+                      {% else %}
+                        <input
+                          id="filter-value-{{ control.name }}"
+                          class="form-control list-filter-value"
+                          type="{{ control.input_type }}"
+                          name="{{ control.name }}"
+                          value="{{ control.value }}"
+                          placeholder="{{ control.placeholder }}"
+                          data-filter-value
+                        >
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endfor %}
+                <div class="list-filter-row list-filter-actions-row">
+                  <span aria-hidden="true"></span>
+                  <div class="btn-list">
+                    <button class="btn btn-primary" type="submit">Apply filters</button>
+                    <a class="btn btn-outline-secondary" href="{{ filter_clear_all_url }}">Clear all</a>
+                  </div>
+                </div>
+              </div>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% else %}
+      <div class="row g-3 align-items-end">
+        <div class="col-md">
+          <form method="get" class="d-flex gap-2 align-items-end">
+            {% for key, value in search_preserved_query_items %}
+              <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endfor %}
+            <div class="flex-fill">
+              <label class="form-label mb-1 d-flex align-items-center gap-2" for="list-search-input">
+                <span>Search</span>
+                <span class="badge bg-secondary-lt text-secondary-emphasis">
+                  {{ search_result_count }} Result{{ search_result_count|pluralize }}
+                </span>
+              </label>
+              <input
+                id="list-search-input"
+                class="form-control"
+                type="search"
+                name="{{ search_param }}"
+                value="{{ search_query }}"
+                placeholder="{{ search_placeholder }}"
+              >
+            </div>
+            {% if search_query %}
+              <a
+                class="btn btn-icon btn-outline-secondary"
+                href="{% query_update q='' page='' %}"
+                aria-label="Clear search"
+                title="Clear search"
+              >
+                <i class="ti ti-x" aria-hidden="true"></i>
+              </a>
+            {% endif %}
+            <button class="btn btn-primary" type="submit">Search</button>
+          </form>
+        </div>
+        {% if page_size_options %}
+          <div class="col-md-auto">
+            <form method="get" class="d-flex gap-2 align-items-end">
+              {% for key, value in per_page_preserved_query_items %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+              {% endfor %}
+              <div>
+                <label class="form-label mb-1" for="list-per-page-select">Per page</label>
+                <select
+                  id="list-per-page-select"
+                  class="form-select"
+                  name="{{ page_size_param }}"
+                >
+                  {% for option in page_size_options %}
+                    <option value="{{ option }}"{% if option == per_page %} selected{% endif %}>{{ option }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <button class="btn btn-outline-primary" type="submit">Apply</button>
+            </form>
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
   </div>
 </div>
+{% endif %}
+
+{% if filter_controls and "offcanvas" in filter_layout %}
+  <div
+    class="offcanvas offcanvas-end list-filter-offcanvas"
+    tabindex="-1"
+    id="list-filter-offcanvas"
+    aria-labelledby="list-filter-offcanvas-title"
+    data-bs-backdrop="false"
+  >
+    <div class="offcanvas-header">
+      <h2 class="offcanvas-title" id="list-filter-offcanvas-title">Filters</h2>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <form method="get" class="list-filter-form list-filter-offcanvas-form" data-list-filter-form>
+      <div class="offcanvas-body">
+        <input type="hidden" name="{{ filter_state_param }}" value="{{ filter_state_update }}">
+        {% for key, value in filter_preserved_query_items %}
+          <input type="hidden" name="{{ key }}" value="{{ value }}">
+        {% endfor %}
+        <div class="list-filter-fields">
+          {% for control in filter_controls %}
+            <div class="list-filter-row" data-filter-field>
+              <label class="form-label list-filter-row-label" for="filter-value-{{ control.name }}">{{ control.label }}</label>
+              <div class="input-group list-filter-input-group">
+                {% if control.operators|length > 1 %}
+                  <select
+                    class="form-select list-filter-operator"
+                    aria-label="{{ control.label }} operator"
+                    data-filter-operator
+                  >
+                    {% for operator in control.operators %}
+                      <option
+                        value="{{ operator.value }}"
+                        data-param-suffix="{{ operator.suffix }}"
+                        data-no-value="{{ operator.no_value|yesno:'true,false' }}"
+                        data-submitted-value="{{ operator.submitted_value }}"
+                        {% if operator.selected %}selected{% endif %}
+                      >{{ operator.label }}</option>
+                    {% endfor %}
+                  </select>
+                {% endif %}
+                {% if control.input_type == "multiselect" %}
+                  <select
+                    id="filter-value-{{ control.name }}"
+                    class="form-select list-filter-value"
+                    name="{{ control.name }}"
+                    data-filter-value
+                    data-filter-tomselect
+                    multiple
+                >
+                  {% for choice in control.choices %}
+                    <option
+                      value="{{ choice.value }}"
+                      {% if choice.selected %}selected{% endif %}
+                      {% if choice.color %}data-filter-item-color="{{ choice.color }}"{% endif %}
+                    >{{ choice.label }}</option>
+                  {% endfor %}
+                </select>
+                {% else %}
+                  <input
+                    id="filter-value-{{ control.name }}"
+                    class="form-control list-filter-value"
+                    type="{{ control.input_type }}"
+                    name="{{ control.name }}"
+                    value="{{ control.value }}"
+                    placeholder="{{ control.placeholder }}"
+                    data-filter-value
+                  >
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="list-filter-offcanvas-footer">
+        <a class="btn btn-outline-secondary" href="{{ filter_clear_all_url }}">Clear all</a>
+        <button class="btn btn-primary" type="submit">Apply filters</button>
+      </div>
+    </form>
+  </div>
+{% endif %}
