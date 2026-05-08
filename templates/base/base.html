@@ -38,12 +38,11 @@
       <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
         <div class="container-fluid">
           <h1 class="navbar-brand navbar-brand-autodark">
-            <a class="brand-home" href="{% url 'dashboard' %}" aria-label="Access Atlas">
-              <span class="brand-mark"><i class="ti ti-map-2" aria-hidden="true"></i></span>
-              <span>Access Atlas</span>
-              <svg class="brand-outline" aria-hidden="true">
-                <rect pathLength="100" x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="4" ry="4"/>
-              </svg>
+            <a class="brand-home" href="{% url 'dashboard' %}" aria-label="AccessAtlas">
+              <span class="brand-mark">
+                <img class="brand-mark-icon" src="{% static 'favicon-32.png' %}" alt="" width="32" height="32">
+              </span>
+              <span class="brand-wordmark">AccessAtlas</span>
             </a>
           </h1>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu">
