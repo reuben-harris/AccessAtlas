@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from django.db import transaction
+from django.db.models import Q
 
 from access_atlas.core.imports import has_import_row_errors, read_uploaded_csv_rows
 from access_atlas.sites.models import Site
@@ -66,6 +67,75 @@ def normalize_import_status(value: str) -> str:
     return normalized or JobStatus.UNASSIGNED
 
 
+def import_lookup_key(value: str) -> str:
+    return value.casefold()
+
+
+def case_insensitive_predicate(field_name: str, values: set[str]) -> Q:
+    predicate = Q()
+    for value in values:
+        predicate |= Q(**{f"{field_name}__iexact": value})
+    return predicate
+
+
+@dataclass(frozen=True)
+class JobImportLookups:
+    sites_by_code: dict[str, Site]
+    templates_by_title: dict[str, list[JobTemplate]]
+    work_programmes_by_name: dict[str, WorkProgramme]
+
+
+def build_job_import_lookups(rows: list[dict[str, str]]) -> JobImportLookups:
+    """Preload reference data used by job CSV rows in a small set of queries."""
+
+    site_codes = {
+        site_code for row in rows if (site_code := (row.get("site_code") or "").strip())
+    }
+    template_titles = {
+        template_title
+        for row in rows
+        if (template_title := (row.get("template_title") or "").strip())
+    }
+    work_programme_names = {
+        work_programme_name
+        for row in rows
+        if (work_programme_name := (row.get("work_programme") or "").strip())
+    }
+
+    sites_by_code: dict[str, Site] = {}
+    if site_codes:
+        for site in Site.objects.filter(
+            case_insensitive_predicate("code", site_codes)
+        ).order_by("code", "pk"):
+            sites_by_code.setdefault(import_lookup_key(site.code), site)
+
+    templates_by_title: dict[str, list[JobTemplate]] = {}
+    if template_titles:
+        for template in JobTemplate.objects.filter(
+            case_insensitive_predicate("title", template_titles),
+            is_active=True,
+        ).order_by("title", "pk"):
+            templates_by_title.setdefault(import_lookup_key(template.title), []).append(
+                template
+            )
+
+    work_programmes_by_name: dict[str, WorkProgramme] = {}
+    if work_programme_names:
+        for work_programme in WorkProgramme.objects.filter(
+            case_insensitive_predicate("name", work_programme_names)
+        ).order_by("name", "pk"):
+            work_programmes_by_name.setdefault(
+                import_lookup_key(work_programme.name),
+                work_programme,
+            )
+
+    return JobImportLookups(
+        sites_by_code=sites_by_code,
+        templates_by_title=templates_by_title,
+        work_programmes_by_name=work_programmes_by_name,
+    )
+
+
 def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
     rows, error = read_uploaded_csv_rows(
         uploaded_file,
@@ -82,6 +152,7 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
             )
         ]
 
+    lookups = build_job_import_lookups(rows)
     result = []
     for index, row in enumerate(rows, start=2):
         site_code = (row.get("site_code") or "").strip()
@@ -155,7 +226,7 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
                 )
             )
             continue
-        site = Site.objects.filter(code__iexact=site_code).first()
+        site = lookups.sites_by_code.get(import_lookup_key(site_code))
         if site is None:
             result.append(
                 JobImportRow(
@@ -170,12 +241,10 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
             )
             continue
 
-        templates = JobTemplate.objects.filter(
-            title__iexact=template_title,
-            is_active=True,
+        templates = lookups.templates_by_title.get(
+            import_lookup_key(template_title), []
         )
-        template_count = templates.count()
-        if template_count == 0:
+        if not templates:
             result.append(
                 JobImportRow(
                     index,
@@ -188,7 +257,7 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
                 )
             )
             continue
-        if template_count > 1:
+        if len(templates) > 1:
             result.append(
                 JobImportRow(
                     index,
@@ -204,9 +273,9 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
 
         work_programme = None
         if work_programme_name:
-            work_programme = WorkProgramme.objects.filter(
-                name__iexact=work_programme_name
-            ).first()
+            work_programme = lookups.work_programmes_by_name.get(
+                import_lookup_key(work_programme_name)
+            )
             if work_programme is None:
                 result.append(
                     JobImportRow(
@@ -230,7 +299,7 @@ def parse_job_import_csv(uploaded_file) -> list[JobImportRow]:
                 closeout_note=closeout_note,
                 work_programme_name=work_programme_name,
                 site=site,
-                template=templates.get(),
+                template=templates[0],
                 work_programme=work_programme,
             )
         )
