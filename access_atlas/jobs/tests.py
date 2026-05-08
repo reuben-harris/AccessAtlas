@@ -85,6 +85,24 @@ def test_create_job_from_template_copies_template_and_requirements():
 
 
 @pytest.mark.django_db
+def test_create_job_from_template_rolls_back_when_requirement_copy_fails(monkeypatch):
+    site = create_site()
+    template = JobTemplate.objects.create(title="Replace sensor")
+    TemplateRequirement.objects.create(job_template=template, name="Sensor cable")
+
+    def fail_requirement_save(self, *args, **kwargs):
+        raise RuntimeError("Requirement copy failed.")
+
+    monkeypatch.setattr(Requirement, "save", fail_requirement_save)
+
+    with pytest.raises(RuntimeError, match="Requirement copy failed."):
+        create_job_from_template(site=site, template=template)
+
+    assert Job.objects.count() == 0
+    assert Requirement.objects.count() == 0
+
+
+@pytest.mark.django_db
 def test_job_created_manually_is_unassigned_by_default():
     site = create_site()
 
@@ -834,6 +852,34 @@ def test_job_history_defaults_to_25_entries_per_page(client):
 
 
 @pytest.mark.django_db
+def test_work_programme_history_paginates_and_renders_empty_state(client):
+    user = User.objects.create_user(email="user@example.com")
+    work_programme = WorkProgramme.objects.create(name="2026 Field Work")
+    for index in range(3):
+        work_programme.description = f"Revision {index}"
+        work_programme.save()
+    client.force_login(user)
+
+    response = client.get(
+        reverse("work_programme_history", kwargs={"pk": work_programme.pk}),
+        {"per_page": 2},
+    )
+
+    assert response.status_code == 200
+    assert response.context["per_page"] == 2
+    assert response.context["paginator"].num_pages == 2
+    assert "<th>When</th>" in response.content.decode()
+
+    work_programme.history.all().delete()
+    response = client.get(
+        reverse("work_programme_history", kwargs={"pk": work_programme.pk})
+    )
+
+    assert response.status_code == 200
+    assert "No history records found." in response.content.decode()
+
+
+@pytest.mark.django_db
 def test_job_map_includes_jobs_and_status_layers(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -1109,6 +1155,29 @@ def test_job_import_confirm_assigns_existing_work_programme(client):
     job = Job.objects.get()
     assert job.work_programme == work_programme
     assert job.due_date == parse_date("2026-12-31")
+
+
+@pytest.mark.django_db
+def test_job_import_parser_resolves_references_case_insensitively():
+    site = create_site()
+    template = JobTemplate.objects.create(title="Replace Sensor", is_active=True)
+    work_programme = WorkProgramme.objects.create(name="2026 Field Work")
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        (
+            b"site_code,template_title,work_programme\n"
+            b"aa-001,replace sensor,2026 field work\n"
+        ),
+        content_type="text/csv",
+    )
+
+    rows = parse_job_import_csv(csv_file)
+
+    assert len(rows) == 1
+    assert rows[0].is_valid
+    assert rows[0].site == site
+    assert rows[0].template == template
+    assert rows[0].work_programme == work_programme
 
 
 @pytest.mark.django_db

@@ -25,6 +25,22 @@ from access_atlas.trips.services import (
 
 
 @pytest.mark.django_db
+def test_trip_list_requires_login(client):
+    response = client.get(reverse("trip_list"))
+
+    assert response.status_code == 302
+    assert response.url == f"{reverse('login')}?next={reverse('trip_list')}"
+
+
+@pytest.mark.django_db
+def test_trip_gantt_requires_login(client):
+    response = client.get(reverse("trip_gantt"))
+
+    assert response.status_code == 302
+    assert response.url == f"{reverse('login')}?next={reverse('trip_gantt')}"
+
+
+@pytest.mark.django_db
 def test_job_assignment_requires_matching_site():
     user = User.objects.create_user(email="user@example.com")
     site_a = Site.objects.create(

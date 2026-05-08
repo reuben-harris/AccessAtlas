@@ -630,21 +630,6 @@ def test_history_records_get_default_reason(site):
 
 
 @pytest.mark.django_db
-def test_dummy_feed_requires_bearer_token(client, settings):
-    settings.SITE_FEED_TOKEN = "secret"
-
-    response = client.get(reverse("dummy_site_feed"))
-    assert response.status_code == 403
-
-    response = client.get(
-        reverse("dummy_site_feed"),
-        headers={"Authorization": "Bearer secret"},
-    )
-    assert response.status_code == 200
-    assert response.json()["schema_version"] == "1.0"
-
-
-@pytest.mark.django_db
 def test_site_autocomplete_returns_code_and_name(logged_in_client):
     Site.objects.create(
         source_name="dummy",

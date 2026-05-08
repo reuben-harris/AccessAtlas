@@ -26,8 +26,12 @@ from access_atlas.sites.access_warnings import (
     build_access_record_warnings,
     build_site_warnings,
 )
-from access_atlas.sites.feed import SiteFeedError, sync_sites_from_payload
-from access_atlas.sites.forms import AccessRecordUploadForm
+from access_atlas.sites.feed import (
+    SiteFeedError,
+    sync_configured_site_feed,
+    sync_sites_from_payload,
+)
+from access_atlas.sites.forms import AccessRecordUploadForm, SitePhotoUploadForm
 from access_atlas.sites.models import (
     AccessRecord,
     AccessRecordStatus,
@@ -205,6 +209,18 @@ def test_sync_sites_rejects_unsupported_schema():
                 "sites": [],
             }
         )
+
+
+@override_settings(SITE_FEED_URL="", SITE_FEED_TOKEN="secret")
+def test_sync_configured_site_feed_requires_url():
+    with pytest.raises(SiteFeedError, match="SITE_FEED_URL is not configured."):
+        sync_configured_site_feed()
+
+
+@override_settings(SITE_FEED_URL="https://example.com/sites.json", SITE_FEED_TOKEN="")
+def test_sync_configured_site_feed_requires_token():
+    with pytest.raises(SiteFeedError, match="SITE_FEED_TOKEN is not configured."):
+        sync_configured_site_feed()
 
 
 @pytest.mark.django_db
@@ -1337,6 +1353,72 @@ def test_access_record_upload_rejects_invalid_geojson(client):
     assert "GeoJSON must be a FeatureCollection." in response.content.decode()
     assert AccessRecord.objects.count() == 0
     assert AccessRecordUploadDraft.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_access_record_upload_rejects_oversized_geojson(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+
+    response = client.post(
+        reverse("access_record_create", kwargs={"site_pk": site.pk}),
+        {
+            "site": str(site.pk),
+            "name": "Boat access",
+            "arrival_method": ArrivalMethod.BOAT,
+            "change_note": "Initial upload",
+            "geojson_file": SimpleUploadedFile(
+                "access.geojson",
+                b"x" * (5 * 1024 * 1024 + 1),
+                content_type="application/geo+json",
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+    assert "GeoJSON file must be 5 MB or smaller." in response.content.decode()
+    assert AccessRecord.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_access_record_upload_rejects_non_geojson_extension(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+
+    response = client.post(
+        reverse("access_record_create", kwargs={"site_pk": site.pk}),
+        {
+            "site": str(site.pk),
+            "name": "Boat access",
+            "arrival_method": ArrivalMethod.BOAT,
+            "change_note": "Initial upload",
+            "geojson_file": SimpleUploadedFile(
+                "access.txt",
+                b'{"type": "FeatureCollection", "features": []}',
+                content_type="application/json",
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+    assert "GeoJSON file must use .geojson or .json." in response.content.decode()
+    assert AccessRecord.objects.count() == 0
 
 
 @pytest.mark.django_db
@@ -2507,6 +2589,35 @@ def test_site_photo_upload_rejects_non_image_file(client):
     assert response.status_code == 200
     assert SitePhoto.objects.count() == 0
     assert "Upload a valid image" in response.content.decode()
+
+
+def test_site_photo_upload_rejects_too_many_files():
+    files = [
+        SimpleUploadedFile(f"photo-{index}.jpg", b"image", content_type="image/jpeg")
+        for index in range(51)
+    ]
+
+    form = SitePhotoUploadForm(files={"photos": files})
+
+    assert not form.is_valid()
+    assert "Upload no more than 50 photos at once." in form.errors["photos"]
+
+
+def test_site_photo_upload_rejects_oversized_file():
+    form = SitePhotoUploadForm(
+        files={
+            "photos": [
+                SimpleUploadedFile(
+                    "large.jpg",
+                    b"x" * (20 * 1024 * 1024 + 1),
+                    content_type="image/jpeg",
+                )
+            ]
+        },
+    )
+
+    assert not form.is_valid()
+    assert "large.jpg must be 20 MB or smaller." in form.errors["photos"]
 
 
 def geojson_file(name="access.geojson"):
