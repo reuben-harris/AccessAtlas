@@ -23,9 +23,11 @@ from .filters import SiteFilterSet
 from .forms import SitePhotoUploadForm
 from .models import Site, SitePhoto
 from .photo_services import (
+    calculate_image_sha256,
     create_site_photo,
     group_visible_site_photos,
     hide_site_photo,
+    site_photo_hashes,
 )
 from .view_helpers import (
     SiteDetailContextMixin,
@@ -145,13 +147,32 @@ class SitePhotosView(SiteDetailContextMixin, LoginRequiredMixin, DetailView):
         self.object = self.get_object()
         form = SitePhotoUploadForm(request.POST, request.FILES)
         if form.is_valid():
+            existing_hashes = site_photo_hashes(self.object)
+            upload_hashes = set()
+            created_count = 0
+            skipped_count = 0
             for photo_file in form.cleaned_data["photos"]:
+                image_sha256 = calculate_image_sha256(photo_file)
+                if image_sha256 in existing_hashes or image_sha256 in upload_hashes:
+                    skipped_count += 1
+                    continue
                 create_site_photo(
                     site=self.object,
                     user=request.user,
                     image_file=photo_file,
+                    image_sha256=image_sha256,
                 )
-            messages.success(request, "Photos uploaded.")
+                upload_hashes.add(image_sha256)
+                created_count += 1
+            if created_count:
+                noun = "photo" if created_count == 1 else "photos"
+                messages.success(request, f"Uploaded {created_count} {noun}.")
+            if skipped_count:
+                noun = "photo" if skipped_count == 1 else "photos"
+                messages.warning(
+                    request,
+                    f"Skipped {skipped_count} duplicate {noun} already on this site.",
+                )
             return redirect(self.object.get_photos_url())
         return self.render_to_response(self.get_context_data(form=form))
 

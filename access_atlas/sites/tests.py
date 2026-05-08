@@ -2705,6 +2705,75 @@ def test_site_photos_upload_creates_photos_and_thumbnails(client):
 
 @pytest.mark.django_db
 @override_settings(MEDIA_ROOT="/tmp/access-atlas-test-media")
+def test_site_photos_upload_skips_duplicates_already_on_site(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    photo_url = reverse("site_photos", kwargs={"pk": site.pk})
+    client.post(photo_url, {"photos": [image_file("original.jpg")]})
+    photo = SitePhoto.objects.get(site=site)
+    photo.hidden = True
+    photo.save(update_fields=["hidden"])
+
+    response = client.post(
+        photo_url,
+        {"photos": [image_file("duplicate.jpg")]},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert SitePhoto.objects.filter(site=site).count() == 1
+    photo.refresh_from_db()
+    assert photo.image_sha256
+    assert (
+        "Skipped 1 duplicate photo already on this site." in response.content.decode()
+    )
+
+
+@pytest.mark.django_db
+@override_settings(MEDIA_ROOT="/tmp/access-atlas-test-media")
+def test_site_photos_upload_hashes_legacy_photos_before_duplicate_check(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    legacy_photo = SitePhoto.objects.create(
+        site=site,
+        image=image_file("legacy.jpg"),
+        hidden=True,
+        uploaded_by=user,
+    )
+
+    response = client.post(
+        reverse("site_photos", kwargs={"pk": site.pk}),
+        {"photos": [image_file("duplicate.jpg")]},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert SitePhoto.objects.filter(site=site).count() == 1
+    legacy_photo.refresh_from_db()
+    assert legacy_photo.image_sha256
+    assert (
+        "Skipped 1 duplicate photo already on this site." in response.content.decode()
+    )
+
+
+@pytest.mark.django_db
+@override_settings(MEDIA_ROOT="/tmp/access-atlas-test-media")
 def test_site_photos_gallery_groups_unknown_dates_after_dated_photos(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -2762,7 +2831,12 @@ def test_site_photo_bulk_hide_hides_selected_photos_only(client):
     )
     client.post(
         reverse("site_photos", kwargs={"pk": site.pk}),
-        {"photos": [image_file("first.jpg"), image_file("second.jpg")]},
+        {
+            "photos": [
+                image_file("first.jpg"),
+                image_file("second.jpg", color="#2fb344"),
+            ]
+        },
     )
     first_photo, second_photo = SitePhoto.objects.filter(site=site).order_by("id")
 
@@ -2799,7 +2873,12 @@ def test_site_photo_bulk_download_streams_selected_originals(client):
     )
     client.post(
         reverse("site_photos", kwargs={"pk": site.pk}),
-        {"photos": [image_file("first.jpg"), image_file("second.jpg")]},
+        {
+            "photos": [
+                image_file("first.jpg"),
+                image_file("second.jpg", color="#2fb344"),
+            ]
+        },
     )
     first_photo, second_photo = SitePhoto.objects.filter(site=site).order_by("id")
 
@@ -2833,7 +2912,12 @@ def test_site_photo_bulk_download_ignores_hidden_selected_photos(client):
     )
     client.post(
         reverse("site_photos", kwargs={"pk": site.pk}),
-        {"photos": [image_file("hidden.jpg"), image_file("visible.jpg")]},
+        {
+            "photos": [
+                image_file("hidden.jpg"),
+                image_file("visible.jpg", color="#2fb344"),
+            ]
+        },
     )
     hidden_photo, visible_photo = SitePhoto.objects.filter(site=site).order_by("id")
     hidden_photo.hidden = True
@@ -2942,9 +3026,10 @@ def image_file(
     *,
     exif_taken_at: str | None = None,
     size: tuple[int, int] = (24, 24),
+    color: str = "#206bc4",
 ):
     buffer = BytesIO()
-    image = Image.new("RGB", size, color="#206bc4")
+    image = Image.new("RGB", size, color=color)
     if exif_taken_at:
         exif = Image.Exif()
         exif[36867] = exif_taken_at

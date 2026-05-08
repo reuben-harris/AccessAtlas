@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from datetime import date, datetime
 from io import BytesIO
@@ -30,6 +31,41 @@ class ThumbnailResult:
     file: ContentFile
     width: int
     height: int
+
+
+def calculate_image_sha256(image_file) -> str:
+    """Return a stable content hash for exact duplicate upload detection."""
+
+    image_file.seek(0)
+    digest = hashlib.sha256()
+    for chunk in image_file.chunks():
+        digest.update(chunk)
+    image_file.seek(0)
+    return digest.hexdigest()
+
+
+def site_photo_hashes(site) -> set[str]:
+    """Return known site photo hashes, backfilling legacy blank hashes lazily."""
+
+    hashes: set[str] = set()
+    for photo in site.photos.all().only("pk", "image", "image_sha256"):
+        if photo.image_sha256:
+            hashes.add(photo.image_sha256)
+            continue
+        if not photo.image:
+            continue
+        try:
+            image_sha256 = calculate_image_sha256(photo.image)
+        except OSError, ValueError:
+            continue
+        if not image_sha256:
+            continue
+        photo.image_sha256 = image_sha256
+        SitePhoto.objects.filter(pk=photo.pk, image_sha256="").update(
+            image_sha256=image_sha256
+        )
+        hashes.add(image_sha256)
+    return hashes
 
 
 def extract_taken_date(image_file):
@@ -80,14 +116,16 @@ def thumbnail_name_for(filename: str) -> str:
 
 
 @transaction.atomic
-def create_site_photo(*, site, user, image_file) -> SitePhoto:
+def create_site_photo(*, site, user, image_file, image_sha256: str = "") -> SitePhoto:
     """Create a site photo with metadata and its gallery thumbnail."""
 
+    image_sha256 = image_sha256 or calculate_image_sha256(image_file)
     taken_date = extract_taken_date(image_file)
     thumbnail = build_thumbnail_file(image_file)
     photo = SitePhoto(
         site=site,
         image=image_file,
+        image_sha256=image_sha256,
         image_width=thumbnail.width,
         image_height=thumbnail.height,
         taken_date=taken_date,

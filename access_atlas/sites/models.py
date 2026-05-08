@@ -168,6 +168,7 @@ class SitePhoto(models.Model):
         on_delete=models.CASCADE,
     )
     image = models.ImageField(upload_to=site_photo_upload_path)
+    image_sha256 = models.CharField(max_length=64, blank=True)
     thumbnail = models.ImageField(
         upload_to=site_photo_thumbnail_path,
         blank=True,
@@ -198,7 +199,11 @@ class SitePhoto(models.Model):
             models.Index(
                 fields=["site", "hidden", "-taken_date", "-uploaded_at"],
                 name="site_photo_gallery_idx",
-            )
+            ),
+            models.Index(
+                fields=["site", "image_sha256"],
+                name="site_photo_hash_idx",
+            ),
         ]
 
     def __str__(self) -> str:
