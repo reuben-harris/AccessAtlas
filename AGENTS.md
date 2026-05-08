@@ -78,6 +78,8 @@ helper rather than letting model/form rules drift apart.
 - `django-simple-history` for audit/history
 - `django-allauth` wired for OIDC support
 - Local development runs Django directly and PostgreSQL through Docker Compose
+- Browser runtime assets are package-managed through `package.json` and copied
+  into ignored `static/vendor/` output by `pnpm build:frontend`
 
 Prefer the existing Django/template approach unless a new feature clearly needs more client-side structure.
 
@@ -88,6 +90,8 @@ Prefer the existing Django/template approach unless a new feature clearly needs 
   - `oidc`
   - `local-oidc`
 - Local login is passwordless and email-based.
+- Permissive local login is intentional for local development and production-release
+  smoke testing. Do not harden it unless the auth direction changes.
 - OIDC is configured through environment variables.
 - Email is the stable identity key.
 - Avoid adding custom auth adapters unless real provider testing proves the defaults are insufficient.
@@ -105,6 +109,9 @@ Keep the site feed narrow:
 The unique site identity is `source_name + external_id`.
 
 Do not add direct write-back to the source system unless the user explicitly changes direction.
+Do not reintroduce an in-app dummy feed endpoint. If sample feed data is needed,
+prefer a static JSON fixture served by local development infrastructure outside
+Django, such as a small nginx/static-file service in Docker Compose.
 
 ## UX Conventions
 
@@ -127,6 +134,25 @@ These are current guardrails, not permanent doctrine:
 - Keep source-of-truth integration simple and feed-based.
 - Prefer stable, boring implementation choices over speculative abstractions.
 - When the public docs and the app diverge, update the docs to match the current app.
+- Keep browser runtime dependencies local and package-managed. Avoid runtime CDN
+  scripts/styles unless the user explicitly chooses an external dependency for a
+  specific reason.
+
+## Maintainability Defaults
+
+- Multi-object writes should live in services or clearly named workflow helpers
+  and should be wrapped in transactions when partial saves would leave the
+  domain in an inconsistent state.
+- Bulk import/review code should preload reference objects and pass explicit
+  lookup structures through row parsing. Avoid adding per-row database queries
+  unless the dataset is intentionally tiny and the tradeoff is documented.
+- Name shared helpers, CSS classes, and JavaScript modules by ownership or
+  behavior rather than by the first page that used them. When a page-specific
+  name becomes shared, rename it as part of the extraction.
+- Frontend lint warnings are treated as build failures. Fix Biome warnings
+  directly where practical. If a third-party integration genuinely requires a
+  rule suppression, keep it narrow and include the reason in the suppression
+  comment.
 
 ## Deferred Areas
 
