@@ -13,8 +13,41 @@ async function copyIntoVendor(targetDir, entries) {
 
 await rm(vendorRoot, { recursive: true, force: true });
 
-/* Keep runtime map assets local so the app serves the exact versions pinned in
-   package.json instead of relying on CDN URLs embedded in templates. */
+/* Keep browser runtime assets local so deployed pages use the exact versions
+   pinned in package.json instead of relying on third-party CDN availability. */
+await copyIntoVendor(path.join(vendorRoot, "tabler"), [
+  [
+    path.join(root, "node_modules", "@tabler", "core", "dist", "css", "tabler.min.css"),
+    "tabler.min.css",
+  ],
+  [
+    path.join(root, "node_modules", "@tabler", "core", "dist", "js", "tabler.min.js"),
+    "tabler.min.js",
+  ],
+]);
+
+await copyIntoVendor(path.join(vendorRoot, "tabler-icons"), [
+  [
+    path.join(
+      root,
+      "node_modules",
+      "@tabler",
+      "icons-webfont",
+      "dist",
+      "tabler-icons.min.css",
+    ),
+    "tabler-icons.min.css",
+  ],
+  [
+    path.join(root, "node_modules", "@tabler", "icons-webfont", "dist", "fonts"),
+    "fonts",
+  ],
+]);
+
+await copyIntoVendor(path.join(vendorRoot, "htmx"), [
+  [path.join(root, "node_modules", "htmx.org", "dist", "htmx.min.js"), "htmx.min.js"],
+]);
+
 await copyIntoVendor(path.join(vendorRoot, "leaflet"), [
   [path.join(root, "node_modules", "leaflet", "dist", "leaflet.css"), "leaflet.css"],
   [path.join(root, "node_modules", "leaflet", "dist", "leaflet.js"), "leaflet.js"],
@@ -68,5 +101,19 @@ await copyIntoVendor(path.join(vendorRoot, "photoswipe"), [
       "photoswipe-lightbox.esm.min.js",
     ),
     "photoswipe-lightbox.esm.min.js",
+  ],
+]);
+
+await copyIntoVendor(path.join(vendorRoot, "three"), [
+  [
+    path.join(root, "node_modules", "three", "build", "three.module.min.js"),
+    "three.module.min.js",
+  ],
+]);
+
+await copyIntoVendor(path.join(vendorRoot, "three-globe"), [
+  [
+    path.join(root, "node_modules", "three-globe", "dist", "three-globe.min.js"),
+    "three-globe.min.js",
   ],
 ]);

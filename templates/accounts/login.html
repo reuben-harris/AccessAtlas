@@ -16,13 +16,19 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.1/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="{% static 'vendor/tabler/tabler.min.css' %}">
+    <link rel="stylesheet" href="{% static 'vendor/tabler-icons/tabler-icons.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
     <script type="module" src="{% static 'js/login_globe.js' %}"></script>
   </head>
   <body class="d-flex flex-column login-page login-page-3d">
-    <div id="login-globe" class="login-globe login-globe-3d" aria-hidden="true"></div>
+    <div
+      id="login-globe"
+      class="login-globe login-globe-3d"
+      data-three-url="{% static 'vendor/three/three.module.min.js' %}"
+      data-three-globe-url="{% static 'vendor/three-globe/three-globe.min.js' %}"
+      aria-hidden="true"
+    ></div>
     <div class="login-content">
       <div class="login-panel">
         <div class="card card-md login-card">

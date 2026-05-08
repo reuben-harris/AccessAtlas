@@ -1,7 +1,11 @@
 const globeContainer = document.getElementById("login-globe");
 const themeQuery = window.matchMedia("(prefers-color-scheme: dark)");
-const countryDataUrl =
-  "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson";
+const countryDataUrl = globeContainer?.dataset.countryDataUrl || "";
+const threeUrl =
+  globeContainer?.dataset.threeUrl || "/static/vendor/three/three.module.min.js";
+const threeGlobeUrl =
+  globeContainer?.dataset.threeGlobeUrl ||
+  "/static/vendor/three-globe/three-globe.min.js";
 const palette = ["#2fb344", "#d63939", "#f59f00", "#e8590c", "#0ca678"];
 
 function applySystemTheme() {
@@ -42,7 +46,22 @@ function createFallbackMessage() {
     '<div class="text-secondary position-absolute top-50 start-50 translate-middle">Globe preview unavailable</div>';
 }
 
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
 async function loadCountryData(globe, updateColors) {
+  if (!countryDataUrl) {
+    return;
+  }
+
   try {
     const response = await fetch(countryDataUrl);
 
@@ -55,7 +74,7 @@ async function loadCountryData(globe, updateColors) {
       countries.features.filter((country) => country.properties.name !== "Antarctica"),
     );
     updateColors();
-  } catch (error) {
+  } catch (_error) {
     // The base globe remains useful when the external country data is unavailable.
   }
 }
@@ -71,10 +90,14 @@ async function initGlobe() {
   let ThreeGlobe;
 
   try {
-    THREE = await import("https://cdn.jsdelivr.net/npm/three@0.183.2/+esm");
-    ThreeGlobe = (await import("https://cdn.jsdelivr.net/npm/three-globe@2.45.2/+esm"))
-      .default;
-  } catch (error) {
+    THREE = await import(threeUrl);
+    window.THREE = THREE;
+    await loadScript(threeGlobeUrl);
+    ThreeGlobe = window.ThreeGlobe;
+    if (!ThreeGlobe) {
+      throw new Error("ThreeGlobe did not load.");
+    }
+  } catch (_error) {
     createFallbackMessage();
     return;
   }

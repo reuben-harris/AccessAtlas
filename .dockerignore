@@ -11,3 +11,4 @@ staticfiles
 node_modules
 static/vendor
 static/css/app.css
+media
