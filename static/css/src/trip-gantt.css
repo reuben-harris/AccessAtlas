@@ -1,6 +1,19 @@
 /* Trips Gantt is a readonly planning surface, so it shares the full-height
    planning styling here without pretending to be a fullscreen map view. */
 
+.trip-gantt-card {
+  overflow: hidden;
+}
+
+.trip-gantt {
+  --g-weekend-highlight-color: rgba(15, 23, 42, 0.05);
+  background: var(--tblr-bg-surface);
+}
+
+.trip-gantt .gantt-container {
+  background: var(--tblr-bg-surface);
+}
+
 /* Frappe Gantt only ships dark variables for html[data-theme="dark"], but the
    app uses data-bs-theme. Mirror the relevant variables here so the chart
    actually follows the site theme. */
@@ -32,19 +45,6 @@
   color: var(--tblr-body-color);
   background: rgba(148, 163, 184, 0.2);
   border: 1px solid rgba(203, 213, 225, 0.24);
-}
-
-.trip-gantt-card {
-  overflow: hidden;
-}
-
-.trip-gantt {
-  --g-weekend-highlight-color: rgba(15, 23, 42, 0.05);
-  background: var(--tblr-bg-surface);
-}
-
-.trip-gantt .gantt-container {
-  background: var(--tblr-bg-surface);
 }
 
 .trip-gantt-view-modes {

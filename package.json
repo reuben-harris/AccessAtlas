@@ -9,7 +9,7 @@
     "build:css": "postcss static/css/src/app.css -o static/css/app.css",
     "build:frontend": "pnpm build:vendor && pnpm build:css",
     "watch:css": "postcss static/css/src/app.css -o static/css/app.css --watch",
-    "lint:frontend": "biome check static/js static/css/src",
+    "lint:frontend": "biome check --error-on-warnings static/js static/css/src",
     "format:frontend": "biome format --write static/js static/css/src",
     "format:frontend:check": "biome format --check static/js static/css/src"
   },

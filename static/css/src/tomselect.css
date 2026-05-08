@@ -24,15 +24,15 @@
     inset 0 0 0 1px rgba(255, 255, 255, 0.45),
     0 1px 2px rgba(15, 23, 42, 0.04);
   border-radius: var(--tblr-border-radius);
-  background: var(--tblr-bg-forms) !important;
+  background: var(--tblr-bg-forms);
   color: var(--tblr-body-color);
 }
 
 .ts-wrapper.single .ts-control,
 .ts-wrapper.multi .ts-control,
 .ts-wrapper.single.input-active .ts-control {
-  border: 1px solid var(--tblr-border-color) !important;
-  background: var(--tblr-bg-forms) !important;
+  border: 1px solid var(--tblr-border-color);
+  background: var(--tblr-bg-forms);
 }
 
 .ts-wrapper.multi .ts-control {
@@ -51,6 +51,7 @@
 
 .ts-control > input {
   flex: 1 1 8rem;
+  /* biome-ignore lint/complexity/noImportantStyles: Tom Select writes inline widths while measuring input text. */
   width: auto !important;
   min-width: 8rem;
   max-width: 100%;
@@ -58,10 +59,12 @@
 }
 
 .has-items .ts-control > input {
+  /* biome-ignore lint/complexity/noImportantStyles: Tom Select writes inline margins while managing selected items. */
   margin: 0 !important;
 }
 
 .ts-wrapper.multi:not(.has-items) .ts-control > input {
+  /* biome-ignore lint/complexity/noImportantStyles: Tom Select writes inline margins while managing selected items. */
   margin-left: 0.25rem !important;
 }
 
@@ -88,16 +91,16 @@
   color: #fff;
 }
 
-.ts-wrapper.plugin-remove_button:not(.rtl) .item .remove {
-  border-left-color: rgba(var(--tblr-primary-rgb), 0.18);
-}
-
 .ts-wrapper.plugin-remove_button .item .remove {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 1.125rem;
   line-height: 1;
+}
+
+.ts-wrapper.plugin-remove_button:not(.rtl) .item .remove {
+  border-left-color: rgba(var(--tblr-primary-rgb), 0.18);
 }
 
 .ts-wrapper.multi .ts-control > div.active .remove {
@@ -155,7 +158,7 @@
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.03),
     0 1px 2px rgba(0, 0, 0, 0.18);
-  background: #151c2c !important;
+  background: #151c2c;
   color: #eff3f8;
 }
 
@@ -165,7 +168,7 @@
 
 [data-bs-theme="dark"] .ts-control > input,
 [data-bs-theme="dark"] .ts-control > input:not(:placeholder-shown) {
-  color: #eff3f8 !important;
+  color: #eff3f8;
   -webkit-text-fill-color: #eff3f8;
 }
 

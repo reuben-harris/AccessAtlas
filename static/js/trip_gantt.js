@@ -127,7 +127,7 @@
       step: "7d",
       column_width: 180,
       date_format: "YYYY-MM-DD",
-      lower_text(currentDate, previousDate) {
+      lower_text(currentDate, _previousDate) {
         const endDate = new Date(currentDate);
         endDate.setDate(endDate.getDate() + 6);
         const startDay = currentDate.getDate();

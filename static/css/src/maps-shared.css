@@ -157,13 +157,13 @@
   color: var(--tblr-link-color);
 }
 
-[data-bs-theme="dark"] .leaflet-popup-close-button {
-  color: var(--tblr-muted) !important;
+[data-bs-theme="dark"] .leaflet-container a.leaflet-popup-close-button {
+  color: var(--tblr-muted);
 }
 
-[data-bs-theme="dark"] .leaflet-popup-close-button:hover,
-[data-bs-theme="dark"] .leaflet-popup-close-button:focus {
-  color: var(--tblr-body-color) !important;
+[data-bs-theme="dark"] .leaflet-container a.leaflet-popup-close-button:hover,
+[data-bs-theme="dark"] .leaflet-container a.leaflet-popup-close-button:focus {
+  color: var(--tblr-body-color);
 }
 
 @media (max-width: 767.98px) {
