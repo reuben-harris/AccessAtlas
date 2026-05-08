@@ -13,13 +13,12 @@ from django.views.generic import TemplateView
 
 from access_atlas.core.history import history_reason
 from access_atlas.core.mixins import SearchablePaginatedListMixin, SortableListMixin
+from access_atlas.core.pagination import normalize_per_page, page_size_options_for
 from access_atlas.core.search import (
     SEARCH_LOOKUP_OPTIONS,
     build_global_search_results,
     normalize_lookup_type,
-    normalize_per_page,
     normalize_sort_value,
-    page_size_options_for,
 )
 from access_atlas.jobs.models import (
     Job,

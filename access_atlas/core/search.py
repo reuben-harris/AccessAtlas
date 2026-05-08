@@ -19,8 +19,6 @@ SEARCH_LOOKUP_VALUES = {value for value, _label in SEARCH_LOOKUP_OPTIONS}
 DEFAULT_SEARCH_LOOKUP = "icontains"
 DEFAULT_SEARCH_SORT = "type"
 SEARCH_SORT_FIELDS = {"type", "value", "object"}
-DEFAULT_SEARCH_PER_PAGE = 25
-SEARCH_PAGE_SIZE_OPTIONS = (25, 50, 100)
 
 
 @dataclass(frozen=True)
@@ -50,22 +48,6 @@ def normalize_sort_value(value: str | None) -> str:
     if sort_key not in SEARCH_SORT_FIELDS:
         return DEFAULT_SEARCH_SORT
     return f"{direction}{sort_key}"
-
-
-def normalize_per_page(value: str | None) -> int:
-    try:
-        per_page = int(value or "")
-    except TypeError, ValueError:
-        return DEFAULT_SEARCH_PER_PAGE
-    return per_page if per_page > 0 else DEFAULT_SEARCH_PER_PAGE
-
-
-def page_size_options_for(per_page: int) -> list[int]:
-    options = list(SEARCH_PAGE_SIZE_OPTIONS)
-    if per_page not in options:
-        options.append(per_page)
-        options.sort()
-    return options
 
 
 def first_matching_value(

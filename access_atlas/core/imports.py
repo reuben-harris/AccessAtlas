@@ -8,7 +8,7 @@ from typing import Protocol
 from django.core.paginator import Paginator
 from django.http import HttpRequest
 
-from access_atlas.core.search import normalize_per_page, page_size_options_for
+from access_atlas.core.pagination import normalize_per_page, page_size_options_for
 
 DEFAULT_IMPORT_SORT_PARAM = "sort"
 
