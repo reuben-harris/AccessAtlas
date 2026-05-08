@@ -216,6 +216,20 @@ def test_work_programme_list_and_detail_render_missing_dates(client):
 
 
 @pytest.mark.django_db
+def test_work_programme_create_uses_flatpickr_date_fields(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.get(reverse("work_programme_create"))
+
+    assert response.status_code == 200
+    assert b'name="start_date"' in response.content
+    assert b'name="end_date"' in response.content
+    assert b"date-picker form-control" in response.content
+    assert b'type="date"' not in response.content
+
+
+@pytest.mark.django_db
 def test_work_programme_detail_includes_assign_job_form(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)

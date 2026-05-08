@@ -10,6 +10,7 @@ from access_atlas.core.tomselect import (
     unprogrammed_jobs_tomselect_config,
     work_programme_tomselect_config,
 )
+from access_atlas.core.widgets import DatePicker
 
 from .models import (
     Job,
@@ -48,8 +49,8 @@ class WorkProgrammeForm(forms.ModelForm):
         model = WorkProgramme
         fields = ["name", "start_date", "end_date", "description"]
         widgets = {
-            "start_date": forms.DateInput(attrs={"type": "date"}),
-            "end_date": forms.DateInput(attrs={"type": "date"}),
+            "start_date": DatePicker(),
+            "end_date": DatePicker(),
         }
 
 

@@ -1,4 +1,35 @@
 (() => {
+  function initializeDatePickers() {
+    const flatpickr = window.flatpickr;
+    if (typeof flatpickr !== "function") {
+      return;
+    }
+
+    // Flatpickr replaces native browser pickers while keeping server-friendly
+    // ISO-style values in the underlying text inputs.
+    flatpickr(".date-picker", {
+      allowInput: true,
+      dateFormat: "Y-m-d",
+      disableMobile: true,
+    });
+    flatpickr(".datetime-picker", {
+      allowInput: true,
+      dateFormat: "Y-m-d H:i:S",
+      disableMobile: true,
+      enableSeconds: true,
+      enableTime: true,
+      time_24hr: true,
+    });
+    flatpickr(".time-picker", {
+      allowInput: true,
+      dateFormat: "H:i",
+      disableMobile: true,
+      enableTime: true,
+      noCalendar: true,
+      time_24hr: true,
+    });
+  }
+
   function selectedOption(select) {
     return select.options[select.selectedIndex];
   }
@@ -101,6 +132,8 @@
       );
     }
   }
+
+  initializeDatePickers();
 
   for (const form of document.querySelectorAll("[data-list-filter-form]")) {
     initializeFilterTomSelects(form);

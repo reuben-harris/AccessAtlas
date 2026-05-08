@@ -16,6 +16,7 @@
   "dependencies": {
     "@tabler/core": "1.4.0",
     "@tabler/icons-webfont": "3.34.1",
+    "flatpickr": "4.6.13",
     "frappe-gantt": "^1.2.2",
     "htmx.org": "2.0.8",
     "leaflet": "1.9.4",

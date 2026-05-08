@@ -2,6 +2,8 @@ from django import template
 from django.forms import CheckboxInput, Select, SelectMultiple
 from django.utils.safestring import mark_safe
 
+from access_atlas.core.widgets import merge_widget_classes
+
 register = template.Library()
 
 
@@ -20,6 +22,7 @@ def render_form_field(field):
         css_class = "form-check-input"
     if field.errors:
         css_class = f"{css_class} is-invalid"
+    css_class = merge_widget_classes(widget.attrs.get("class"), css_class)
     return field.as_widget(attrs={"class": css_class})
 
 

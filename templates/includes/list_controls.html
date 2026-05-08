@@ -231,6 +231,36 @@
                             >{{ choice.label }}</option>
                           {% endfor %}
                         </select>
+                      {% elif control.input_type == "date" %}
+                        <input
+                          id="filter-value-{{ control.name }}"
+                          class="form-control list-filter-value date-picker"
+                          type="text"
+                          name="{{ control.name }}"
+                          value="{{ control.value }}"
+                          placeholder="{{ control.placeholder|default:'YYYY-MM-DD' }}"
+                          data-filter-value
+                        >
+                      {% elif control.input_type == "datetime" or control.input_type == "datetime-local" %}
+                        <input
+                          id="filter-value-{{ control.name }}"
+                          class="form-control list-filter-value datetime-picker"
+                          type="text"
+                          name="{{ control.name }}"
+                          value="{{ control.value }}"
+                          placeholder="{{ control.placeholder|default:'YYYY-MM-DD hh:mm:ss' }}"
+                          data-filter-value
+                        >
+                      {% elif control.input_type == "time" %}
+                        <input
+                          id="filter-value-{{ control.name }}"
+                          class="form-control list-filter-value time-picker"
+                          type="text"
+                          name="{{ control.name }}"
+                          value="{{ control.value }}"
+                          placeholder="{{ control.placeholder|default:'hh:mm' }}"
+                          data-filter-value
+                        >
                       {% else %}
                         <input
                           id="filter-value-{{ control.name }}"
@@ -386,6 +416,36 @@
                     >{{ choice.label }}</option>
                   {% endfor %}
                 </select>
+                {% elif control.input_type == "date" %}
+                  <input
+                    id="filter-value-{{ control.name }}"
+                    class="form-control list-filter-value date-picker"
+                    type="text"
+                    name="{{ control.name }}"
+                    value="{{ control.value }}"
+                    placeholder="{{ control.placeholder|default:'YYYY-MM-DD' }}"
+                    data-filter-value
+                  >
+                {% elif control.input_type == "datetime" or control.input_type == "datetime-local" %}
+                  <input
+                    id="filter-value-{{ control.name }}"
+                    class="form-control list-filter-value datetime-picker"
+                    type="text"
+                    name="{{ control.name }}"
+                    value="{{ control.value }}"
+                    placeholder="{{ control.placeholder|default:'YYYY-MM-DD hh:mm:ss' }}"
+                    data-filter-value
+                  >
+                {% elif control.input_type == "time" %}
+                  <input
+                    id="filter-value-{{ control.name }}"
+                    class="form-control list-filter-value time-picker"
+                    type="text"
+                    name="{{ control.name }}"
+                    value="{{ control.value }}"
+                    placeholder="{{ control.placeholder|default:'hh:mm' }}"
+                    data-filter-value
+                  >
                 {% else %}
                   <input
                     id="filter-value-{{ control.name }}"

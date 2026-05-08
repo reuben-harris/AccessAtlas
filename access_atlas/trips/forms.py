@@ -13,6 +13,7 @@ from access_atlas.core.tomselect import (
     site_tomselect_config,
     team_members_tomselect_config,
 )
+from access_atlas.core.widgets import DatePicker, TimePicker
 from access_atlas.jobs.models import JobStatus
 
 from .models import SiteVisit, SiteVisitStatus, Trip
@@ -54,8 +55,8 @@ class TripForm(forms.ModelForm):
             "notes",
         ]
         widgets = {
-            "start_date": forms.DateInput(attrs={"type": "date"}),
-            "end_date": forms.DateInput(attrs={"type": "date"}),
+            "start_date": DatePicker(),
+            "end_date": DatePicker(),
         }
 
 
@@ -76,13 +77,13 @@ class SiteVisitForm(forms.ModelForm):
         required=False,
         label="Start time",
         input_formats=["%H:%M"],
-        widget=forms.TimeInput(attrs={"type": "time"}),
+        widget=TimePicker(),
     )
     planned_end_time = forms.TimeField(
         required=False,
         label="End time",
         input_formats=["%H:%M"],
-        widget=forms.TimeInput(attrs={"type": "time"}),
+        widget=TimePicker(),
     )
 
     def __init__(self, *args, **kwargs):

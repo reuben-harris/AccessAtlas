@@ -14,6 +14,9 @@ importers:
       '@tabler/icons-webfont':
         specifier: 3.34.1
         version: 3.34.1
+      flatpickr:
+        specifier: 4.6.13
+        version: 4.6.13
       frappe-gantt:
         specifier: ^1.2.2
         version: 1.2.2
@@ -411,6 +414,9 @@ packages:
   fill-range@7.1.1:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
     engines: {node: '>=8'}
+
+  flatpickr@4.6.13:
+    resolution: {integrity: sha512-97PMG/aywoYpB4IvbvUJi0RQi8vearvU0oov1WW3k0WZPBMrTQVqekSX5CjSG/M4Q3i6A/0FKXC7RyAoAUUSPw==}
 
   frame-ticker@1.0.3:
     resolution: {integrity: sha512-E0X2u2JIvbEMrqEg5+4BpTqaD22OwojJI63K7MdKHdncjtAhGRbCR8nJCr2vwEt9NWBPCPcu70X9smPviEBy8Q==}
@@ -1012,6 +1018,8 @@ snapshots:
   fill-range@7.1.1:
     dependencies:
       to-regex-range: 5.0.1
+
+  flatpickr@4.6.13: {}
 
   frame-ticker@1.0.3:
     dependencies:

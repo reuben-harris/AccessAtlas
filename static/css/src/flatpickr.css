@@ -1,0 +1,147 @@
+/* Flatpickr date/time picker styling aligned to the Access Atlas form theme. */
+
+.flatpickr-calendar {
+  overflow: hidden;
+  color: var(--tblr-body-color);
+  background: var(--tblr-bg-surface);
+  border: 1px solid var(--tblr-border-color);
+  border-radius: var(--tblr-border-radius);
+  box-shadow: var(--tblr-box-shadow-lg);
+}
+
+.flatpickr-calendar.arrowTop::before,
+.flatpickr-calendar.arrowTop::after,
+.flatpickr-calendar.arrowBottom::before,
+.flatpickr-calendar.arrowBottom::after {
+  border-bottom-color: var(--tblr-border-color);
+  border-top-color: var(--tblr-border-color);
+}
+
+.flatpickr-current-month,
+.flatpickr-months,
+.flatpickr-months .flatpickr-month,
+.flatpickr-time,
+.flatpickr-time .flatpickr-am-pm,
+.flatpickr-time input,
+.flatpickr-weekday,
+.flatpickr-weekdays {
+  color: var(--tblr-body-color);
+  background: var(--tblr-bg-surface);
+}
+
+.flatpickr-months .flatpickr-next-month,
+.flatpickr-months .flatpickr-prev-month {
+  color: var(--tblr-body-color);
+  fill: var(--tblr-body-color);
+}
+
+.flatpickr-day {
+  color: var(--tblr-body-color);
+}
+
+.flatpickr-day.nextMonthDay,
+.flatpickr-day.prevMonthDay {
+  color: var(--tblr-secondary-color);
+}
+
+.flatpickr-day:focus,
+.flatpickr-day:hover {
+  color: var(--tblr-body-color);
+  background: var(--tblr-bg-surface-secondary);
+  border-color: var(--tblr-border-color);
+}
+
+.flatpickr-day.today {
+  border-color: rgba(var(--tblr-primary-rgb), 0.55);
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.selected:focus,
+.flatpickr-day.selected:hover {
+  color: var(--tblr-primary-fg);
+  background: var(--tblr-primary);
+  border-color: var(--tblr-primary);
+}
+
+.flatpickr-time {
+  border-top-color: var(--tblr-border-color);
+}
+
+.flatpickr-time .flatpickr-am-pm:focus,
+.flatpickr-time .flatpickr-am-pm:hover,
+.flatpickr-time input:focus,
+.flatpickr-time input:hover {
+  background: var(--tblr-bg-surface-secondary);
+}
+
+.numInputWrapper span {
+  border-color: var(--tblr-border-color);
+}
+
+.numInputWrapper span.arrowDown::after {
+  border-top-color: var(--tblr-body-color);
+}
+
+.numInputWrapper span.arrowUp::after {
+  border-bottom-color: var(--tblr-body-color);
+}
+
+/* Flatpickr's default stylesheet uses high-specificity dark text rules for day
+   cells and time steppers, so dark mode needs explicit overrides. */
+[data-bs-theme="dark"] .flatpickr-calendar,
+[data-bs-theme="dark"] .flatpickr-calendar .flatpickr-current-month,
+[data-bs-theme="dark"] .flatpickr-calendar .flatpickr-current-month input.cur-year,
+[data-bs-theme="dark"]
+  .flatpickr-calendar
+  .flatpickr-current-month
+  .flatpickr-monthDropdown-months,
+[data-bs-theme="dark"] .flatpickr-calendar .flatpickr-day,
+[data-bs-theme="dark"] .flatpickr-calendar .flatpickr-time,
+[data-bs-theme="dark"] .flatpickr-calendar .flatpickr-time .flatpickr-am-pm,
+[data-bs-theme="dark"] .flatpickr-calendar .flatpickr-time .flatpickr-time-separator,
+[data-bs-theme="dark"] .flatpickr-calendar .flatpickr-time input,
+[data-bs-theme="dark"] .flatpickr-calendar span.flatpickr-weekday {
+  color: #e5e7eb;
+}
+
+[data-bs-theme="dark"] .flatpickr-calendar .flatpickr-day.nextMonthDay,
+[data-bs-theme="dark"] .flatpickr-calendar .flatpickr-day.prevMonthDay {
+  color: #9ca3af;
+}
+
+[data-bs-theme="dark"] .flatpickr-calendar .flatpickr-day.flatpickr-disabled,
+[data-bs-theme="dark"] .flatpickr-calendar .flatpickr-day.notAllowed {
+  color: #6b7280;
+}
+
+[data-bs-theme="dark"] .flatpickr-calendar .flatpickr-months .flatpickr-next-month,
+[data-bs-theme="dark"] .flatpickr-calendar .flatpickr-months .flatpickr-prev-month {
+  color: #e5e7eb;
+  fill: #e5e7eb;
+}
+
+[data-bs-theme="dark"]
+  .flatpickr-calendar
+  .flatpickr-current-month
+  .numInputWrapper
+  span.arrowDown::after,
+[data-bs-theme="dark"]
+  .flatpickr-calendar
+  .flatpickr-time
+  .numInputWrapper
+  span.arrowDown::after {
+  border-top-color: #e5e7eb;
+}
+
+[data-bs-theme="dark"]
+  .flatpickr-calendar
+  .flatpickr-current-month
+  .numInputWrapper
+  span.arrowUp::after,
+[data-bs-theme="dark"]
+  .flatpickr-calendar
+  .flatpickr-time
+  .numInputWrapper
+  span.arrowUp::after {
+  border-bottom-color: #e5e7eb;
+}

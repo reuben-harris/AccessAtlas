@@ -83,6 +83,17 @@ await copyIntoVendor(path.join(vendorRoot, "frappe-gantt"), [
   ],
 ]);
 
+await copyIntoVendor(path.join(vendorRoot, "flatpickr"), [
+  [
+    path.join(root, "node_modules", "flatpickr", "dist", "flatpickr.min.css"),
+    "flatpickr.min.css",
+  ],
+  [
+    path.join(root, "node_modules", "flatpickr", "dist", "flatpickr.min.js"),
+    "flatpickr.min.js",
+  ],
+]);
+
 await copyIntoVendor(path.join(vendorRoot, "photoswipe"), [
   [
     path.join(root, "node_modules", "photoswipe", "dist", "photoswipe.css"),

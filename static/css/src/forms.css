@@ -24,6 +24,9 @@ form p textarea {
 
 /* Django error rendering and browser invalid affordances need custom spacing tweaks. */
 .form-control.is-invalid,
+.date-picker.form-control.is-invalid,
+.datetime-picker.form-control.is-invalid,
+.time-picker.form-control.is-invalid,
 input[type="date"].form-control.is-invalid,
 input[type="datetime-local"].form-control.is-invalid,
 input[type="time"].form-control.is-invalid {
