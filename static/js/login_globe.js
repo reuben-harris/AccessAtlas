@@ -26,6 +26,12 @@ function randomColor() {
   return palette[Math.floor(Math.random() * palette.length)];
 }
 
+function isVisibleCountry(country) {
+  const name =
+    country.properties?.name ?? country.properties?.NAME ?? country.properties?.ADMIN;
+  return name !== "Antarctica";
+}
+
 function latLngToVector(THREE, latitude, longitude, radius) {
   const phi = ((90 - latitude) * Math.PI) / 180;
   const theta = ((longitude + 180) * Math.PI) / 180;
@@ -70,9 +76,7 @@ async function loadCountryData(globe, updateColors) {
     }
 
     const countries = await response.json();
-    globe.polygonsData(
-      countries.features.filter((country) => country.properties.name !== "Antarctica"),
-    );
+    globe.polygonsData(countries.features.filter(isVisibleCountry));
     updateColors();
   } catch (_error) {
     // The base globe remains useful when the external country data is unavailable.
@@ -195,7 +199,7 @@ async function initGlobe() {
   function resize() {
     const width = globeContainer.clientWidth || window.innerWidth;
     const height = globeContainer.clientHeight || window.innerHeight;
-    renderer.setSize(width, height, false);
+    renderer.setSize(width, height);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
 

@@ -21,8 +21,16 @@ await copyIntoVendor(path.join(vendorRoot, "tabler"), [
     "tabler.min.css",
   ],
   [
+    path.join(root, "node_modules", "@tabler", "core", "dist", "css", "tabler.min.css.map"),
+    "tabler.min.css.map",
+  ],
+  [
     path.join(root, "node_modules", "@tabler", "core", "dist", "js", "tabler.min.js"),
     "tabler.min.js",
+  ],
+  [
+    path.join(root, "node_modules", "@tabler", "core", "dist", "js", "tabler.min.js.map"),
+    "tabler.min.js.map",
   ],
 ]);
 
@@ -120,11 +128,26 @@ await copyIntoVendor(path.join(vendorRoot, "three"), [
     path.join(root, "node_modules", "three", "build", "three.module.min.js"),
     "three.module.min.js",
   ],
+  [
+    path.join(root, "node_modules", "three", "build", "three.core.min.js"),
+    "three.core.min.js",
+  ],
 ]);
 
 await copyIntoVendor(path.join(vendorRoot, "three-globe"), [
   [
     path.join(root, "node_modules", "three-globe", "dist", "three-globe.min.js"),
     "three-globe.min.js",
+  ],
+  [
+    path.join(
+      root,
+      "node_modules",
+      "three-globe",
+      "example",
+      "country-polygons",
+      "ne_110m_admin_0_countries.geojson",
+    ),
+    "ne_110m_admin_0_countries.geojson",
   ],
 ]);
