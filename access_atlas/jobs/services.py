@@ -8,6 +8,7 @@ from access_atlas.sites.models import Site
 from .models import Job, JobTemplate, Requirement, WorkProgramme
 
 
+@transaction.atomic
 def create_job_from_template(
     site: Site,
     template: JobTemplate,
