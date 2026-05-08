@@ -137,7 +137,7 @@
       </aside>
 
       <header class="navbar navbar-expand-md d-print-none">
-        <div class="container-xl">
+        <div class="container-fluid access-atlas-shell-container">
           <form class="navbar-form flex-fill" action="{% url 'search' %}" method="get">
             <div class="input-icon w-100">
               <span class="input-icon-addon search-icon-addon">
@@ -196,7 +196,7 @@
 
       <div class="page-wrapper">
         <div class="page-body">
-          <div class="container-xl">
+          <div class="container-fluid access-atlas-shell-container">
             {% if messages %}
               {% for message in messages %}
                 <div class="alert alert-{{ message.tags|default:'info' }}" role="alert">{{ message }}</div>

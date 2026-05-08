@@ -50,8 +50,12 @@
   </div>
 
   <div class="btn-list mt-3">
-    <button class="btn btn-success" type="submit">Close trip</button>
-    <a class="btn btn-outline-secondary" href="{{ trip.get_absolute_url }}">Back</a>
+    <button class="btn btn-success" type="submit">
+      <i class="ti ti-flag-check" aria-hidden="true"></i>Close trip
+    </button>
+    <a class="btn btn-secondary" href="{{ trip.get_absolute_url }}">
+      <i class="ti ti-arrow-left" aria-hidden="true"></i>Back
+    </a>
   </div>
 </form>
 {% endblock %}

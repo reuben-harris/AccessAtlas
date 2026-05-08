@@ -5,7 +5,9 @@
       <form method="post" action="{{ action_url }}">
         {% csrf_token %}
         {% include "includes/form_fields.html" with form=form %}
-        <button class="btn btn-primary" type="submit">{{ submit_label|default:"Assign" }}</button>
+        <button class="btn btn-primary" type="submit">
+          <i class="ti ti-link" aria-hidden="true"></i>{{ submit_label|default:"Assign" }}
+        </button>
       </form>
     </div>
   </div>

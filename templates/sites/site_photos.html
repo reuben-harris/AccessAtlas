@@ -14,7 +14,7 @@
       <h2 class="page-title">{{ object.name }}</h2>
     </div>
     <div class="col-auto ms-auto">
-      <a class="btn btn-info d-inline-flex align-items-center gap-1" href="{{ site_search_url }}" target="_blank" rel="noopener noreferrer" title="Open site coordinates in Google Maps">
+      <a class="btn btn-info" href="{{ site_search_url }}" target="_blank" rel="noopener noreferrer" title="Open site coordinates in Google Maps">
         <i class="ti ti-map-search" aria-hidden="true"></i>
         Site
       </a>
@@ -37,7 +37,9 @@
         {% for error in form.photos.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
       </div>
       {% include "includes/form_error_summary.html" with error_title="Unable to upload photos" %}
-      <button class="btn btn-primary" type="submit">Upload</button>
+      <button class="btn btn-info" type="submit">
+        <i class="ti ti-upload" aria-hidden="true"></i>Upload
+      </button>
     </form>
   </div>
 </div>
@@ -62,7 +64,7 @@
           </span>
         </button>
         <button
-          class="btn btn-outline-secondary site-photo-toolbar-action"
+          class="btn btn-info site-photo-toolbar-action"
           type="submit"
           formaction="{% url 'site_photo_bulk_download' object.pk %}"
           disabled
@@ -72,7 +74,7 @@
           Download
         </button>
         <button
-          class="btn btn-outline-danger site-photo-toolbar-action"
+          class="btn btn-danger site-photo-toolbar-action"
           type="submit"
           formaction="{% url 'site_photo_bulk_hide' object.pk %}"
           disabled

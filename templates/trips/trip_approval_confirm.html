@@ -20,8 +20,12 @@
       {% endfor %}
       <input type="hidden" name="{{ confirm_field_name }}" value="1">
       <div class="btn-list">
-        <button class="btn btn-primary" type="submit">{{ submit_label }}</button>
-        <a class="btn btn-outline-secondary" href="{{ cancel_url }}">Cancel</a>
+        <button class="btn btn-primary" type="submit">
+          <i class="ti ti-circle-check" aria-hidden="true"></i>{{ submit_label }}
+        </button>
+        <a class="btn btn-secondary" href="{{ cancel_url }}">
+          <i class="ti ti-x" aria-hidden="true"></i>Cancel
+        </a>
       </div>
     </form>
   </div>

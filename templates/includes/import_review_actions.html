@@ -10,7 +10,9 @@
           <option value="{{ option }}"{% if option == per_page %} selected{% endif %}>{{ option }}</option>
         {% endfor %}
       </select>
-      <button class="btn btn-sm btn-outline-primary" type="submit">Apply</button>
+      <button class="btn btn-sm btn-primary" type="submit">
+        <i class="ti ti-check" aria-hidden="true"></i>Apply
+      </button>
     </form>
   </div>
 {% endif %}

@@ -41,8 +41,12 @@
       {% include "includes/form_error_summary.html" %}
 
       <div class="btn-list">
-        <button class="btn btn-primary" type="submit">Upload</button>
-        <a class="btn btn-outline-secondary" href="{{ cancel_url }}">Cancel</a>
+        <button class="btn btn-info" type="submit">
+          <i class="ti ti-upload" aria-hidden="true"></i>Upload
+        </button>
+        <a class="btn btn-secondary" href="{{ cancel_url }}">
+          <i class="ti ti-x" aria-hidden="true"></i>Cancel
+        </a>
       </div>
     </form>
   </div>

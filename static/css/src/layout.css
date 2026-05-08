@@ -1,5 +1,22 @@
 /* Shell layout and primary navigation */
 
+.access-atlas-shell-container {
+  --tblr-gutter-x: 2rem;
+  max-width: none;
+}
+
+.page-body {
+  margin: 0.75rem 0 1rem;
+}
+
+.page-wrapper .page-header {
+  margin: 0 0 0.75rem;
+}
+
+.page-header .row {
+  row-gap: 0.75rem;
+}
+
 .navbar-vertical {
   min-width: 14rem;
 }
@@ -143,11 +160,11 @@
 }
 
 .page-title {
-  margin-bottom: 1rem;
+  margin-bottom: 0;
 }
 
 .page-header .col-auto {
-  padding-bottom: 1rem;
+  padding-bottom: 0;
 }
 
 .navbar-nav.flex-row {
@@ -172,4 +189,18 @@
 
 .user-menu-button::after {
   display: none;
+}
+
+@media (max-width: 767.98px) {
+  .access-atlas-shell-container {
+    --tblr-gutter-x: 1.5rem;
+  }
+
+  .page-body {
+    margin: 0.5rem 0 0.75rem;
+  }
+
+  .page-wrapper .page-header {
+    margin-bottom: 0.5rem;
+  }
 }

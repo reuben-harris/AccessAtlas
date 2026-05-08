@@ -1,13 +1,7 @@
 /* Trip detail map */
 
 .trip-map-card {
-  height: calc(100dvh - 16rem);
-  min-height: 28rem;
   overflow: hidden;
-}
-
-.trip-map-card .card-body {
-  height: 100%;
 }
 
 .trip-map {

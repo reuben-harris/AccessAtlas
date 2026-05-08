@@ -52,6 +52,11 @@
   box-shadow: 0 0 0.78rem color-mix(in srgb, var(--user-avatar-color) 50%, transparent);
 }
 
+.btn:not(.btn-icon) > .ti {
+  margin-right: 0.375rem;
+  font-size: 1rem;
+}
+
 .view-toolbar {
   display: inline-flex;
   align-items: center;

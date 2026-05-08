@@ -192,16 +192,7 @@
   background: var(--tblr-bg-surface);
 }
 
-.leaflet-container .list-filter-offcanvas .btn-outline-secondary {
-  color: var(--tblr-secondary);
-  border-color: var(--tblr-secondary);
-}
-
-.leaflet-container .list-filter-offcanvas .btn-outline-secondary:hover,
-.leaflet-container .list-filter-offcanvas .btn-outline-secondary:focus-visible {
-  color: var(--tblr-secondary-fg, #fff);
-  background-color: var(--tblr-secondary);
-  border-color: var(--tblr-secondary);
+.leaflet-container .list-filter-offcanvas .btn {
   text-decoration: none;
 }
 

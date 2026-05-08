@@ -16,8 +16,12 @@
     <form method="post">
       {% csrf_token %}
       <div class="btn-list">
-        <button class="btn btn-danger" type="submit">Delete</button>
-        <a class="btn btn-outline-secondary" href="{{ view.get_cancel_url }}">Cancel</a>
+        <button class="btn btn-danger" type="submit">
+          <i class="ti ti-trash" aria-hidden="true"></i>Delete
+        </button>
+        <a class="btn btn-secondary" href="{{ view.get_cancel_url }}">
+          <i class="ti ti-x" aria-hidden="true"></i>Cancel
+        </a>
       </div>
     </form>
   </div>

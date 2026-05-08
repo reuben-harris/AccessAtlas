@@ -4,6 +4,8 @@
   {% url confirm_url_name as confirm_url %}
   <form method="post" action="{{ confirm_url }}">
     {% csrf_token %}
-    <button class="btn btn-primary" type="submit">{{ confirm_button_label }}</button>
+    <button class="btn btn-orange" type="submit">
+      <i class="ti ti-upload" aria-hidden="true"></i>{{ confirm_button_label }}
+    </button>
   </form>
 {% endif %}

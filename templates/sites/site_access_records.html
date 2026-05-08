@@ -15,7 +15,7 @@
       <h2 class="page-title">{{ object.name }}</h2>
     </div>
     <div class="col-auto ms-auto">
-      <a class="btn btn-info d-inline-flex align-items-center gap-1" href="{{ site_search_url }}" target="_blank" rel="noopener noreferrer" title="Open site coordinates in Google Maps">
+      <a class="btn btn-info" href="{{ site_search_url }}" target="_blank" rel="noopener noreferrer" title="Open site coordinates in Google Maps">
         <i class="ti ti-map-search" aria-hidden="true"></i>
         Site
       </a>
@@ -38,7 +38,9 @@
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">
     <h3 class="card-title">Access Records</h3>
-    <a class="btn btn-sm btn-primary" href="{% url 'access_record_create' object.pk %}">Add access record</a>
+    <a class="btn btn-sm btn-success" href="{% url 'access_record_create' object.pk %}">
+      <i class="ti ti-plus" aria-hidden="true"></i>Add access record
+    </a>
   </div>
   <div class="table-responsive">
     <table class="table table-vcenter">
@@ -90,13 +92,15 @@
                     <i class="ti ti-map-pin" aria-hidden="true"></i>
                   </button>
                 {% endif %}
-                <a class="btn btn-icon btn-info" href="{% url 'access_record_geojson_download' access_record.pk %}" aria-label="Download {{ access_record.name }} GeoJSON" title="Download GeoJSON">
+                <a class="btn btn-icon btn-secondary" href="{% url 'access_record_geojson_download' access_record.pk %}" aria-label="Download {{ access_record.name }} GeoJSON" title="Download GeoJSON">
                   <i class="ti ti-brackets" aria-hidden="true"></i>
                 </a>
-                <a class="btn btn-icon btn-success" href="{% url 'access_record_kml_download' access_record.pk %}" aria-label="Download {{ access_record.name }} KML" title="Download KML">
+                <a class="btn btn-icon btn-secondary" href="{% url 'access_record_kml_download' access_record.pk %}" aria-label="Download {{ access_record.name }} KML" title="Download KML">
                   <i class="ti ti-map-2" aria-hidden="true"></i>
                 </a>
-                <a class="btn btn-primary row-upload-revision-button" href="{% url 'access_record_version_create' access_record.pk %}">Upload revision</a>
+                <a class="btn btn-info row-upload-revision-button" href="{% url 'access_record_version_create' access_record.pk %}">
+                  <i class="ti ti-upload" aria-hidden="true"></i>Upload revision
+                </a>
               </div>
             </td>
           </tr>

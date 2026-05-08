@@ -14,7 +14,9 @@
       {% csrf_token %}
       {% include "includes/form_fields.html" %}
       {% include "includes/form_error_summary.html" %}
-      <button class="btn btn-primary" type="submit">Create job</button>
+      <button class="btn btn-success" type="submit">
+        <i class="ti ti-plus" aria-hidden="true"></i>Create job
+      </button>
     </form>
   </div>
 </div>

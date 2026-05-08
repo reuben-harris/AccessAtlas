@@ -15,7 +15,9 @@
           {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
         </div>
       {% endfor %}
-      <button class="btn btn-primary" type="submit">Review import</button>
+      <button class="btn btn-orange" type="submit">
+        <i class="ti ti-upload" aria-hidden="true"></i>Review import
+      </button>
     </form>
   </div>
 </div>

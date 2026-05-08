@@ -10,7 +10,7 @@
     </div>
     <div class="col-auto ms-auto">
       <a class="btn btn-warning" href="{% url 'job_template_update' object.pk %}">
-        Edit
+        <i class="ti ti-pencil" aria-hidden="true"></i>Edit
       </a>
     </div>
   </div>
@@ -30,7 +30,9 @@
 <div class="card mt-3">
   <div class="card-header d-flex justify-content-between align-items-center">
     <h3 class="card-title">Default Requirements</h3>
-    <a class="btn btn-sm btn-primary" href="{% url 'template_requirement_create' object.pk %}">Add requirement</a>
+    <a class="btn btn-sm btn-success" href="{% url 'template_requirement_create' object.pk %}">
+      <i class="ti ti-plus" aria-hidden="true"></i>Add requirement
+    </a>
   </div>
   <div class="table-responsive">
     <table class="table table-vcenter">

@@ -114,7 +114,9 @@
               <h4 class="dashboard-attention-group-title">Sites with access warnings</h4>
               <div class="text-secondary">{{ warning_sites_count }} site{{ warning_sites_count|pluralize }}</div>
             </div>
-            <a class="btn btn-outline-secondary btn-sm" href="{% url 'site_list' %}">View sites</a>
+            <a class="btn btn-secondary btn-sm" href="{% url 'site_list' %}">
+              <i class="ti ti-eye" aria-hidden="true"></i>View sites
+            </a>
           </div>
           <div class="list-group list-group-flush">
             {% for site in warning_sites %}
@@ -137,7 +139,9 @@
               <h4 class="dashboard-attention-group-title">Stale synced sites</h4>
               <div class="text-secondary">{{ stale_sites_count }} site{{ stale_sites_count|pluralize }}</div>
             </div>
-            <a class="btn btn-outline-secondary btn-sm" href="{% url 'site_list' %}">View sites</a>
+            <a class="btn btn-secondary btn-sm" href="{% url 'site_list' %}">
+              <i class="ti ti-eye" aria-hidden="true"></i>View sites
+            </a>
           </div>
           <div class="list-group list-group-flush">
             {% for site in stale_sites %}

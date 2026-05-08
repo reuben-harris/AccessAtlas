@@ -17,7 +17,9 @@
     <div class="col-auto ms-auto">
       <form method="post" action="{% url 'sync_sites' %}">
         {% csrf_token %}
-        <button class="btn btn-primary" type="submit">Sync sites</button>
+        <button class="btn btn-info" type="submit">
+          <i class="ti ti-refresh" aria-hidden="true"></i>Sync sites
+        </button>
       </form>
     </div>
   </div>

@@ -79,7 +79,9 @@
                     <i class="ti ti-x" aria-hidden="true"></i>
                   </a>
                 {% endif %}
-                <button class="btn btn-primary" type="submit">Search</button>
+                <button class="btn btn-primary" type="submit">
+                  <i class="ti ti-search" aria-hidden="true"></i>Search
+                </button>
               </form>
             </div>
             {% if page_size_options %}
@@ -100,7 +102,9 @@
                       {% endfor %}
                     </select>
                   </div>
-                  <button class="btn btn-outline-primary" type="submit">Apply</button>
+                  <button class="btn btn-primary" type="submit">
+                    <i class="ti ti-check" aria-hidden="true"></i>Apply
+                  </button>
                 </form>
               </div>
             {% endif %}
@@ -120,7 +124,7 @@
                 </a>
               </div>
               <button
-                class="btn btn-outline-primary"
+                class="btn btn-primary"
                 type="button"
                 data-bs-toggle="offcanvas"
                 data-bs-target="#list-filter-offcanvas"
@@ -172,7 +176,7 @@
                 <div class="text-secondary">No filters applied</div>
               {% endif %}
               <button
-                class="btn btn-outline-primary"
+                class="btn btn-primary"
                 type="button"
                 data-bs-toggle="offcanvas"
                 data-bs-target="#list-filter-offcanvas"
@@ -244,8 +248,12 @@
                 <div class="list-filter-row list-filter-actions-row">
                   <span aria-hidden="true"></span>
                   <div class="btn-list">
-                    <button class="btn btn-primary" type="submit">Apply filters</button>
-                    <a class="btn btn-outline-secondary" href="{{ filter_clear_all_url }}">Clear all</a>
+                    <button class="btn btn-primary" type="submit">
+                      <i class="ti ti-check" aria-hidden="true"></i>Apply filters
+                    </button>
+                    <a class="btn btn-secondary" href="{{ filter_clear_all_url }}">
+                      <i class="ti ti-filter-x" aria-hidden="true"></i>Clear all
+                    </a>
                   </div>
                 </div>
               </div>
@@ -286,7 +294,9 @@
                 <i class="ti ti-x" aria-hidden="true"></i>
               </a>
             {% endif %}
-            <button class="btn btn-primary" type="submit">Search</button>
+            <button class="btn btn-primary" type="submit">
+              <i class="ti ti-search" aria-hidden="true"></i>Search
+            </button>
           </form>
         </div>
         {% if page_size_options %}
@@ -307,7 +317,9 @@
                   {% endfor %}
                 </select>
               </div>
-              <button class="btn btn-outline-primary" type="submit">Apply</button>
+              <button class="btn btn-primary" type="submit">
+                <i class="ti ti-check" aria-hidden="true"></i>Apply
+              </button>
             </form>
           </div>
         {% endif %}
@@ -391,8 +403,12 @@
         </div>
       </div>
       <div class="list-filter-offcanvas-footer">
-        <a class="btn btn-outline-secondary" href="{{ filter_clear_all_url }}">Clear all</a>
-        <button class="btn btn-primary" type="submit">Apply filters</button>
+        <a class="btn btn-secondary" href="{{ filter_clear_all_url }}">
+          <i class="ti ti-filter-x" aria-hidden="true"></i>Clear all
+        </a>
+        <button class="btn btn-primary" type="submit">
+          <i class="ti ti-check" aria-hidden="true"></i>Apply filters
+        </button>
       </div>
     </form>
   </div>

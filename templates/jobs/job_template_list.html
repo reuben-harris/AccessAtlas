@@ -10,8 +10,12 @@
     </div>
     <div class="col-auto ms-auto">
       <div class="btn-list">
-        <a class="btn btn-orange" href="{% url 'job_template_import' %}">Import</a>
-        <a class="btn btn-primary" href="{% url 'job_template_create' %}">New template</a>
+        <a class="btn btn-orange" href="{% url 'job_template_import' %}">
+          <i class="ti ti-upload" aria-hidden="true"></i>Import
+        </a>
+        <a class="btn btn-success" href="{% url 'job_template_create' %}">
+          <i class="ti ti-plus" aria-hidden="true"></i>New template
+        </a>
       </div>
     </div>
   </div>

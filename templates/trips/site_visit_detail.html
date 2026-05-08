@@ -23,7 +23,7 @@
     </div>
     <div class="col-auto ms-auto">
       <a class="btn btn-warning" href="{% url 'site_visit_update' object.pk %}">
-        Edit
+        <i class="ti ti-pencil" aria-hidden="true"></i>Edit
       </a>
     </div>
   </div>
@@ -59,7 +59,9 @@
               {% if not object.trip.is_terminal %}
                 <form class="d-inline" method="post" action="{% url 'unassign_job' assignment.pk %}">
                   {% csrf_token %}
-                  <button class="btn btn-outline-danger row-unassign-button" type="submit">Unassign</button>
+                  <button class="btn btn-danger row-unassign-button" type="submit">
+                    <i class="ti ti-link-off" aria-hidden="true"></i>Unassign
+                  </button>
                 </form>
               {% endif %}
             </td>
