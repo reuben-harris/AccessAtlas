@@ -2805,6 +2805,8 @@ def test_site_photos_gallery_groups_unknown_dates_after_dated_photos(client):
     assert "site-photo-card-meta" not in content
     assert "data-site-photo-selection-action" in content
     assert "data-site-photo-toggle" in content
+    assert "data-site-photo-group-select" in content
+    assert "data-site-photo-group=" in content
     assert "data-site-photo-selection-summary" in content
     assert "data-site-photo-selection-clear" in content
     assert "data-site-photo-view" in content

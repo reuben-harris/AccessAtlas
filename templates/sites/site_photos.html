@@ -89,7 +89,15 @@
     {% for group in photo_groups %}
       <section class="site-photo-group{% if not forloop.first %} mt-4{% endif %}">
         <div class="site-photo-group-header">
-          <h4 class="site-photo-group-title">{{ group.label }}</h4>
+          <label class="form-check site-photo-group-select">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              data-site-photo-group-select="photo-group-{{ forloop.counter }}"
+              aria-label="Select all photos for {{ group.label }}"
+            >
+            <span class="site-photo-group-title">{{ group.label }}</span>
+          </label>
           {% if group.missing_taken_date %}
             <span class="badge bg-warning-lt d-inline-flex align-items-center gap-1">
               <i class="ti ti-alert-triangle" aria-hidden="true"></i>
@@ -106,6 +114,7 @@
                   type="checkbox"
                   name="photo_ids"
                   value="{{ photo.pk }}"
+                  data-site-photo-group="photo-group-{{ forloop.parentloop.counter }}"
                   data-site-photo-select
                 >
               </label>

@@ -7,6 +7,9 @@ import PhotoSwipeLightbox from "../vendor/photoswipe/photoswipe-lightbox.esm.min
   }
 
   const checkboxes = selectionForm.querySelectorAll("[data-site-photo-select]");
+  const groupCheckboxes = selectionForm.querySelectorAll(
+    "[data-site-photo-group-select]",
+  );
   const actionButtons = selectionForm.querySelectorAll(
     "[data-site-photo-selection-action]",
   );
@@ -20,6 +23,12 @@ import PhotoSwipeLightbox from "../vendor/photoswipe/photoswipe-lightbox.esm.min
     "[data-site-photo-selection-clear]",
   );
 
+  function checkboxesForGroup(groupId) {
+    return selectionForm.querySelectorAll(
+      `[data-site-photo-select][data-site-photo-group="${CSS.escape(groupId)}"]`,
+    );
+  }
+
   const refreshSelectionState = () => {
     let selectedCount = 0;
     for (const checkbox of checkboxes) {
@@ -28,6 +37,12 @@ import PhotoSwipeLightbox from "../vendor/photoswipe/photoswipe-lightbox.esm.min
       if (checkbox.checked) {
         selectedCount += 1;
       }
+    }
+    for (const checkbox of groupCheckboxes) {
+      const groupId = checkbox.dataset.sitePhotoGroupSelect;
+      const groupPhotos = groupId ? Array.from(checkboxesForGroup(groupId)) : [];
+      checkbox.checked =
+        groupPhotos.length > 0 && groupPhotos.every((photo) => photo.checked);
     }
     for (const button of actionButtons) {
       button.disabled = selectedCount === 0;
@@ -43,6 +58,19 @@ import PhotoSwipeLightbox from "../vendor/photoswipe/photoswipe-lightbox.esm.min
 
   for (const checkbox of checkboxes) {
     checkbox.addEventListener("change", refreshSelectionState);
+  }
+
+  for (const checkbox of groupCheckboxes) {
+    checkbox.addEventListener("change", () => {
+      const groupId = checkbox.dataset.sitePhotoGroupSelect;
+      if (!groupId) {
+        return;
+      }
+      for (const photoCheckbox of checkboxesForGroup(groupId)) {
+        photoCheckbox.checked = checkbox.checked;
+      }
+      refreshSelectionState();
+    });
   }
 
   for (const button of selectionForm.querySelectorAll("[data-site-photo-toggle]")) {
