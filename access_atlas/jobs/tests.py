@@ -977,8 +977,8 @@ def test_job_list_summarizes_all_selected_status_filters(client):
     content = response.content.decode()
     assert 'id="list-filter-offcanvas"' not in content
     assert "list-filter-inline-form" in content
-    assert 'data-filter-item-color="#206bc4"' in content
-    assert 'data-filter-item-color="#2fb344"' in content
+    assert 'data-filter-item-color="var(--tblr-blue)"' in content
+    assert 'data-filter-item-color="var(--tblr-green)"' in content
     assert content.count("data-list-filter-form") == 1
 
 

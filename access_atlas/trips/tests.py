@@ -364,6 +364,12 @@ def test_trip_list_summarizes_all_selected_status_filters(client):
     assert [chip["label"] for chip in response.context["active_filter_chips"]] == [
         "Status is all statuses"
     ]
+    content = response.content.decode()
+    assert 'data-filter-item-color="var(--tblr-secondary)"' in content
+    assert 'data-filter-item-color="var(--tblr-orange)"' in content
+    assert 'data-filter-item-color="var(--tblr-blue)"' in content
+    assert 'data-filter-item-color="var(--tblr-green)"' in content
+    assert 'data-filter-item-color="var(--tblr-red)"' in content
 
 
 @pytest.mark.django_db

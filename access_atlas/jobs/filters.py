@@ -16,11 +16,11 @@ from access_atlas.core.list_filters import (
     EmptyValueFilter,
     FilterFieldSpec,
 )
+from access_atlas.core.status_display import status_filter_choice_attributes
 from access_atlas.sites.filters import site_ids_matching_any_tag, site_tag_choices
 from access_atlas.sites.models import Site
 
 from .models import Job, JobStatus, JobTemplate, Priority, WorkProgramme
-from .status_display import job_status_choice_attributes
 
 ACTIVE_STATE_CHOICES = (
     ("true", "Active"),
@@ -422,7 +422,7 @@ class JobFilterSet(AccessAtlasFilterSet):
             choices=JobStatus.choices,
             collapse_chip_when_all_choices=True,
             all_choices_chip_label="all statuses",
-            choice_attributes=job_status_choice_attributes,
+            choice_attributes=status_filter_choice_attributes,
         ),
         FilterFieldSpec(
             "priority",

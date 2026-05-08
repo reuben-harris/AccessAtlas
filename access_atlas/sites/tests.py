@@ -496,6 +496,9 @@ def test_site_list_can_explicitly_include_stale_sites(client):
     assert [chip["label"] for chip in response.context["active_filter_chips"]] == [
         "Status is all statuses"
     ]
+    content = response.content.decode()
+    assert 'data-filter-item-color="var(--tblr-blue)"' in content
+    assert 'data-filter-item-color="var(--tblr-secondary)"' in content
 
 
 @pytest.mark.django_db
@@ -847,6 +850,9 @@ def test_access_record_list_filters_by_status_arrival_and_site_tags(client):
     assert response.status_code == 200
     object_list = list(response.context["object_list"])
     assert [record.name for record in object_list] == ["Retired helicopter access"]
+    content = response.content.decode()
+    assert 'data-filter-item-color="var(--tblr-blue)"' in content
+    assert 'data-filter-item-color="var(--tblr-yellow)"' in content
 
 
 @pytest.mark.django_db

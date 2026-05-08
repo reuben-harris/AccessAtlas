@@ -15,6 +15,7 @@ from access_atlas.core.list_filters import (
     FilterFieldSpec,
     ensure_querydict,
 )
+from access_atlas.core.status_display import status_filter_choice_attributes
 
 from .models import (
     AccessRecord,
@@ -180,6 +181,7 @@ class SiteFilterSet(AccessAtlasFilterSet):
             choices=SiteSyncStatus.choices,
             collapse_chip_when_all_choices=True,
             all_choices_chip_label="all statuses",
+            choice_attributes=status_filter_choice_attributes,
         ),
         FilterFieldSpec(
             "source_name",
@@ -349,6 +351,7 @@ class AccessRecordFilterSet(AccessAtlasFilterSet):
             choices=AccessRecordStatus.choices,
             collapse_chip_when_all_choices=True,
             all_choices_chip_label="all statuses",
+            choice_attributes=status_filter_choice_attributes,
         ),
         FilterFieldSpec(
             "arrival_method",

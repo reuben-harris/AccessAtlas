@@ -12,6 +12,7 @@ from access_atlas.core.list_filters import (
     AccessAtlasFilterSet,
     FilterFieldSpec,
 )
+from access_atlas.core.status_display import status_filter_choice_attributes
 
 from .models import Trip, TripStatus
 
@@ -104,6 +105,7 @@ class TripFilterSet(AccessAtlasFilterSet):
             choices=TripStatus.choices,
             collapse_chip_when_all_choices=True,
             all_choices_chip_label="all statuses",
+            choice_attributes=status_filter_choice_attributes,
         ),
         FilterFieldSpec(
             "trip_leader",
