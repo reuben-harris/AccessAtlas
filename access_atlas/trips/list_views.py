@@ -1,3 +1,4 @@
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import F
 from django.views.generic import ListView
 
@@ -8,6 +9,7 @@ from .view_helpers import trip_list_views
 
 
 class TripListView(
+    LoginRequiredMixin,
     SortableListMixin,
     SearchablePaginatedListMixin,
     ListView,
@@ -36,7 +38,7 @@ class TripListView(
         return context
 
 
-class TripGanttView(ListView):
+class TripGanttView(LoginRequiredMixin, ListView):
     model = Trip
     template_name = "trips/trip_gantt.html"
 
