@@ -1,0 +1,86 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}Job Charts - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">Jobs</h2>
+    </div>
+    <div class="col-auto ms-auto">
+      <div class="btn-list">
+        <a class="btn btn-orange" href="{% url 'job_import' %}">
+          <i class="ti ti-upload" aria-hidden="true"></i>Import
+        </a>
+        <a class="btn btn-info" href="{% url 'job_create_from_template' %}">
+          <i class="ti ti-template" aria-hidden="true"></i>From template
+        </a>
+        <a class="btn btn-success" href="{% url 'job_create' %}">
+          <i class="ti ti-plus" aria-hidden="true"></i>New job
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% include "jobs/_job_view_toolbar.html" with active_job_view="charts" %}
+{% include "includes/list_controls.html" %}
+
+<div class="row row-cards">
+  <div class="col-12 col-xl-7">
+    <section class="card job-chart-card">
+      <div class="card-header">
+        <h3 class="card-title">Jobs by Status</h3>
+      </div>
+      <div class="card-body">
+        {% if job_status_chart.total %}
+          <div class="job-chart-canvas-wrap">
+            <canvas id="job-status-chart" aria-label="Jobs by status chart"></canvas>
+          </div>
+        {% else %}
+          <p class="text-secondary mb-0">No jobs match the current filters.</p>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+
+  <div class="col-12 col-xl-5">
+    <section class="card">
+      <div class="card-header">
+        <h3 class="card-title">Status Counts</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-vcenter">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th class="text-end">Jobs</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in job_status_chart.rows %}
+              <tr>
+                <td>
+                  <span class="job-chart-swatch" style="--job-chart-color: {{ row.color }};"></span>
+                  {{ row.label }}
+                </td>
+                <td class="text-end">{{ row.count }}</td>
+              </tr>
+            {% endfor %}
+            <tr>
+              <td class="fw-semibold">Total</td>
+              <td class="fw-semibold text-end">{{ job_status_chart.total }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+
+{{ job_status_chart|json_script:"job-status-chart-data" }}
+<script src="{% static 'vendor/chart.js/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/jobs_charts.js' %}"></script>
+{% endblock %}

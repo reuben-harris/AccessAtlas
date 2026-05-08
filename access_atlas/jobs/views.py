@@ -11,6 +11,7 @@ from django.views.generic import (
     DeleteView,
     DetailView,
     ListView,
+    TemplateView,
     UpdateView,
 )
 
@@ -643,6 +644,43 @@ class JobMapView(FilteredListMixin, LoginRequiredMixin, ListView):
             },
             "maxZoom": settings.MAP_TILE_MAX_ZOOM,
         }
+        return context
+
+
+class JobChartsView(FilteredListMixin, LoginRequiredMixin, TemplateView):
+    model = Job
+    template_name = "jobs/job_charts.html"
+    filterset_class = JobFilterSet
+    search_placeholder = "Search jobs"
+    filter_preference_page_key = "jobs"
+
+    def get_context_data(self, **kwargs):
+        queryset = Job.objects.select_related("site", "work_programme")
+        filtered_jobs = self.apply_filters(queryset)
+        context = super().get_context_data(**kwargs)
+        counts = {
+            row["status"]: row["count"]
+            for row in filtered_jobs.values("status")
+            .order_by()
+            .annotate(count=Count("id"))
+        }
+        status_rows = [
+            {
+                "value": status,
+                "label": status.label,
+                "count": counts.get(status, 0),
+                "color": JOB_STATUS_COLORS[status],
+            }
+            for status in JobStatus
+        ]
+        context["job_status_chart"] = {
+            "total": sum(item["count"] for item in status_rows),
+            "labels": [item["label"] for item in status_rows],
+            "counts": [item["count"] for item in status_rows],
+            "colors": [item["color"] for item in status_rows],
+            "rows": status_rows,
+        }
+        context["search_result_count"] = filtered_jobs.count()
         return context
 
 

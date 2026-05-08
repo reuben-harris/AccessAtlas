@@ -1,0 +1,19 @@
+/* Jobs charts: keep chart canvases stable while filters and counts change. */
+
+.job-chart-card {
+  min-height: 28rem;
+}
+
+.job-chart-canvas-wrap {
+  position: relative;
+  min-height: 22rem;
+}
+
+.job-chart-swatch {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-right: 0.5rem;
+  background: var(--job-chart-color);
+  border-radius: 999px;
+}

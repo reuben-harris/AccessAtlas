@@ -1093,6 +1093,32 @@ def test_job_map_applies_shared_status_filter(client):
 
 
 @pytest.mark.django_db
+def test_job_charts_apply_shared_status_filter(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    Job.objects.create(site=site, title="Unassigned job")
+    Job.objects.create(
+        site=site,
+        title="Completed job",
+        status=JobStatus.COMPLETED,
+        closeout_note="Completed in the field.",
+    )
+
+    response = client.get(reverse("job_charts"), {"status": JobStatus.COMPLETED})
+
+    assert response.status_code == 200
+    chart_data = parse_json_script(response.content.decode(), "job-status-chart-data")
+    assert chart_data["total"] == 1
+    assert chart_data["counts"] == [0, 0, 1, 0]
+    assert response.context["search_result_count"] == 1
+    content = response.content.decode()
+    assert "vendor/chart.js/chart.umd.min.js" in content
+    assert 'src="/static/js/jobs_charts.js"' in content
+    assert "Charts" in content
+
+
+@pytest.mark.django_db
 def test_job_detail_links_to_assigned_site_visit(client):
     user = User.objects.create_user(email="user@example.com")
     site = create_site()

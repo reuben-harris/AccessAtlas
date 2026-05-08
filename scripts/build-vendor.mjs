@@ -123,6 +123,13 @@ await copyIntoVendor(path.join(vendorRoot, "photoswipe"), [
   ],
 ]);
 
+await copyIntoVendor(path.join(vendorRoot, "chart.js"), [
+  [
+    path.join(root, "node_modules", "chart.js", "dist", "chart.umd.min.js"),
+    "chart.umd.min.js",
+  ],
+]);
+
 await copyIntoVendor(path.join(vendorRoot, "three"), [
   [
     path.join(root, "node_modules", "three", "build", "three.module.min.js"),
