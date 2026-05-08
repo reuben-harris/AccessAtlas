@@ -57,32 +57,46 @@ def first_matching_value(
 ) -> str:
     """Return the first candidate that matches the active lookup mode."""
 
+    return first_matching_candidate(
+        query,
+        [("Value", candidate) for candidate in candidates],
+        lookup_type,
+    )[1]
+
+
+def first_matching_candidate(
+    query: str,
+    candidates: list[tuple[str, str]],
+    lookup_type: str,
+) -> tuple[str, str]:
+    """Return the first matching field label and value for search results."""
+
     if lookup_type == "iregex":
         try:
             pattern = re.compile(query, re.IGNORECASE)
         except re.error:
-            return candidates[0] if candidates else ""
-        for candidate in candidates:
+            return candidates[0] if candidates else ("Value", "")
+        for label, candidate in candidates:
             if pattern.search(candidate):
-                return candidate
-        return candidates[0] if candidates else ""
+                return label, candidate
+        return candidates[0] if candidates else ("Value", "")
 
     normalized_query = query.casefold()
-    for candidate in candidates:
+    for label, candidate in candidates:
         normalized_candidate = candidate.casefold()
         if lookup_type == "iexact" and normalized_candidate == normalized_query:
-            return candidate
+            return label, candidate
         if lookup_type == "istartswith" and normalized_candidate.startswith(
             normalized_query
         ):
-            return candidate
+            return label, candidate
         if lookup_type == "iendswith" and normalized_candidate.endswith(
             normalized_query
         ):
-            return candidate
+            return label, candidate
         if lookup_type == "icontains" and normalized_query in normalized_candidate:
-            return candidate
-    return candidates[0] if candidates else ""
+            return label, candidate
+    return candidates[0] if candidates else ("Value", "")
 
 
 def build_search_predicate(
@@ -97,41 +111,54 @@ def build_search_predicate(
 
 
 def build_site_rows(queryset, query: str, lookup_type: str) -> list[SearchResultRow]:
-    return [
-        SearchResultRow(
-            object_type="Site",
-            value=first_matching_value(
-                query,
-                [site.code, site.name, site.description],
-                lookup_type,
-            ),
-            object_label=str(site),
-            object_url=site.get_absolute_url(),
+    rows = []
+    for site in queryset:
+        field_label, value = first_matching_candidate(
+            query,
+            [
+                ("Code", site.code),
+                ("Name", site.name),
+                ("Description", site.description),
+            ],
+            lookup_type,
         )
-        for site in queryset
-    ]
+        rows.append(
+            SearchResultRow(
+                object_type=f"Site > {field_label}",
+                value=value,
+                object_label=str(site),
+                object_url=site.get_absolute_url(),
+            )
+        )
+    return rows
 
 
 def build_job_rows(queryset, query: str, lookup_type: str) -> list[SearchResultRow]:
-    return [
-        SearchResultRow(
-            object_type="Job",
-            value=first_matching_value(
-                query,
-                [
-                    job.title,
-                    job.description,
-                    job.site.code,
-                    job.site.name,
+    rows = []
+    for job in queryset:
+        field_label, value = first_matching_candidate(
+            query,
+            [
+                ("Title", job.title),
+                ("Description", job.description),
+                ("Site Code", job.site.code),
+                ("Site Name", job.site.name),
+                (
+                    "Work Programme",
                     job.work_programme.name if job.work_programme else "",
-                ],
-                lookup_type,
-            ),
-            object_label=job.title,
-            object_url=job.get_absolute_url(),
+                ),
+            ],
+            lookup_type,
         )
-        for job in queryset
-    ]
+        rows.append(
+            SearchResultRow(
+                object_type=f"Job > {field_label}",
+                value=value,
+                object_label=job.title,
+                object_url=job.get_absolute_url(),
+            )
+        )
+    return rows
 
 
 def build_job_template_rows(
@@ -139,19 +166,22 @@ def build_job_template_rows(
     query: str,
     lookup_type: str,
 ) -> list[SearchResultRow]:
-    return [
-        SearchResultRow(
-            object_type="Job Template",
-            value=first_matching_value(
-                query,
-                [job_template.title, job_template.description],
-                lookup_type,
-            ),
-            object_label=job_template.title,
-            object_url=job_template.get_absolute_url(),
+    rows = []
+    for job_template in queryset:
+        field_label, value = first_matching_candidate(
+            query,
+            [("Title", job_template.title), ("Description", job_template.description)],
+            lookup_type,
         )
-        for job_template in queryset
-    ]
+        rows.append(
+            SearchResultRow(
+                object_type=f"Job Template > {field_label}",
+                value=value,
+                object_label=job_template.title,
+                object_url=job_template.get_absolute_url(),
+            )
+        )
+    return rows
 
 
 def build_work_programme_rows(
@@ -159,25 +189,31 @@ def build_work_programme_rows(
     query: str,
     lookup_type: str,
 ) -> list[SearchResultRow]:
-    return [
-        SearchResultRow(
-            object_type="Work Programme",
-            value=first_matching_value(
-                query,
-                [work_programme.name, work_programme.description],
-                lookup_type,
-            ),
-            object_label=work_programme.name,
-            object_url=work_programme.get_absolute_url(),
+    rows = []
+    for work_programme in queryset:
+        field_label, value = first_matching_candidate(
+            query,
+            [
+                ("Name", work_programme.name),
+                ("Description", work_programme.description),
+            ],
+            lookup_type,
         )
-        for work_programme in queryset
-    ]
+        rows.append(
+            SearchResultRow(
+                object_type=f"Work Programme > {field_label}",
+                value=value,
+                object_label=work_programme.name,
+                object_url=work_programme.get_absolute_url(),
+            )
+        )
+    return rows
 
 
 def build_trip_rows(queryset, query: str, lookup_type: str) -> list[SearchResultRow]:
     return [
         SearchResultRow(
-            object_type="Trip",
+            object_type="Trip > Name",
             value=first_matching_value(query, [trip.name], lookup_type),
             object_label=trip.name,
             object_url=trip.get_absolute_url(),
@@ -191,19 +227,26 @@ def build_site_visit_rows(
     query: str,
     lookup_type: str,
 ) -> list[SearchResultRow]:
-    return [
-        SearchResultRow(
-            object_type="Site Visit",
-            value=first_matching_value(
-                query,
-                [site_visit.trip.name, site_visit.site.code, site_visit.site.name],
-                lookup_type,
-            ),
-            object_label=f"{site_visit.trip.name} - {site_visit.site.code}",
-            object_url=site_visit.get_absolute_url(),
+    rows = []
+    for site_visit in queryset:
+        field_label, value = first_matching_candidate(
+            query,
+            [
+                ("Trip", site_visit.trip.name),
+                ("Site Code", site_visit.site.code),
+                ("Site Name", site_visit.site.name),
+            ],
+            lookup_type,
         )
-        for site_visit in queryset
-    ]
+        rows.append(
+            SearchResultRow(
+                object_type=f"Site Visit > {field_label}",
+                value=value,
+                object_label=f"{site_visit.trip.name} - {site_visit.site.code}",
+                object_url=site_visit.get_absolute_url(),
+            )
+        )
+    return rows
 
 
 def build_access_record_rows(
@@ -211,19 +254,26 @@ def build_access_record_rows(
     query: str,
     lookup_type: str,
 ) -> list[SearchResultRow]:
-    return [
-        SearchResultRow(
-            object_type="Access Record",
-            value=first_matching_value(
-                query,
-                [access_record.name, access_record.site.code, access_record.site.name],
-                lookup_type,
-            ),
-            object_label=str(access_record),
-            object_url=access_record.get_absolute_url(),
+    rows = []
+    for access_record in queryset:
+        field_label, value = first_matching_candidate(
+            query,
+            [
+                ("Name", access_record.name),
+                ("Site Code", access_record.site.code),
+                ("Site Name", access_record.site.name),
+            ],
+            lookup_type,
         )
-        for access_record in queryset
-    ]
+        rows.append(
+            SearchResultRow(
+                object_type=f"Access Record > {field_label}",
+                value=value,
+                object_label=str(access_record),
+                object_url=access_record.get_absolute_url(),
+            )
+        )
+    return rows
 
 
 def sort_search_rows(

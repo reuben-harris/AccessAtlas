@@ -252,13 +252,13 @@ def test_global_search_shows_total_counts_and_new_object_groups(logged_in_client
     assert response.context["lookup_type"] == "icontains"
     row_types = {row.object_type for row in _global_search_rows(response)}
     assert row_types == {
-        "Site",
-        "Job",
-        "Job Template",
-        "Work Programme",
-        "Trip",
-        "Site Visit",
-        "Access Record",
+        "Site > Name",
+        "Job > Title",
+        "Job Template > Title",
+        "Work Programme > Name",
+        "Trip > Name",
+        "Site Visit > Trip",
+        "Access Record > Name",
     }
     content = response.content.decode()
     assert "Type" in content
@@ -330,6 +330,7 @@ def test_global_search_matches_site_description(logged_in_client):
     assert response.status_code == 200
     rows = _global_search_rows(response)
     assert len(rows) == 1
+    assert rows[0].object_type == "Site > Description"
     assert rows[0].object_label == "AA-001 - Alpha Field"
     assert rows[0].value == "Generator hut beside the ridge track."
 

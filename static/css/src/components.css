@@ -206,6 +206,10 @@
   min-width: 5.5rem;
 }
 
+.search-match {
+  padding: 0;
+}
+
 @media (max-width: 767.98px) {
   .global-search-form {
     grid-template-columns: 1fr;
