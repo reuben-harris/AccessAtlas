@@ -21,6 +21,7 @@ from access_atlas.trips.models import (
 from access_atlas.trips.services import (
     assign_job_to_site_visit,
     assign_jobs_to_site_visit,
+    return_trip_to_draft,
 )
 
 
@@ -568,6 +569,64 @@ def test_trip_approval_moves_trip_to_approved_and_records_approver(client):
     assert trip.status == TripStatus.APPROVED
     assert trip.approved_at is not None
     assert approval.approval_round == 1
+
+
+@pytest.mark.django_db
+def test_return_trip_to_draft_clears_submission_without_new_approval_round():
+    leader = User.objects.create_user(email="leader@example.com")
+    approver = User.objects.create_user(email="approver@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=leader,
+        status=TripStatus.APPROVED,
+        submitted_by=leader,
+        submitted_at=timezone.now(),
+        approved_at=timezone.now(),
+        approval_round=2,
+    )
+    TripApproval.objects.create(trip=trip, approver=approver, approval_round=2)
+
+    return_trip_to_draft(trip)
+
+    trip.refresh_from_db()
+    assert trip.status == TripStatus.DRAFT
+    assert trip.submitted_by is None
+    assert trip.submitted_at is None
+    assert trip.approved_at is None
+    assert trip.approval_round == 2
+    assert trip.history.first().history_change_reason == "Returned trip to draft"
+
+
+@pytest.mark.django_db
+def test_return_trip_to_draft_action_is_available_for_submitted_trip(client):
+    user = User.objects.create_user(email="leader@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+        status=TripStatus.SUBMITTED,
+        submitted_by=user,
+        submitted_at=timezone.now(),
+        approval_round=1,
+    )
+    client.force_login(user)
+
+    detail_response = client.get(reverse("trip_detail", kwargs={"pk": trip.pk}))
+    confirm_response = client.get(
+        reverse("trip_return_to_draft", kwargs={"pk": trip.pk})
+    )
+    post_response = client.post(reverse("trip_return_to_draft", kwargs={"pk": trip.pk}))
+
+    assert detail_response.status_code == 200
+    assert "Return to draft" in detail_response.content.decode()
+    assert confirm_response.status_code == 200
+    assert "Return Trip to Draft" in confirm_response.content.decode()
+    assert post_response.status_code == 302
+    trip.refresh_from_db()
+    assert trip.status == TripStatus.DRAFT
 
 
 @pytest.mark.django_db

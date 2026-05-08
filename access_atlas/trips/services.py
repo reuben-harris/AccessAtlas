@@ -128,6 +128,29 @@ def invalidate_trip_approval(trip: Trip, user, reason: str) -> bool:
 
 
 @transaction.atomic
+def return_trip_to_draft(trip: Trip) -> None:
+    """Withdraw a submitted or approved trip so planning edits can continue."""
+
+    if trip.status not in {TripStatus.SUBMITTED, TripStatus.APPROVED}:
+        raise ValidationError("Only submitted or approved trips can return to draft.")
+
+    trip.status = TripStatus.DRAFT
+    trip.submitted_by = None
+    trip.submitted_at = None
+    trip.approved_at = None
+    trip.save(
+        update_fields=[
+            "status",
+            "submitted_by",
+            "submitted_at",
+            "approved_at",
+            "updated_at",
+        ]
+    )
+    update_change_reason(trip, "Returned trip to draft")
+
+
+@transaction.atomic
 def assign_job_to_site_visit(site_visit, job) -> SiteVisitJob:
     if job.status != JobStatus.UNASSIGNED:
         raise ValidationError("Only unassigned jobs can be assigned to a site visit.")

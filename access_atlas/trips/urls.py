@@ -12,6 +12,11 @@ urlpatterns = [
     path("<int:pk>/edit/", views.TripUpdateView.as_view(), name="trip_update"),
     path("<int:pk>/submit/", views.submit_trip_view, name="trip_submit"),
     path("<int:pk>/approve/", views.approve_trip_view, name="trip_approve"),
+    path(
+        "<int:pk>/return-to-draft/",
+        views.return_trip_to_draft_view,
+        name="trip_return_to_draft",
+    ),
     path("<int:pk>/close/", views.close_trip_view, name="trip_close"),
     path("<int:pk>/cancel/", views.cancel_trip_view, name="trip_cancel"),
     path(

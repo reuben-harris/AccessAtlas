@@ -169,6 +169,16 @@ def trip_action_controls(trip: Trip, user) -> dict[str, object]:
         # round, the button should explain why they cannot approve again.
         approve_disabled_reason = "You have already approved this trip."
 
+    return_to_draft_disabled_reason = None
+    if trip.is_terminal:
+        return_to_draft_disabled_reason = (
+            f"This trip is already {closed_state} and cannot return to draft."
+        )
+    elif trip.status not in {TripStatus.SUBMITTED, TripStatus.APPROVED}:
+        return_to_draft_disabled_reason = (
+            "Only submitted or approved trips can return to draft."
+        )
+
     cancel_disabled_reason = None
     close_disabled_reason = None
     if trip.is_terminal:
@@ -185,6 +195,8 @@ def trip_action_controls(trip: Trip, user) -> dict[str, object]:
         "approve_enabled": approve_disabled_reason is None,
         "approve_disabled_reason": approve_disabled_reason,
         "approve_label": approve_label,
+        "return_to_draft_enabled": return_to_draft_disabled_reason is None,
+        "return_to_draft_disabled_reason": return_to_draft_disabled_reason,
         "cancel_enabled": cancel_disabled_reason is None,
         "cancel_disabled_reason": cancel_disabled_reason,
         "close_enabled": close_disabled_reason is None,
@@ -194,7 +206,11 @@ def trip_action_controls(trip: Trip, user) -> dict[str, object]:
 
 def trip_approval_summary(trip: Trip) -> dict[str, object]:
     """Return the current approval round summary for the trip overview card."""
-    current_approvals = list(trip.current_approvals().select_related("approver"))
+    current_approvals = (
+        list(trip.current_approvals().select_related("approver"))
+        if trip.status in {TripStatus.SUBMITTED, TripStatus.APPROVED}
+        else []
+    )
     return {
         "submitted_by": trip.submitted_by,
         "submitted_at": trip.submitted_at,

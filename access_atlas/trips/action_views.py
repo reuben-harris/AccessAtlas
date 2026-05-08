@@ -15,6 +15,7 @@ from .services import (
     close_trip,
     get_trip_cancel_summary,
     invalidate_trip_approval,
+    return_trip_to_draft,
     submit_trip_for_approval,
     unassign_site_visit_job,
 )
@@ -131,6 +132,26 @@ def approve_trip_view(request, pk):
         label = "Added approval to" if was_approved else "Approved"
         messages.success(request, f"{label} trip: {trip.name}")
     return redirect(request.POST.get("next") or trip)
+
+
+@login_required
+def return_trip_to_draft_view(request, pk):
+    trip = get_object_or_404(Trip, pk=pk)
+    if trip.status not in {TripStatus.SUBMITTED, TripStatus.APPROVED}:
+        messages.info(
+            request,
+            "Only submitted or approved trips can be returned to draft.",
+        )
+        return redirect(trip)
+    if request.method == "POST":
+        try:
+            return_trip_to_draft(trip)
+        except ValidationError as exc:
+            messages.error(request, exc.message)
+        else:
+            messages.success(request, f"Returned trip to draft: {trip.name}")
+        return redirect(trip)
+    return render(request, "trips/trip_return_to_draft.html", {"trip": trip})
 
 
 @login_required

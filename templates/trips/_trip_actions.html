@@ -35,6 +35,12 @@
     </span>
   {% endif %}
 
+  {% if trip_action_controls.return_to_draft_enabled %}
+    <a class="btn btn-outline-primary" href="{% url 'trip_return_to_draft' object.pk %}">
+      <i class="ti ti-arrow-back-up" aria-hidden="true"></i>Return to draft
+    </a>
+  {% endif %}
+
   {% if trip_action_controls.cancel_enabled %}
     <a class="btn btn-danger" href="{% url 'trip_cancel' object.pk %}">
       <i class="ti ti-ban" aria-hidden="true"></i>Cancel trip
