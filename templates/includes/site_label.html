@@ -1,0 +1,5 @@
+{% if site.code %}
+  {{ site.code }} - {{ site.name }}
+{% else %}
+  <span class="text-secondary fst-italic">null</span> - {{ site.name }}
+{% endif %}

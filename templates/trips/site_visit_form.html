@@ -33,15 +33,8 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label">{{ form.planned_day.label }}{% required_marker form.planned_day %}</label>
-        <div class="trip-day-picker" role="radiogroup" aria-label="{{ form.planned_day.label }}">
-          {% for choice in form.planned_day %}
-            <label class="trip-day-picker-item">
-              {{ choice.tag }}
-              <span class="trip-day-picker-label">{{ choice.choice_label }}</span>
-            </label>
-          {% endfor %}
-        </div>
+        <label class="form-label" for="{{ form.planned_day.id_for_label }}">{{ form.planned_day.label }}{% required_marker form.planned_day %}</label>
+        {{ form.planned_day|render_form_field }}
         {% if form.planned_day.help_text %}<div class="form-hint">{{ form.planned_day.help_text }}</div>{% endif %}
         {% for error in form.planned_day.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
       </div>

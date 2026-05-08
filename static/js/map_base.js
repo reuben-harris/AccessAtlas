@@ -128,13 +128,7 @@
     return { applyMinZoom };
   }
 
-  function markerScaleForZoom(zoom) {
-    if (zoom <= 2) {
-      return "world";
-    }
-    if (zoom <= 3) {
-      return "far";
-    }
+  function markerScaleForZoom() {
     return "normal";
   }
 
@@ -437,8 +431,12 @@
       return;
     }
 
-    const applyLayout = () => {
+    const invalidateLayout = () => {
       map.invalidateSize({ pan: false });
+    };
+
+    const applyInitialLayout = () => {
+      invalidateLayout();
       if (typeof onLayout === "function") {
         onLayout();
       }
@@ -448,9 +446,9 @@
        render. Running after two animation frames waits for layout to settle
        before Leaflet computes bounds and tiles. */
     window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(applyLayout);
+      window.requestAnimationFrame(applyInitialLayout);
     });
-    window.addEventListener("resize", applyLayout);
+    window.addEventListener("resize", invalidateLayout);
   }
 
   accessAtlas.escapeHtml = escapeHtml;

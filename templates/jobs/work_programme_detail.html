@@ -43,7 +43,7 @@
         {% for job in object.jobs.all %}
           <tr>
             <td><a href="{{ job.get_absolute_url }}">{{ job.title }}</a></td>
-            <td><a href="{{ job.site.get_absolute_url }}">{{ job.site.code }}</a></td>
+            <td><a href="{{ job.site.get_absolute_url }}">{% include "includes/site_label.html" with site=job.site %}</a></td>
             <td><span class="badge {{ job.status|status_badge_class }}">{{ job.get_status_display }}</span></td>
             <td>{{ job.get_priority_display }}</td>
             {% url 'job_update' job.pk as edit_url %}

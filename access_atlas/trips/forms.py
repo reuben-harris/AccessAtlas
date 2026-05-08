@@ -71,7 +71,7 @@ class SiteVisitForm(forms.ModelForm):
     )
     planned_day = TripDayChoiceField(
         label="Visit day",
-        widget=forms.RadioSelect,
+        widget=forms.Select(attrs={"data-basic-tomselect": "true"}),
     )
     planned_start_time = forms.TimeField(
         required=False,

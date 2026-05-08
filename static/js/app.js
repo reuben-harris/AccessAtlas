@@ -133,7 +133,28 @@
     }
   }
 
+  function initializeBasicTomSelects() {
+    const TomSelect = window.TomSelect;
+    if (typeof TomSelect !== "function") {
+      return;
+    }
+
+    for (const select of document.querySelectorAll("[data-basic-tomselect]")) {
+      if (!(select instanceof HTMLSelectElement) || select.tomselect) {
+        continue;
+      }
+
+      // Local-choice selects use TomSelect for compact keyboard search without
+      // adopting the remote autocomplete contract used by django-tomselect.
+      new TomSelect(select, {
+        create: false,
+        maxItems: 1,
+      });
+    }
+  }
+
   initializeDatePickers();
+  initializeBasicTomSelects();
 
   for (const form of document.querySelectorAll("[data-list-filter-form]")) {
     initializeFilterTomSelects(form);

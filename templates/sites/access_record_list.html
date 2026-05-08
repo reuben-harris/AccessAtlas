@@ -36,7 +36,7 @@
       <tbody>
         {% for access_record in object_list %}
           <tr>
-            <td><a href="{{ access_record.site.get_absolute_url }}">{{ access_record.site.code }}</a></td>
+            <td><a href="{{ access_record.site.get_absolute_url }}">{% include "includes/site_label.html" with site=access_record.site %}</a></td>
             <td><a href="{{ access_record.get_absolute_url }}">{{ access_record.name }}</a></td>
             <td>{{ access_record.get_arrival_method_display }}</td>
             <td><span class="badge {{ access_record.status|status_badge_class }}">{{ access_record.get_status_display }}</span></td>

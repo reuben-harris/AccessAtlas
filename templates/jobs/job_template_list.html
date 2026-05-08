@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load status_badges %}
 
 {% block title %}Job Templates - Access Atlas{% endblock %}
 
@@ -39,7 +40,7 @@
             <td><a href="{{ template.get_absolute_url }}">{{ template.title }}</a></td>
             <td>{{ template.get_priority_display }}</td>
             <td>{{ template.estimated_duration_minutes|default:"-" }} min</td>
-            <td>{{ template.is_active|yesno:"Yes,No" }}</td>
+            <td><span class="badge {{ template.is_active|yesno:'active,retired'|status_badge_class }}">{{ template.is_active|yesno:"Yes,No" }}</span></td>
             {% url 'job_template_update' template.pk as edit_url %}
             {% include "includes/row_actions.html" with edit_url=edit_url label=template.title %}
           </tr>

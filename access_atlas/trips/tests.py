@@ -1132,6 +1132,7 @@ def test_site_visit_form_uses_trip_day_choices():
         ("2026-04-22", "Wed 22 Apr 2026"),
         ("2026-04-23", "Thu 23 Apr 2026"),
     ]
+    assert form.fields["planned_day"].widget.attrs["data-basic-tomselect"] == "true"
 
 
 @pytest.mark.django_db
