@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from itertools import chain
 from math import pi
 from urllib.parse import urlencode
 
@@ -11,7 +10,11 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import TemplateView
 
-from access_atlas.core.history import history_reason
+from access_atlas.core.global_history import (
+    build_global_history_entries,
+    filter_global_history_entries,
+    sort_global_history_entries,
+)
 from access_atlas.core.mixins import SearchablePaginatedListMixin, SortableListMixin
 from access_atlas.core.pagination import normalize_per_page, page_size_options_for
 from access_atlas.core.search import (
@@ -20,41 +23,11 @@ from access_atlas.core.search import (
     normalize_lookup_type,
     normalize_sort_value,
 )
-from access_atlas.jobs.models import (
-    Job,
-    JobStatus,
-    JobTemplate,
-    Requirement,
-    TemplateRequirement,
-)
+from access_atlas.jobs.models import Job, JobStatus
 from access_atlas.sites.access_record_snapshots import build_access_record_snapshots
 from access_atlas.sites.access_warnings import build_site_warnings
-from access_atlas.sites.models import Site, SitePhoto, SiteSyncStatus
-from access_atlas.trips.models import SiteVisit, SiteVisitJob, Trip, TripStatus
-
-
-@dataclass(frozen=True)
-class HistoryEntry:
-    date: object
-    action: str
-    reason: str
-    object_type: str
-    object_display: str
-    object_url: str
-    user: object
-
-
-HISTORY_MODELS = [
-    Site,
-    SitePhoto,
-    JobTemplate,
-    TemplateRequirement,
-    Job,
-    Requirement,
-    Trip,
-    SiteVisit,
-    SiteVisitJob,
-]
+from access_atlas.sites.models import Site, SiteSyncStatus
+from access_atlas.trips.models import Trip, TripStatus
 
 JOB_STATUS_CHART_COLORS = {
     JobStatus.UNASSIGNED: "#667382",
@@ -153,22 +126,6 @@ def build_dashboard_attention_groups() -> dict[str, object]:
     }
 
 
-def build_history_entry(record) -> HistoryEntry:
-    instance = record.instance
-    object_url = ""
-    if record.history_type != "-" and hasattr(instance, "get_absolute_url"):
-        object_url = instance.get_absolute_url()
-    return HistoryEntry(
-        date=record.history_date,
-        action=record.get_history_type_display(),
-        reason=history_reason(record),
-        object_type=instance._meta.verbose_name.title(),
-        object_display=str(instance),
-        object_url=object_url,
-        user=record.history_user,
-    )
-
-
 @login_required
 def dashboard(request):
     today = timezone.localdate()
@@ -245,44 +202,14 @@ class GlobalHistoryView(
         "user": "user",
     }
 
-    def get_entries(self) -> list[HistoryEntry]:
-        records = chain.from_iterable(
-            model.history.select_related("history_user").all()
-            for model in HISTORY_MODELS
-        )
-        return [build_history_entry(record) for record in records]
-
-    def filter_entries(self, entries: list[HistoryEntry]) -> list[HistoryEntry]:
-        search_query = self.get_search_query()
-        if not search_query:
-            return entries
-        search_value = search_query.casefold()
-        return [
-            entry
-            for entry in entries
-            if search_value in entry.object_display.casefold()
-            or search_value in entry.object_type.casefold()
-            or search_value in entry.action.casefold()
-            or search_value in (entry.reason or "").casefold()
-            or search_value in str(entry.user or "System").casefold()
-        ]
-
-    def sort_entries(self, entries: list[HistoryEntry]) -> list[HistoryEntry]:
-        sort_value = self.get_sort_value()
-        descending = sort_value.startswith("-")
-        sort_key = sort_value.removeprefix("-")
-        sort_functions = {
-            "date": lambda entry: entry.date,
-            "object": lambda entry: entry.object_display.casefold(),
-            "type": lambda entry: entry.object_type.casefold(),
-            "action": lambda entry: entry.action.casefold(),
-            "user": lambda entry: str(entry.user or "System").casefold(),
-        }
-        key_function = sort_functions.get(sort_key, sort_functions["date"])
-        return sorted(entries, key=key_function, reverse=descending)
-
     def get_context_data(self, **kwargs):
-        entries = self.sort_entries(self.filter_entries(self.get_entries()))
+        entries = sort_global_history_entries(
+            filter_global_history_entries(
+                build_global_history_entries(),
+                self.get_search_query(),
+            ),
+            self.get_sort_value(),
+        )
         paginator = Paginator(entries, self.get_per_page())
         page_obj = paginator.get_page(self.request.GET.get("page"))
         context = super().get_context_data(
