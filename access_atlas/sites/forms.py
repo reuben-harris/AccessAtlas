@@ -8,6 +8,11 @@ from access_atlas.core.tomselect import site_tomselect_config
 from .access_records import AccessRecordGeoJSONError, parse_access_record_geojson
 from .models import AccessRecord, AccessRecordUploadDraft, ArrivalMethod
 
+MAX_PHOTO_UPLOAD_BYTES = 20 * 1024 * 1024
+MAX_PHOTO_UPLOAD_COUNT = 50
+MAX_GEOJSON_UPLOAD_BYTES = 5 * 1024 * 1024
+GEOJSON_FILE_EXTENSIONS = (".geojson", ".json")
+
 
 class MultipleImageInput(forms.ClearableFileInput):
     allow_multiple_selected = True
@@ -20,6 +25,13 @@ class MultipleImageField(forms.ImageField):
         files = data if isinstance(data, list | tuple) else [data]
         if not files or files == [None]:
             raise forms.ValidationError("Choose at least one photo.")
+        if len(files) > MAX_PHOTO_UPLOAD_COUNT:
+            raise forms.ValidationError(
+                f"Upload no more than {MAX_PHOTO_UPLOAD_COUNT} photos at once."
+            )
+        for file in files:
+            if file.size > MAX_PHOTO_UPLOAD_BYTES:
+                raise forms.ValidationError(f"{file.name} must be 20 MB or smaller.")
         clean_file = super().clean
         return [clean_file(file, initial) for file in files]
 
@@ -28,7 +40,9 @@ class SitePhotoUploadForm(forms.Form):
     photos = MultipleImageField(
         label="Photos",
         widget=MultipleImageInput(attrs={"multiple": True, "accept": "image/*"}),
-        help_text="Upload one or more image files.",
+        help_text=(
+            "Upload one or more image files. Each photo must be 20 MB or smaller."
+        ),
     )
 
 
@@ -77,6 +91,10 @@ class AccessRecordGeoJSONUploadMixin(forms.Form):
         return cleaned_data
 
     def _parse_geojson_file(self, geojson_file):
+        if geojson_file.size > MAX_GEOJSON_UPLOAD_BYTES:
+            raise forms.ValidationError("GeoJSON file must be 5 MB or smaller.")
+        if not geojson_file.name.lower().endswith(GEOJSON_FILE_EXTENSIONS):
+            raise forms.ValidationError("GeoJSON file must use .geojson or .json.")
         try:
             raw = geojson_file.read().decode("utf-8")
             geojson = json.loads(raw)
