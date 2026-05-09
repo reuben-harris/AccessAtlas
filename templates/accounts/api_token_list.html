@@ -1,0 +1,105 @@
+{% extends "base/base.html" %}
+
+{% block title %}API Tokens - Access Atlas{% endblock %}
+
+{% block content %}
+{% if plaintext_token %}
+  <div class="alert alert-warning api-token-created-alert" role="alert">
+    <div class="api-token-created-message">
+      <span><span class="fw-semibold">Token created.</span> Copy it now; it will not be shown again.</span>
+    </div>
+    <div class="input-group api-token-created-value">
+      <input id="created-api-token" class="form-control font-monospace" type="text" value="{{ plaintext_token }}" readonly>
+      <button
+        class="btn btn-outline-secondary"
+        type="button"
+        data-copy-value="#created-api-token"
+        data-copy-label="Copy"
+        data-copy-success-label="Copied"
+      >
+        <i class="ti ti-copy" aria-hidden="true"></i>Copy
+      </button>
+    </div>
+  </div>
+{% endif %}
+
+<div class="page-header">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">API Tokens</h2>
+    </div>
+    <div class="col-auto">
+      <div class="btn-list">
+        <a class="btn btn-primary" href="{% url 'api_token_create' %}">
+          <i class="ti ti-plus" aria-hidden="true"></i>New token
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% include "includes/list_controls.html" %}
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-vcenter card-table api-token-table">
+      <thead>
+        <tr>
+          {% include "includes/sortable_th.html" with label="Name" sort_key="name" %}
+          {% include "includes/sortable_th.html" with label="Prefix" sort_key="prefix" %}
+          {% include "includes/sortable_th.html" with label="Access" sort_key="access" %}
+          {% include "includes/sortable_th.html" with label="Expires" sort_key="expires" %}
+          {% include "includes/sortable_th.html" with label="Last used" sort_key="last-used" %}
+          {% include "includes/sortable_th.html" with label="Status" sort_key="status" %}
+          <th class="w-1"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for token in tokens %}
+          <tr>
+            <td>{{ token.name }}</td>
+            <td><code>{{ token.key_prefix }}</code></td>
+            <td>{% if token.can_write %}Read/write{% else %}Read-only{% endif %}</td>
+            <td>{{ token.expires_at|date:"j M Y H:i"|default:"-" }}</td>
+            <td>{{ token.last_used_at|date:"j M Y H:i"|default:"-" }}</td>
+            <td>
+              {% if token.is_revoked %}
+                <span class="badge bg-red-lt">Revoked</span>
+              {% elif token.is_expired %}
+                <span class="badge bg-yellow-lt">Expired</span>
+              {% else %}
+                <span class="badge bg-green-lt">Active</span>
+              {% endif %}
+            </td>
+            <td class="api-token-row-action-cell">
+              <div class="api-token-row-action-slot">
+                {% if not token.is_revoked %}
+                  <form class="api-token-row-action-form" method="post" action="{% url 'api_token_revoke' token.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}">
+                    {% csrf_token %}
+                    <button class="btn btn-icon btn-outline-danger api-token-row-action" type="submit" aria-label="Revoke {{ token.name }}" title="Revoke {{ token.name }}">
+                      <i class="ti ti-ban" aria-hidden="true"></i>
+                    </button>
+                  </form>
+                {% else %}
+                  <span class="api-token-row-action" aria-hidden="true"></span>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" class="text-secondary">
+              {% if search_query %}
+                No API tokens match your search.
+              {% else %}
+                No API tokens have been created.
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "includes/pagination_footer.html" %}
+{% endblock %}

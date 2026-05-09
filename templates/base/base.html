@@ -169,6 +169,18 @@
                 <i class="ti ti-bug" aria-hidden="true"></i>
               </a>
             {% endif %}
+            {% if request.user.is_authenticated %}
+              <a
+                class="btn btn-icon btn-outline-secondary header-square-button me-2"
+                href="{% url 'api_schema_swagger_ui' %}"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Swagger docs"
+                title="Swagger docs"
+              >
+                <i class="ti ti-api" aria-hidden="true"></i>
+              </a>
+            {% endif %}
             <button class="btn btn-icon btn-outline-secondary header-square-button me-2" type="button" data-theme-cycle data-theme-current-mode="{{ theme_preference.mode|default:'system' }}" data-theme-preference-key="{{ theme_preference_key }}" data-theme-preference-url="{% url 'account_preference' %}" aria-label="Theme: {{ theme_preference.mode|title }}" title="Theme: {{ theme_preference.mode|title }}">
               <i class="ti ti-device-desktop" aria-hidden="true"></i>
             </button>
@@ -185,9 +197,17 @@
                     {% endif %}
                   </div>
                   <div class="dropdown-divider"></div>
+                  <a class="dropdown-item" href="{% url 'api_token_list' %}">
+                    <i class="ti ti-key" aria-hidden="true"></i>
+                    <span>API tokens</span>
+                  </a>
+                  <div class="dropdown-divider"></div>
                   <form action="{% url 'logout' %}" method="post">
                     {% csrf_token %}
-                    <button class="dropdown-item" type="submit">Log out</button>
+                    <button class="dropdown-item" type="submit">
+                      <i class="ti ti-logout" aria-hidden="true"></i>
+                      <span>Log out</span>
+                    </button>
                   </form>
                 </div>
               </div>

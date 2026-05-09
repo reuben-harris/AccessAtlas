@@ -221,6 +221,39 @@
     new bootstrap.Popover(element);
   }
 
+  for (const button of document.querySelectorAll("[data-copy-value]")) {
+    button.addEventListener("click", async () => {
+      const target = document.querySelector(button.dataset.copyValue || "");
+      if (
+        !(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)
+      ) {
+        return;
+      }
+
+      const originalLabel = button.dataset.copyLabel || button.textContent || "Copy";
+      const successLabel = button.dataset.copySuccessLabel || "Copied";
+      const value = target.value;
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(value);
+        } else {
+          target.select();
+          document.execCommand("copy");
+          target.setSelectionRange(value.length, value.length);
+        }
+      } catch (_error) {
+        target.select();
+        return;
+      }
+
+      button.textContent = successLabel;
+      window.setTimeout(() => {
+        button.innerHTML = '<i class="ti ti-copy" aria-hidden="true"></i>';
+        button.append(originalLabel);
+      }, 1600);
+    });
+  }
+
   for (const link of document.querySelectorAll("[data-bug-report-link]")) {
     link.addEventListener("click", () => {
       const url = new URL(link.href);

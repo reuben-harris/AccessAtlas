@@ -22,6 +22,7 @@ ALLOWED_PREFERENCE_KEYS = {
     UI_THEME_PREFERENCE_KEY,
 }
 ALLOWED_LIST_SORT_PREFERENCE_PAGES = {
+    "api-tokens",
     "sites",
     "trips",
     "jobs",
