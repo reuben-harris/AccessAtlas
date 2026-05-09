@@ -138,6 +138,7 @@ uv run python manage.py check
 uv run pytest
 uv run ruff check .
 uv run ruff format --check .
+uv run python manage.py spectacular --validate --file /tmp/access-atlas-schema.yml
 pnpm install
 pnpm build:frontend
 pnpm watch:css
