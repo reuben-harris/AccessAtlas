@@ -5,14 +5,77 @@
       return;
     }
 
+    function optionCallbacks(callbacks) {
+      if (!callbacks) {
+        return [];
+      }
+      return Array.isArray(callbacks) ? callbacks : [callbacks];
+    }
+
+    function mapFullscreenParent(input) {
+      const offcanvas = input.closest(".list-filter-offcanvas");
+      const mapElement = offcanvas?.closest(".leaflet-container");
+      if (!mapElement) {
+        return null;
+      }
+
+      if (
+        document.fullscreenElement === mapElement ||
+        mapElement.matches(":fullscreen") ||
+        mapElement.classList.contains("leaflet-pseudo-fullscreen")
+      ) {
+        return mapElement;
+      }
+      return null;
+    }
+
+    function moveCalendar(instance, parent) {
+      const calendar = instance?.calendarContainer;
+      if (!calendar || !parent || calendar.parentNode === parent) {
+        return;
+      }
+      parent.appendChild(calendar);
+    }
+
+    function pickerOptions(input, options) {
+      if (!input.closest(".list-filter-offcanvas")) {
+        return options;
+      }
+
+      return {
+        ...options,
+        onClose: [
+          ...optionCallbacks(options.onClose),
+          (_selectedDates, _dateString, instance) => {
+            moveCalendar(instance, document.body);
+          },
+        ],
+        onPreCalendarPosition: [
+          ...optionCallbacks(options.onPreCalendarPosition),
+          (_selectedDates, _dateString, instance) => {
+            // Flatpickr positions against viewport coordinates, so keep the
+            // normal body parent except while true fullscreen only paints the
+            // Leaflet map subtree.
+            moveCalendar(instance, mapFullscreenParent(input) || document.body);
+          },
+        ],
+      };
+    }
+
+    function initializePicker(selector, options) {
+      for (const input of document.querySelectorAll(selector)) {
+        flatpickr(input, pickerOptions(input, options));
+      }
+    }
+
     // Flatpickr replaces native browser pickers while keeping server-friendly
     // ISO-style values in the underlying text inputs.
-    flatpickr(".date-picker", {
+    initializePicker(".date-picker", {
       allowInput: true,
       dateFormat: "Y-m-d",
       disableMobile: true,
     });
-    flatpickr(".datetime-picker", {
+    initializePicker(".datetime-picker", {
       allowInput: true,
       dateFormat: "Y-m-d H:i:S",
       disableMobile: true,
@@ -20,7 +83,7 @@
       enableTime: true,
       time_24hr: true,
     });
-    flatpickr(".time-picker", {
+    initializePicker(".time-picker", {
       allowInput: true,
       dateFormat: "H:i",
       disableMobile: true,

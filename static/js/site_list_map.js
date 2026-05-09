@@ -53,7 +53,7 @@
   const defaultZoom = 5;
   const initialFilterCount = Number(mapElement.dataset.filterCount || 0);
   const map = L.map(mapElement).setView(defaultCenter, defaultZoom);
-  const filterPanel = createFullscreenSafeOffcanvasController(mapElement);
+  const filterPanel = createFullscreenSafeOffcanvasController(mapElement, { map });
   configureMapConstraints(map);
   const markerLayer = L.layerGroup().addTo(map);
   const basemapController = createBasemapController(

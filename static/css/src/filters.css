@@ -45,6 +45,9 @@
   --tblr-offcanvas-width: min(64rem, calc(100vw - 1rem));
 }
 
+/* Browser fullscreen only paints descendants of the fullscreen map element.
+   JS moves the filter panel into Leaflet, and this preserves the Bootstrap
+   offcanvas geometry after that move. */
 .list-filter-offcanvas--map-fullscreen {
   position: absolute;
   top: 0;
@@ -192,8 +195,23 @@
   background: var(--tblr-bg-surface);
 }
 
+/* Leaflet styles map-contained links as blue controls. Keep Bootstrap button
+   variables when the filter panel is temporarily mounted inside the map. */
 .leaflet-container .list-filter-offcanvas .btn {
+  color: var(--tblr-btn-color);
   text-decoration: none;
+}
+
+.leaflet-container .list-filter-offcanvas .btn:hover,
+.leaflet-container .list-filter-offcanvas .btn:focus-visible {
+  color: var(--tblr-btn-hover-color);
+  text-decoration: none;
+}
+
+.leaflet-container .list-filter-offcanvas .btn:active,
+.leaflet-container .list-filter-offcanvas .btn.active,
+.leaflet-container .list-filter-offcanvas .show > .btn.dropdown-toggle {
+  color: var(--tblr-btn-active-color);
 }
 
 [data-bs-theme="dark"] .list-filter-input-group .ts-wrapper.multi .ts-control,

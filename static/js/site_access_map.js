@@ -142,7 +142,7 @@
   );
   const filterPanel =
     typeof createFullscreenSafeOffcanvasController === "function"
-      ? createFullscreenSafeOffcanvasController(mapElement)
+      ? createFullscreenSafeOffcanvasController(mapElement, { map })
       : null;
   configureMapConstraints(map);
   featureLayer.addTo(map);
