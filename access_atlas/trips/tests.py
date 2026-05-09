@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from access_atlas.accounts.models import User
 from access_atlas.core.test_utils import parse_json_script
-from access_atlas.jobs.models import Job, JobStatus
+from access_atlas.jobs.models import Job, JobStatus, Requirement, RequirementType
 from access_atlas.sites.models import AccessRecord, AccessRecordVersion, Site
 from access_atlas.trips.forms import AssignJobForm, SiteVisitForm, TripForm
 from access_atlas.trips.models import (
@@ -23,6 +23,55 @@ from access_atlas.trips.services import (
     assign_jobs_to_site_visit,
     return_trip_to_draft,
 )
+
+
+def create_requirement_site(
+    code="AA-001",
+    name="Site A",
+    *,
+    latitude=-41.1,
+    longitude=174.1,
+):
+    return Site.objects.create(
+        source_name="dummy",
+        external_id=code,
+        code=code,
+        name=name,
+        latitude=latitude,
+        longitude=longitude,
+    )
+
+
+def create_trip(user, *, status=TripStatus.DRAFT, approval_round=0):
+    return Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+        status=status,
+        approval_round=approval_round,
+    )
+
+
+def assign_requirement_job(
+    trip,
+    *,
+    site_code="AA-001",
+    site_name="Site A",
+    title="Inspect cabinet",
+):
+    site = create_requirement_site(code=site_code, name=site_name)
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title=title)
+    SiteVisitJob.objects.create(site_visit=site_visit, job=job)
+    return job
+
+
+def assert_trip_approval_is_unchanged(trip):
+    trip.refresh_from_db()
+    assert trip.status == TripStatus.APPROVED
+    assert trip.approval_round == 1
+    assert TripApproval.objects.filter(trip=trip, approval_round=1).count() == 1
 
 
 @pytest.mark.django_db
@@ -1311,6 +1360,566 @@ def test_trip_detail_shows_assigned_jobs(client):
     assert b"Jobs" in response.content
     assert b"Replace access panel" in response.content
     assert b"45 min" in response.content
+
+
+@pytest.mark.django_db
+def test_trip_requirements_requires_login(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+
+    response = client.get(reverse("trip_requirements", kwargs={"pk": trip.pk}))
+
+    assert response.status_code == 302
+    requirements_url = reverse("trip_requirements", kwargs={"pk": trip.pk})
+    assert response.url == f"{reverse('login')}?next={requirements_url}"
+
+
+@pytest.mark.django_db
+def test_trip_detail_navigation_links_to_requirements(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("trip_detail", kwargs={"pk": trip.pk}))
+
+    assert response.status_code == 200
+    assert b"Requirements" in response.content
+    assert reverse("trip_requirements", kwargs={"pk": trip.pk}).encode() in (
+        response.content
+    )
+
+
+@pytest.mark.django_db
+def test_trip_requirements_shows_assigned_job_requirements_only(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    other_site = Site.objects.create(
+        source_name="dummy",
+        external_id="002",
+        code="AA-002",
+        name="Site B",
+        latitude=-42.1,
+        longitude=175.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    assigned_job = Job.objects.create(site=site, title="Inspect cabinet")
+    SiteVisitJob.objects.create(site_visit=site_visit, job=assigned_job)
+    Requirement.objects.create(
+        job=assigned_job,
+        name="Battery",
+        quantity="2",
+        requirement_type=RequirementType.PART,
+    )
+    unassigned_job = Job.objects.create(site=site, title="Unplanned job")
+    Requirement.objects.create(job=unassigned_job, name="Unplanned cable")
+    other_trip = Trip.objects.create(
+        name="Other trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    other_visit = SiteVisit.objects.create(trip=other_trip, site=other_site)
+    other_job = Job.objects.create(site=other_site, title="Other job")
+    SiteVisitJob.objects.create(site_visit=other_visit, job=other_job)
+    Requirement.objects.create(job=other_job, name="Other trip requirement")
+    client.force_login(user)
+
+    response = client.get(reverse("trip_requirements", kwargs={"pk": trip.pk}))
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "Battery" in content
+    assert "Part" in content
+    assert "2" in content
+    assert "Inspect cabinet" in content
+    assert "Site A" in content
+    assert "Unplanned cable" not in content
+    assert "Other trip requirement" not in content
+
+
+@pytest.mark.django_db
+def test_trip_requirements_sorts_by_selected_column(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    SiteVisitJob.objects.create(site_visit=site_visit, job=job)
+    Requirement.objects.create(job=job, name="Alpha cable")
+    Requirement.objects.create(job=job, name="Zebra battery")
+    client.force_login(user)
+
+    response = client.get(
+        reverse("trip_requirements", kwargs={"pk": trip.pk}),
+        {"sort": "-requirement"},
+    )
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert response.context["current_sort"] == "-requirement"
+    assert response.context["current_sort_field"] == "requirement"
+    assert response.context["current_sort_descending"] is True
+    assert content.index("Zebra battery") < content.index("Alpha cable")
+    assert "Confirmed" in content
+    assert "sort=confirmed" in content
+    assert "Type" in content
+    assert "sort=type" in content
+
+
+@pytest.mark.django_db
+def test_trip_requirement_toggle_updates_requirement_and_returns_row(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    SiteVisitJob.objects.create(site_visit=site_visit, job=job)
+    requirement = Requirement.objects.create(job=job, name="Battery")
+    client.force_login(user)
+
+    url = reverse(
+        "trip_requirement_toggle",
+        kwargs={"pk": trip.pk, "requirement_pk": requirement.pk},
+    )
+    checked_response = client.post(url, {"is_checked": "1"}, HTTP_HX_REQUEST="true")
+
+    assert checked_response.status_code == 200
+    requirement.refresh_from_db()
+    assert requirement.is_checked is True
+    assert f'id="requirement-row-{requirement.pk}"' in (
+        checked_response.content.decode()
+    )
+
+    unchecked_response = client.post(url, {}, HTTP_HX_REQUEST="true")
+
+    assert unchecked_response.status_code == 200
+    requirement.refresh_from_db()
+    assert requirement.is_checked is False
+
+
+@pytest.mark.django_db
+def test_terminal_trip_requirements_are_read_only(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    SiteVisitJob.objects.create(site_visit=site_visit, job=job)
+    requirement = Requirement.objects.create(job=job, name="Battery")
+    trip.status = TripStatus.COMPLETED
+    trip.save(update_fields=["status", "updated_at"])
+    client.force_login(user)
+
+    page_response = client.get(reverse("trip_requirements", kwargs={"pk": trip.pk}))
+    toggle_response = client.post(
+        reverse(
+            "trip_requirement_toggle",
+            kwargs={"pk": trip.pk, "requirement_pk": requirement.pk},
+        ),
+        {"is_checked": "1"},
+        HTTP_HX_REQUEST="true",
+    )
+
+    assert page_response.status_code == 200
+    assert b"disabled" in page_response.content
+    assert toggle_response.status_code == 403
+    requirement.refresh_from_db()
+    assert requirement.is_checked is False
+
+
+@pytest.mark.django_db
+def test_approved_trip_requirement_toggle_does_not_reset_approval(client):
+    leader = User.objects.create_user(email="leader@example.com")
+    approver = User.objects.create_user(email="approver@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=leader,
+        status=TripStatus.APPROVED,
+        approval_round=1,
+    )
+    TripApproval.objects.create(trip=trip, approver=approver, approval_round=1)
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    SiteVisitJob.objects.create(site_visit=site_visit, job=job)
+    requirement = Requirement.objects.create(job=job, name="Battery")
+    client.force_login(leader)
+
+    response = client.post(
+        reverse(
+            "trip_requirement_toggle",
+            kwargs={"pk": trip.pk, "requirement_pk": requirement.pk},
+        ),
+        {"is_checked": "1"},
+        HTTP_HX_REQUEST="true",
+    )
+
+    assert response.status_code == 200
+    requirement.refresh_from_db()
+    trip.refresh_from_db()
+    assert requirement.is_checked is True
+    assert trip.status == TripStatus.APPROVED
+    assert trip.approval_round == 1
+    assert TripApproval.objects.filter(trip=trip, approval_round=1).count() == 1
+
+
+@pytest.mark.django_db
+def test_trip_requirements_shows_add_button_and_row_actions(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = create_trip(user)
+    job = assign_requirement_job(trip)
+    requirement = Requirement.objects.create(job=job, name="Battery")
+    client.force_login(user)
+
+    response = client.get(reverse("trip_requirements", kwargs={"pk": trip.pk}))
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert reverse("trip_requirement_create", kwargs={"trip_pk": trip.pk}) in content
+    assert (
+        reverse(
+            "trip_requirement_update",
+            kwargs={"trip_pk": trip.pk, "pk": requirement.pk},
+        )
+        in content
+    )
+    assert (
+        reverse(
+            "trip_requirement_delete",
+            kwargs={"trip_pk": trip.pk, "pk": requirement.pk},
+        )
+        in content
+    )
+    assert "No jobs are assigned to this trip" not in content
+
+
+@pytest.mark.django_db
+def test_trip_requirements_without_jobs_disables_requirement_create(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = create_trip(user)
+    client.force_login(user)
+
+    page_response = client.get(reverse("trip_requirements", kwargs={"pk": trip.pk}))
+    create_response = client.get(
+        reverse("trip_requirement_create", kwargs={"trip_pk": trip.pk})
+    )
+    content = page_response.content.decode()
+
+    assert page_response.status_code == 200
+    assert "No jobs are assigned to this trip" in content
+    assert "Add jobs to this trip before creating requirements." in content
+    assert create_response.status_code == 302
+    assert create_response.url == trip.get_requirements_url()
+
+
+@pytest.mark.django_db
+def test_trip_requirement_create_limits_job_dropdown_to_trip_jobs(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = create_trip(user)
+    first_job = assign_requirement_job(trip)
+    second_job = assign_requirement_job(
+        trip,
+        site_code="AA-002",
+        site_name="Site B",
+        title="Replace battery",
+    )
+    unassigned_site = create_requirement_site(code="AA-003", name="Site C")
+    Job.objects.create(site=unassigned_site, title="Unplanned job")
+    other_trip = create_trip(user)
+    assign_requirement_job(
+        other_trip,
+        site_code="AA-004",
+        site_name="Site D",
+        title="Other trip job",
+    )
+    client.force_login(user)
+
+    form_response = client.get(
+        reverse("trip_requirement_create", kwargs={"trip_pk": trip.pk})
+    )
+    post_response = client.post(
+        reverse("trip_requirement_create", kwargs={"trip_pk": trip.pk}),
+        {
+            "job": second_job.pk,
+            "requirement_type": "part",
+            "name": "Battery",
+            "quantity": "2",
+            "notes": "",
+            "is_required": "on",
+        },
+    )
+    content = form_response.content.decode()
+
+    assert form_response.status_code == 200
+    assert 'name="job"' in content
+    assert f"AA-001 - {first_job.title}" in content
+    assert f"AA-002 - {second_job.title}" in content
+    assert "Unplanned job" not in content
+    assert "Other trip job" not in content
+    assert post_response.status_code == 302
+    assert post_response.url == trip.get_requirements_url()
+    requirement = Requirement.objects.get(name="Battery")
+    assert requirement.job == second_job
+
+
+@pytest.mark.django_db
+def test_trip_requirement_edit_can_reassign_within_trip_only(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = create_trip(user)
+    first_job = assign_requirement_job(trip)
+    second_job = assign_requirement_job(
+        trip,
+        site_code="AA-002",
+        site_name="Site B",
+        title="Replace battery",
+    )
+    other_trip = create_trip(user)
+    other_job = assign_requirement_job(
+        other_trip,
+        site_code="AA-003",
+        site_name="Site C",
+        title="Other trip job",
+    )
+    requirement = Requirement.objects.create(job=first_job, name="Battery")
+    edit_url = reverse(
+        "trip_requirement_update",
+        kwargs={"trip_pk": trip.pk, "pk": requirement.pk},
+    )
+    client.force_login(user)
+
+    form_response = client.get(edit_url)
+    valid_response = client.post(
+        edit_url,
+        {
+            "job": second_job.pk,
+            "requirement_type": "part",
+            "name": "Battery",
+            "quantity": "2",
+            "notes": "",
+            "is_required": "on",
+        },
+    )
+    requirement.refresh_from_db()
+    invalid_response = client.post(
+        edit_url,
+        {
+            "job": other_job.pk,
+            "requirement_type": "part",
+            "name": "Other battery",
+            "quantity": "4",
+            "notes": "",
+            "is_required": "on",
+        },
+    )
+    requirement.refresh_from_db()
+    content = form_response.content.decode()
+
+    assert form_response.status_code == 200
+    assert f"AA-001 - {first_job.title}" in content
+    assert f"AA-002 - {second_job.title}" in content
+    assert "Other trip job" not in content
+    assert valid_response.status_code == 302
+    assert valid_response.url == trip.get_requirements_url()
+    assert requirement.job == second_job
+    assert invalid_response.status_code == 200
+    assert "Select a valid choice" in invalid_response.content.decode()
+    assert requirement.job == second_job
+    assert requirement.name == "Battery"
+
+
+@pytest.mark.django_db
+def test_trip_requirement_delete_removes_requirement_and_returns_to_trip(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = create_trip(user)
+    job = assign_requirement_job(trip)
+    requirement = Requirement.objects.create(job=job, name="Battery")
+    delete_url = reverse(
+        "trip_requirement_delete",
+        kwargs={"trip_pk": trip.pk, "pk": requirement.pk},
+    )
+    client.force_login(user)
+
+    form_response = client.get(delete_url)
+    post_response = client.post(delete_url)
+    content = form_response.content.decode()
+
+    assert form_response.status_code == 200
+    assert "Delete trip requirement" in content
+    assert "This also removes it from the job." in content
+    assert post_response.status_code == 302
+    assert post_response.url == trip.get_requirements_url()
+    assert not Requirement.objects.filter(pk=requirement.pk).exists()
+
+
+@pytest.mark.django_db
+def test_terminal_trip_requirement_structure_is_read_only(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = create_trip(user)
+    job = assign_requirement_job(trip)
+    requirement = Requirement.objects.create(job=job, name="Battery")
+    trip.status = TripStatus.COMPLETED
+    trip.save(update_fields=["status", "updated_at"])
+    client.force_login(user)
+
+    page_response = client.get(reverse("trip_requirements", kwargs={"pk": trip.pk}))
+    create_response = client.get(
+        reverse("trip_requirement_create", kwargs={"trip_pk": trip.pk})
+    )
+    update_response = client.post(
+        reverse(
+            "trip_requirement_update",
+            kwargs={"trip_pk": trip.pk, "pk": requirement.pk},
+        ),
+        {
+            "job": job.pk,
+            "requirement_type": "part",
+            "name": "Updated battery",
+            "quantity": "",
+            "notes": "",
+            "is_required": "on",
+        },
+    )
+    delete_response = client.post(
+        reverse(
+            "trip_requirement_delete",
+            kwargs={"trip_pk": trip.pk, "pk": requirement.pk},
+        )
+    )
+
+    assert page_response.status_code == 200
+    assert "Requirements frozen" in page_response.content.decode()
+    assert create_response.status_code == 302
+    assert create_response.url == trip.get_requirements_url()
+    assert update_response.status_code == 302
+    assert update_response.url == trip.get_requirements_url()
+    assert delete_response.status_code == 302
+    assert delete_response.url == trip.get_requirements_url()
+    requirement.refresh_from_db()
+    assert requirement.name == "Battery"
+    assert Requirement.objects.filter(pk=requirement.pk).exists()
+
+
+@pytest.mark.django_db
+def test_approved_trip_requirement_structure_changes_do_not_reset_approval(client):
+    leader = User.objects.create_user(email="leader@example.com")
+    approver = User.objects.create_user(email="approver@example.com")
+    trip = create_trip(leader, status=TripStatus.APPROVED, approval_round=1)
+    TripApproval.objects.create(trip=trip, approver=approver, approval_round=1)
+    first_job = assign_requirement_job(trip)
+    second_job = assign_requirement_job(
+        trip,
+        site_code="AA-002",
+        site_name="Site B",
+        title="Replace battery",
+    )
+    client.force_login(leader)
+
+    create_response = client.post(
+        reverse("trip_requirement_create", kwargs={"trip_pk": trip.pk}),
+        {
+            "job": first_job.pk,
+            "requirement_type": "part",
+            "name": "Battery",
+            "quantity": "2",
+            "notes": "",
+            "is_required": "on",
+        },
+    )
+    requirement = Requirement.objects.get(name="Battery")
+    update_response = client.post(
+        reverse(
+            "trip_requirement_update",
+            kwargs={"trip_pk": trip.pk, "pk": requirement.pk},
+        ),
+        {
+            "job": second_job.pk,
+            "requirement_type": "part",
+            "name": "Battery pack",
+            "quantity": "1",
+            "notes": "",
+            "is_required": "on",
+        },
+    )
+    delete_response = client.post(
+        reverse(
+            "trip_requirement_delete",
+            kwargs={"trip_pk": trip.pk, "pk": requirement.pk},
+        )
+    )
+
+    assert create_response.status_code == 302
+    assert update_response.status_code == 302
+    assert delete_response.status_code == 302
+    assert not Requirement.objects.filter(pk=requirement.pk).exists()
+    assert_trip_approval_is_unchanged(trip)
 
 
 @pytest.mark.django_db

@@ -1,0 +1,22 @@
+<tr id="requirement-row-{{ requirement.pk }}">
+  <td>
+    {% if requirements_readonly %}
+      <input class="form-check-input" type="checkbox" aria-label="Mark {{ requirement.name }} confirmed" {% if requirement.is_checked %}checked{% endif %} disabled>
+    {% else %}
+      <form class="m-0" hx-post="{% url 'requirement_toggle' requirement.pk %}" hx-trigger="change" hx-target="#requirement-row-{{ requirement.pk }}" hx-swap="outerHTML">
+        {% csrf_token %}
+        <input class="form-check-input" type="checkbox" name="is_checked" value="1" aria-label="Mark {{ requirement.name }} confirmed" {% if requirement.is_checked %}checked{% endif %}>
+      </form>
+    {% endif %}
+  </td>
+  <td>{{ requirement.name }}</td>
+  <td>{{ requirement.get_requirement_type_display }}</td>
+  <td>{{ requirement.quantity|default:"-" }}</td>
+  {% if requirements_readonly %}
+    {% include "includes/disabled_requirement_row_actions.html" with label=requirement.name disabled_reason=requirements_frozen_reason %}
+  {% else %}
+    {% url 'requirement_update' requirement.pk as edit_url %}
+    {% url 'requirement_delete' requirement.pk as delete_url %}
+    {% include "includes/requirement_row_actions.html" with edit_url=edit_url delete_url=delete_url label=requirement.name %}
+  {% endif %}
+</tr>

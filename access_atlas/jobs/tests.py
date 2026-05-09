@@ -37,7 +37,7 @@ from access_atlas.jobs.services import (
 )
 from access_atlas.jobs.template_imports import parse_job_template_import_csv
 from access_atlas.sites.models import Site
-from access_atlas.trips.models import SiteVisit, Trip
+from access_atlas.trips.models import SiteVisit, Trip, TripApproval, TripStatus
 from access_atlas.trips.services import assign_job_to_site_visit
 
 IMPORT_FIX_ALERT = (
@@ -458,6 +458,331 @@ def test_job_detail_shows_work_programme_due_date(client):
     assert "Work Programme" in content
     assert "2026 Field Work" in content
     assert "2026-12-31" in content
+
+
+@pytest.mark.django_db
+def test_job_detail_links_to_requirements_section(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    Requirement.objects.create(job=job, name="Patch cable")
+
+    response = client.get(job.get_absolute_url())
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Requirements" in content
+    assert job.get_requirements_url() in content
+    assert "Patch cable" not in content
+
+
+@pytest.mark.django_db
+def test_job_detail_renders_blank_requirement_quantity_as_dash(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    Requirement.objects.create(job=job, name="Patch cable")
+
+    response = client.get(job.get_requirements_url())
+
+    content = response.content.decode()
+    row_start = content.index("<td>Patch cable</td>")
+    row_end = content.index("</tr>", row_start)
+    row = content[row_start:row_end]
+    assert response.status_code == 200
+    assert "<td>-</td>" in row
+
+
+@pytest.mark.django_db
+def test_job_requirement_create_keeps_job_fixed(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+
+    form_response = client.get(reverse("requirement_create", kwargs={"job_pk": job.pk}))
+    post_response = client.post(
+        reverse("requirement_create", kwargs={"job_pk": job.pk}),
+        {
+            "requirement_type": "part",
+            "name": "Patch cable",
+            "quantity": "",
+            "notes": "",
+            "is_required": "on",
+        },
+    )
+
+    assert form_response.status_code == 200
+    assert 'name="job"' not in form_response.content.decode()
+    assert post_response.status_code == 302
+    assert post_response.url == job.get_requirements_url()
+    requirement = Requirement.objects.get()
+    assert requirement.job == job
+    assert requirement.name == "Patch cable"
+
+
+@pytest.mark.django_db
+def test_job_detail_renders_requirement_confirmation_checkbox(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    requirement = Requirement.objects.create(job=job, name="Patch cable")
+
+    response = client.get(job.get_requirements_url())
+
+    content = response.content.decode()
+    row_start = content.index(f'id="requirement-row-{requirement.pk}"')
+    row_end = content.index("</tr>", row_start)
+    row = content[row_start:row_end]
+    assert response.status_code == 200
+    assert "Confirmed" in content
+    assert "Requirement" in content
+    assert "Patch cable" in row
+    assert reverse("requirement_toggle", kwargs={"pk": requirement.pk}) in row
+    assert "Mark Patch cable confirmed" in row
+
+
+@pytest.mark.django_db
+def test_job_detail_sorts_requirements_by_selected_column(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    Requirement.objects.create(job=job, name="Alpha cable")
+    Requirement.objects.create(job=job, name="Zebra battery")
+
+    response = client.get(job.get_requirements_url(), {"sort": "-requirement"})
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert response.context["current_sort"] == "-requirement"
+    assert response.context["current_sort_field"] == "requirement"
+    assert response.context["current_sort_descending"] is True
+    assert content.index("Zebra battery") < content.index("Alpha cable")
+    assert "sort=confirmed" in content
+    assert "sort=type" in content
+    assert "sort=quantity" in content
+
+
+@pytest.mark.django_db
+def test_requirement_toggle_updates_requirement_and_returns_job_row(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    requirement = Requirement.objects.create(job=job, name="Patch cable")
+    url = reverse("requirement_toggle", kwargs={"pk": requirement.pk})
+
+    checked_response = client.post(url, {"is_checked": "1"}, HTTP_HX_REQUEST="true")
+
+    assert checked_response.status_code == 200
+    requirement.refresh_from_db()
+    assert requirement.is_checked is True
+    assert f'id="requirement-row-{requirement.pk}"' in (
+        checked_response.content.decode()
+    )
+
+    unchecked_response = client.post(url, {}, HTTP_HX_REQUEST="true")
+
+    assert unchecked_response.status_code == 200
+    requirement.refresh_from_db()
+    assert requirement.is_checked is False
+
+
+@pytest.mark.django_db
+def test_terminal_trip_job_requirements_are_read_only(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    assign_job_to_site_visit(site_visit, job)
+    requirement = Requirement.objects.create(job=job, name="Patch cable")
+    trip.status = TripStatus.COMPLETED
+    trip.save(update_fields=["status", "updated_at"])
+
+    page_response = client.get(job.get_requirements_url())
+    toggle_response = client.post(
+        reverse("requirement_toggle", kwargs={"pk": requirement.pk}),
+        {"is_checked": "1"},
+        HTTP_HX_REQUEST="true",
+    )
+
+    assert page_response.status_code == 200
+    assert b"disabled" in page_response.content
+    assert toggle_response.status_code == 403
+    requirement.refresh_from_db()
+    assert requirement.is_checked is False
+
+
+@pytest.mark.django_db
+def test_approved_trip_job_requirement_toggle_does_not_reset_approval(client):
+    leader = User.objects.create_user(email="leader@example.com")
+    approver = User.objects.create_user(email="approver@example.com")
+    client.force_login(leader)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=leader,
+        status=TripStatus.APPROVED,
+        approval_round=1,
+    )
+    TripApproval.objects.create(trip=trip, approver=approver, approval_round=1)
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    assign_job_to_site_visit(site_visit, job)
+    requirement = Requirement.objects.create(job=job, name="Patch cable")
+
+    response = client.post(
+        reverse("requirement_toggle", kwargs={"pk": requirement.pk}),
+        {"is_checked": "1"},
+        HTTP_HX_REQUEST="true",
+    )
+
+    assert response.status_code == 200
+    requirement.refresh_from_db()
+    trip.refresh_from_db()
+    assert requirement.is_checked is True
+    assert trip.status == TripStatus.APPROVED
+    assert trip.approval_round == 1
+    assert TripApproval.objects.filter(trip=trip, approval_round=1).count() == 1
+
+
+@pytest.mark.django_db
+def test_terminal_trip_job_requirement_structure_is_read_only(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    assign_job_to_site_visit(site_visit, job)
+    requirement = Requirement.objects.create(job=job, name="Patch cable")
+    trip.status = TripStatus.COMPLETED
+    trip.save(update_fields=["status", "updated_at"])
+
+    page_response = client.get(job.get_requirements_url())
+    create_response = client.get(
+        reverse("requirement_create", kwargs={"job_pk": job.pk})
+    )
+    update_response = client.post(
+        reverse("requirement_update", kwargs={"pk": requirement.pk}),
+        {
+            "requirement_type": requirement.requirement_type,
+            "name": "Updated cable",
+            "quantity": "",
+            "notes": "",
+            "is_required": "on",
+        },
+    )
+    delete_response = client.post(reverse("requirement_delete", args=[requirement.pk]))
+
+    assert page_response.status_code == 200
+    assert "Requirements frozen" in page_response.content.decode()
+    assert create_response.status_code == 302
+    assert create_response.url == job.get_requirements_url()
+    assert update_response.status_code == 302
+    assert update_response.url == job.get_requirements_url()
+    assert delete_response.status_code == 302
+    assert delete_response.url == job.get_requirements_url()
+    requirement.refresh_from_db()
+    assert requirement.name == "Patch cable"
+    assert Requirement.objects.filter(pk=requirement.pk).exists()
+
+
+@pytest.mark.django_db
+def test_approved_trip_job_requirement_create_does_not_reset_approval(client):
+    leader = User.objects.create_user(email="leader@example.com")
+    approver = User.objects.create_user(email="approver@example.com")
+    client.force_login(leader)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=leader,
+        status=TripStatus.APPROVED,
+        approval_round=1,
+    )
+    TripApproval.objects.create(trip=trip, approver=approver, approval_round=1)
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    assign_job_to_site_visit(site_visit, job)
+
+    response = client.post(
+        reverse("requirement_create", kwargs={"job_pk": job.pk}),
+        {
+            "requirement_type": "part",
+            "name": "Patch cable",
+            "quantity": "",
+            "notes": "",
+            "is_required": "on",
+        },
+    )
+
+    assert response.status_code == 302
+    trip.refresh_from_db()
+    assert Requirement.objects.filter(job=job, name="Patch cable").exists()
+    assert trip.status == TripStatus.APPROVED
+    assert trip.approval_round == 1
+    assert TripApproval.objects.filter(trip=trip, approval_round=1).count() == 1
+
+
+@pytest.mark.django_db
+def test_approved_trip_job_requirement_update_and_delete_do_not_reset_approval(client):
+    leader = User.objects.create_user(email="leader@example.com")
+    approver = User.objects.create_user(email="approver@example.com")
+    client.force_login(leader)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=leader,
+        status=TripStatus.APPROVED,
+        approval_round=1,
+    )
+    TripApproval.objects.create(trip=trip, approver=approver, approval_round=1)
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    assign_job_to_site_visit(site_visit, job)
+    requirement = Requirement.objects.create(job=job, name="Patch cable")
+
+    update_response = client.post(
+        reverse("requirement_update", kwargs={"pk": requirement.pk}),
+        {
+            "requirement_type": "part",
+            "name": "Patch cable pack",
+            "quantity": "1",
+            "notes": "",
+            "is_required": "on",
+        },
+    )
+    delete_response = client.post(reverse("requirement_delete", args=[requirement.pk]))
+
+    assert update_response.status_code == 302
+    assert delete_response.status_code == 302
+    assert not Requirement.objects.filter(pk=requirement.pk).exists()
+    trip.refresh_from_db()
+    assert trip.status == TripStatus.APPROVED
+    assert trip.approval_round == 1
+    assert TripApproval.objects.filter(trip=trip, approval_round=1).count() == 1
 
 
 @pytest.mark.django_db
@@ -2031,7 +2356,7 @@ def test_requirement_delete_removes_requirement_and_returns_to_job(client):
     response = client.post(reverse("requirement_delete", args=[requirement.pk]))
 
     assert response.status_code == 302
-    assert response.url == job.get_absolute_url()
+    assert response.url == job.get_requirements_url()
     assert not Requirement.objects.filter(pk=requirement.pk).exists()
 
 

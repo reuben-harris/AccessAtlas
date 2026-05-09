@@ -90,6 +90,9 @@ class Trip(models.Model):
     def get_map_url(self) -> str:
         return reverse("trip_map", kwargs={"pk": self.pk})
 
+    def get_requirements_url(self) -> str:
+        return reverse("trip_requirements", kwargs={"pk": self.pk})
+
     @property
     def is_terminal(self) -> bool:
         return self.status in {TripStatus.COMPLETED, TripStatus.CANCELLED}

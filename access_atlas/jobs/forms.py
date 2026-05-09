@@ -117,9 +117,24 @@ class JobTemplateImportUploadForm(forms.Form):
 
 
 class RequirementForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        fixed_job = kwargs.pop("fixed_job", None)
+        job_queryset = kwargs.pop("job_queryset", None)
+        super().__init__(*args, **kwargs)
+
+        if fixed_job is not None or job_queryset is None:
+            self.fields.pop("job", None)
+            return
+
+        self.fields["job"].queryset = job_queryset
+        self.fields["job"].label_from_instance = lambda job: (
+            f"{job.site.code} - {job.title}"
+        )
+
     class Meta:
         model = Requirement
         fields = [
+            "job",
             "requirement_type",
             "name",
             "quantity",

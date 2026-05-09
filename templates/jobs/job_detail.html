@@ -49,32 +49,4 @@
     </dl>
   </div>
 </div>
-<div class="card mt-3">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h3 class="card-title">Requirements</h3>
-    <a class="btn btn-sm btn-success" href="{% url 'requirement_create' object.pk %}">
-      <i class="ti ti-plus" aria-hidden="true"></i>Add requirement
-    </a>
-  </div>
-  <div class="table-responsive">
-    <table class="table table-vcenter">
-      <thead><tr><th>Name</th><th>Type</th><th>Quantity</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
-      <tbody>
-        {% for requirement in object.requirements.all %}
-          <tr>
-            <td>{{ requirement.name }}</td>
-            <td>{{ requirement.get_requirement_type_display }}</td>
-            <td>{{ requirement.quantity }}</td>
-            <td>{{ requirement.is_checked|yesno:"Checked,Open" }}</td>
-            {% url 'requirement_update' requirement.pk as edit_url %}
-            {% url 'requirement_delete' requirement.pk as delete_url %}
-            {% include "includes/requirement_row_actions.html" with edit_url=edit_url delete_url=delete_url label=requirement.name %}
-          </tr>
-        {% empty %}
-          <tr><td colspan="5" class="text-secondary">No requirements.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
 {% endblock %}
