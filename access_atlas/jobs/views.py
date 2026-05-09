@@ -3,7 +3,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
 from django.db.models import Count
+from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django.views.generic import (
     CreateView,
@@ -89,6 +91,38 @@ from .template_imports import (
 
 IMPORT_ACTION_REFRESH = "refresh"
 IMPORT_ACTION_DISCARD = "discard"
+
+JOB_REQUIREMENT_DEFAULT_ORDER = ("name", "id")
+JOB_REQUIREMENT_SORT_FIELDS = {
+    "confirmed": ("is_checked", "name", "id"),
+    "requirement": ("name", "id"),
+    "type": ("requirement_type", "name", "id"),
+    "quantity": ("quantity", "name", "id"),
+}
+
+
+def job_requirement_sort_value(value: str | None) -> str:
+    if not value:
+        return ""
+    sort_key = value.removeprefix("-")
+    if sort_key not in JOB_REQUIREMENT_SORT_FIELDS:
+        return ""
+    return f"-{sort_key}" if value.startswith("-") else sort_key
+
+
+def job_requirement_ordering(sort_value: str) -> tuple[str, ...]:
+    if not sort_value:
+        return JOB_REQUIREMENT_DEFAULT_ORDER
+    descending = sort_value.startswith("-")
+    fields = JOB_REQUIREMENT_SORT_FIELDS[sort_value.removeprefix("-")]
+    if not descending:
+        return fields
+    return tuple(f"-{field}" for field in fields)
+
+
+def job_requirement_queryset(job: Job, sort_value: str = ""):
+    """Return requirements for one job using the job detail table sort."""
+    return job.requirements.order_by(*job_requirement_ordering(sort_value))
 
 
 def store_import_review(
@@ -205,6 +239,12 @@ def _job_detail_sections(job: Job, active_section: str) -> list[dict[str, str | 
             "icon": "ti-layout-dashboard",
             "url": job.get_absolute_url(),
             "is_active": active_section == "overview",
+        },
+        {
+            "label": "Requirements",
+            "icon": "ti-list-check",
+            "url": job.get_requirements_url(),
+            "is_active": active_section == "requirements",
         },
         {
             "label": "History",
@@ -686,6 +726,33 @@ class JobDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
+class JobRequirementsView(LoginRequiredMixin, DetailView):
+    model = Job
+    template_name = "jobs/job_requirements.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        sort_value = job_requirement_sort_value(self.request.GET.get("sort"))
+        requirements_readonly = job_requirements_readonly(self.object)
+        context["detail_sections"] = _job_detail_sections(self.object, "requirements")
+        context["detail_navigation_label"] = "Job sections"
+        context["requirements"] = job_requirement_queryset(self.object, sort_value)
+        context["requirements_readonly"] = requirements_readonly
+        context["requirements_frozen_reason"] = job_requirements_frozen_reason(
+            self.object
+        )
+        context["add_requirement_url"] = (
+            reverse("requirement_create", kwargs={"job_pk": self.object.pk})
+            if not requirements_readonly
+            else ""
+        )
+        context["current_sort"] = sort_value
+        context["current_sort_field"] = sort_value.removeprefix("-")
+        context["current_sort_descending"] = sort_value.startswith("-")
+        context["sort_param"] = "sort"
+        return context
+
+
 class JobHistoryView(PaginatedObjectHistoryMixin, LoginRequiredMixin, DetailView):
     model = Job
     template_name = "jobs/job_history.html"
@@ -842,6 +909,53 @@ def confirm_jobs_import_view(request):
     return redirect("job_list")
 
 
+def job_requirements_readonly(job: Job) -> bool:
+    return job_requirements_frozen_reason(job) != ""
+
+
+def job_requirements_frozen_reason(job: Job) -> str:
+    assignment = getattr(job, "site_visit_assignment", None)
+    if assignment is None or not assignment.site_visit.trip.is_terminal:
+        return ""
+    trip = assignment.site_visit.trip
+    return (
+        f"This job is assigned to {trip.get_status_display().lower()} trip "
+        f'"{trip.name}", so its requirements are frozen.'
+    )
+
+
+def requirement_is_readonly(requirement: Requirement) -> bool:
+    return job_requirements_readonly(requirement.job)
+
+
+@login_required
+@require_POST
+def toggle_requirement(request, pk):
+    requirement = get_object_or_404(
+        Requirement.objects.select_related(
+            "job",
+            "job__site_visit_assignment__site_visit__trip",
+        ),
+        pk=pk,
+    )
+    if requirement_is_readonly(requirement):
+        return HttpResponseForbidden(
+            "Requirements cannot be updated for jobs on completed or cancelled trips."
+        )
+
+    requirement.is_checked = "is_checked" in request.POST
+    requirement._change_reason = "Updated requirement checklist state"
+    requirement.save(update_fields=["is_checked"])
+    return render(
+        request,
+        "jobs/_job_requirement_row.html",
+        {
+            "requirement": requirement,
+            "requirements_readonly": False,
+        },
+    )
+
+
 class RequirementCreateView(
     HistoryReasonMixin,
     ObjectFormMixin,
@@ -853,15 +967,33 @@ class RequirementCreateView(
     form_class = RequirementForm
     template_name = "object_form.html"
 
+    def get_job(self):
+        if hasattr(self, "_job"):
+            return self._job
+        self._job = get_object_or_404(Job, pk=self.kwargs["job_pk"])
+        return self._job
+
+    def dispatch(self, request, *args, **kwargs):
+        job = self.get_job()
+        if job_requirements_readonly(job):
+            messages.info(request, job_requirements_frozen_reason(job))
+            return redirect(job.get_requirements_url())
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["fixed_job"] = self.get_job()
+        return kwargs
+
     def form_valid(self, form):
-        form.instance.job = get_object_or_404(Job, pk=self.kwargs["job_pk"])
+        form.instance.job = self.get_job()
         return super().form_valid(form)
 
     def get_success_url(self):
-        return self.object.job.get_absolute_url()
+        return self.object.job.get_requirements_url()
 
     def get_cancel_url(self):
-        return get_object_or_404(Job, pk=self.kwargs["job_pk"]).get_absolute_url()
+        return self.get_job().get_requirements_url()
 
 
 class RequirementUpdateView(
@@ -874,16 +1006,35 @@ class RequirementUpdateView(
     form_class = RequirementForm
     template_name = "object_form.html"
 
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if requirement_is_readonly(self.object):
+            messages.info(request, job_requirements_frozen_reason(self.object.job))
+            return redirect(self.object.job.get_requirements_url())
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["fixed_job"] = self.object.job
+        return kwargs
+
     def get_success_url(self):
-        return self.object.job.get_absolute_url()
+        return self.object.job.get_requirements_url()
 
     def get_cancel_url(self):
-        return self.object.job.get_absolute_url()
+        return self.object.job.get_requirements_url()
 
 
 class RequirementDeleteView(LoginRequiredMixin, DeleteView):
     model = Requirement
     template_name = "object_confirm_delete.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if requirement_is_readonly(self.object):
+            messages.info(request, job_requirements_frozen_reason(self.object.job))
+            return redirect(self.object.job.get_requirements_url())
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -895,7 +1046,7 @@ class RequirementDeleteView(LoginRequiredMixin, DeleteView):
         return context
 
     def get_success_url(self):
-        return self.object.job.get_absolute_url()
+        return self.object.job.get_requirements_url()
 
     def get_cancel_url(self):
-        return self.object.job.get_absolute_url()
+        return self.object.job.get_requirements_url()

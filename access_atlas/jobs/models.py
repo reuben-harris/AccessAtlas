@@ -200,6 +200,9 @@ class Job(models.Model):
     def get_history_url(self) -> str:
         return reverse("job_history", kwargs={"pk": self.pk})
 
+    def get_requirements_url(self) -> str:
+        return reverse("job_requirements", kwargs={"pk": self.pk})
+
     @property
     def due_date(self):
         return self.work_programme.end_date if self.work_programme else None

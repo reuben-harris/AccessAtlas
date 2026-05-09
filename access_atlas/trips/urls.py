@@ -7,6 +7,31 @@ urlpatterns = [
     path("gantt/", views.TripGanttView.as_view(), name="trip_gantt"),
     path("new/", views.TripCreateView.as_view(), name="trip_create"),
     path("<int:pk>/map/", views.TripMapView.as_view(), name="trip_map"),
+    path(
+        "<int:pk>/requirements/",
+        views.TripRequirementsView.as_view(),
+        name="trip_requirements",
+    ),
+    path(
+        "<int:trip_pk>/requirements/new/",
+        views.TripRequirementCreateView.as_view(),
+        name="trip_requirement_create",
+    ),
+    path(
+        "<int:trip_pk>/requirements/<int:pk>/edit/",
+        views.TripRequirementUpdateView.as_view(),
+        name="trip_requirement_update",
+    ),
+    path(
+        "<int:trip_pk>/requirements/<int:pk>/delete/",
+        views.TripRequirementDeleteView.as_view(),
+        name="trip_requirement_delete",
+    ),
+    path(
+        "<int:pk>/requirements/<int:requirement_pk>/toggle/",
+        views.toggle_trip_requirement,
+        name="trip_requirement_toggle",
+    ),
     path("<int:pk>/history/", views.TripHistoryView.as_view(), name="trip_history"),
     path("<int:pk>/", views.TripDetailView.as_view(), name="trip_detail"),
     path("<int:pk>/edit/", views.TripUpdateView.as_view(), name="trip_update"),

@@ -1,0 +1,65 @@
+{% extends "base/base.html" %}
+
+{% block title %}{{ object.name }} Requirements - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">{{ object.name }}</h2>
+    </div>
+    <div class="col-auto ms-auto">
+      {% include "trips/_trip_actions.html" %}
+    </div>
+  </div>
+</div>
+{% include "includes/detail_section_nav.html" %}
+{% if requirements_frozen_reason %}
+  {% include "includes/stacked_alert.html" with alert_title="Requirements frozen" alert_body=requirements_frozen_reason alert_class="alert-warning" %}
+{% endif %}
+<div class="d-flex justify-content-end mb-3">
+  {% if add_requirement_url %}
+    <a class="btn btn-sm btn-success" href="{{ add_requirement_url }}">
+      <i class="ti ti-plus" aria-hidden="true"></i>Add requirement
+    </a>
+  {% else %}
+    <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="{{ add_requirement_disabled_reason }}">
+      <button class="btn btn-sm btn-secondary disabled" type="button" disabled>
+        <i class="ti ti-plus" aria-hidden="true"></i>Add requirement
+      </button>
+    </span>
+  {% endif %}
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-vcenter">
+      <thead>
+        <tr>
+          {% include "includes/sortable_th.html" with label="Confirmed" sort_key="confirmed" %}
+          {% include "includes/sortable_th.html" with label="Requirement" sort_key="requirement" %}
+          {% include "includes/sortable_th.html" with label="Type" sort_key="type" %}
+          {% include "includes/sortable_th.html" with label="Quantity" sort_key="quantity" %}
+          {% include "includes/sortable_th.html" with label="Job" sort_key="job" %}
+          {% include "includes/sortable_th.html" with label="Site" sort_key="site" %}
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for requirement in requirements %}
+          {% include "trips/_trip_requirement_row.html" %}
+        {% empty %}
+          <tr>
+            <td colspan="7" class="text-secondary">
+              {% if has_assigned_jobs %}
+                No requirements for jobs assigned to this trip.
+              {% else %}
+                No jobs are assigned to this trip. Add jobs to a site visit before creating requirements.
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
