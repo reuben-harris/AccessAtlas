@@ -1,12 +1,12 @@
 from urllib.parse import urlencode
 
-from django.conf import settings
 from django.urls import reverse
 
 from access_atlas.accounts.preferences import (
     get_user_preference,
     site_access_map_preference_key,
 )
+from access_atlas.core.maps import map_basemap_config, map_basemap_preference
 
 from .access_record_snapshots import build_access_record_snapshots
 from .access_warnings import build_site_warnings
@@ -211,20 +211,6 @@ def access_record_detail_sections(
     ]
 
 
-def map_tile_layer() -> dict[str, object]:
-    return {
-        "light": {
-            "url": settings.MAP_TILE_URL,
-            "attribution": settings.MAP_TILE_ATTRIBUTION,
-        },
-        "dark": {
-            "url": settings.MAP_TILE_DARK_URL,
-            "attribution": settings.MAP_TILE_DARK_ATTRIBUTION,
-        },
-        "maxZoom": settings.MAP_TILE_MAX_ZOOM,
-    }
-
-
 def site_warning_site_ids(sites: list[Site]) -> set[int]:
     # The list/map views only need a boolean warning flag per site, so compute
     # that once up front instead of repeating full warning rendering in the
@@ -314,7 +300,8 @@ class SiteDetailContextMixin:
                 "key": preference_key,
                 "value": map_preference,
             },
-            "map_tile_layer": map_tile_layer(),
+            "map_basemap_config": map_basemap_config(),
+            "map_basemap_preference": map_basemap_preference(self.request.user),
         }
 
     def get_detail_sections(self) -> list[dict[str, str | bool]]:

@@ -53,6 +53,8 @@
 /* Home/reset controls should render consistently anywhere we add them. */
 .access-atlas-map-home-control button,
 .access-atlas-map-filter-control button,
+.access-atlas-map-layer-control > button,
+.site-map-animation-control button,
 .leaflet-control-fullscreen a {
   position: relative;
   display: flex;
@@ -91,8 +93,152 @@
 }
 
 .access-atlas-map-home-control button i,
-.access-atlas-map-filter-control button i {
+.access-atlas-map-filter-control button i,
+.access-atlas-map-layer-control > button i {
   font-size: 1rem;
+}
+
+.access-atlas-map-layer-control {
+  position: relative;
+}
+
+.access-atlas-map-layer-menu {
+  position: absolute;
+  top: 0;
+  right: calc(100% + 0.5rem);
+  width: 13.25rem;
+  max-height: min(32rem, calc(100vh - 7rem));
+  padding: 0.375rem;
+  color: var(--tblr-body-color);
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: var(--tblr-border-radius);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.18);
+  overflow-y: auto;
+}
+
+.access-atlas-map-layer-menu[hidden] {
+  display: none;
+}
+
+.access-atlas-map-layer-item {
+  width: 100%;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: calc(var(--tblr-border-radius) + 2px);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.access-atlas-map-layer-item:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.access-atlas-map-layer-item + .access-atlas-map-layer-item {
+  margin-top: 0.5rem;
+}
+
+.access-atlas-map-layer-preview {
+  position: relative;
+  display: block;
+  min-height: 3.75rem;
+  background: #dbeafe;
+}
+
+.access-atlas-map-layer-preview::after {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0) 55%);
+  content: "";
+}
+
+.access-atlas-map-layer-preview-tile {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.access-atlas-map-layer-label {
+  position: absolute;
+  top: 0.375rem;
+  left: 0.375rem;
+  z-index: 2;
+  max-width: calc(100% - 2.25rem);
+  padding: 0.1875rem 0.375rem;
+  color: #fff;
+  background: rgba(28, 33, 39, 0.82);
+  border-radius: var(--tblr-border-radius);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.access-atlas-map-layer-check {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.375rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #fff;
+  background: var(--tblr-primary);
+  border-radius: 50%;
+  font-size: 0.875rem;
+  visibility: hidden;
+}
+
+.access-atlas-map-layer-unavailable {
+  position: absolute;
+  right: 0.375rem;
+  bottom: 0.375rem;
+  left: 0.375rem;
+  z-index: 2;
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.1875rem 0.375rem;
+  color: #1f2937;
+  background: rgba(255, 255, 255, 0.86);
+  border-radius: var(--tblr-border-radius);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.access-atlas-map-layer-item.is-unavailable .access-atlas-map-layer-preview {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--tblr-bg-surface-secondary),
+    var(--tblr-bg-surface-secondary) 0.5rem,
+    var(--tblr-border-color) 0.5rem,
+    var(--tblr-border-color) 1rem
+  );
+}
+
+.access-atlas-map-layer-item:not(:disabled):hover,
+.access-atlas-map-layer-item:not(:disabled):focus-visible {
+  border-color: rgba(32, 107, 196, 0.55);
+}
+
+.access-atlas-map-layer-item.is-active {
+  border-color: var(--tblr-primary);
+}
+
+.access-atlas-map-layer-item.is-active .access-atlas-map-layer-check {
+  visibility: visible;
 }
 
 .leaflet-control-fullscreen a {
@@ -105,6 +251,10 @@
 .access-atlas-map-home-control button:focus-visible,
 .access-atlas-map-filter-control button:hover,
 .access-atlas-map-filter-control button:focus-visible,
+.access-atlas-map-layer-control > button:hover,
+.access-atlas-map-layer-control > button:focus-visible,
+.site-map-animation-control button:hover,
+.site-map-animation-control button:focus-visible,
 .leaflet-control-fullscreen a:hover,
 .leaflet-control-fullscreen a:focus-visible {
   background: #f4f4f4;
@@ -138,10 +288,29 @@
 
 [data-bs-theme="dark"] .access-atlas-map-home-control button,
 [data-bs-theme="dark"] .access-atlas-map-filter-control button,
+[data-bs-theme="dark"] .access-atlas-map-layer-control > button,
+[data-bs-theme="dark"] .site-map-animation-control button,
 [data-bs-theme="dark"] .leaflet-control-fullscreen a {
   color: var(--tblr-body-color);
   background-color: var(--tblr-bg-surface);
   border-color: var(--tblr-border-color);
+}
+
+[data-bs-theme="dark"] .access-atlas-map-layer-menu {
+  color: var(--tblr-body-color);
+  background: var(--tblr-bg-surface);
+  border-color: var(--tblr-border-color);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.45);
+}
+
+[data-bs-theme="dark"] .access-atlas-map-layer-item:not(:disabled):hover,
+[data-bs-theme="dark"] .access-atlas-map-layer-item:not(:disabled):focus-visible {
+  background: var(--tblr-bg-surface-secondary);
+}
+
+[data-bs-theme="dark"] .access-atlas-map-layer-unavailable {
+  color: var(--tblr-body-color);
+  background: rgba(28, 33, 39, 0.88);
 }
 
 [data-bs-theme="dark"] .access-atlas-map-filter-badge {
@@ -152,6 +321,10 @@
 [data-bs-theme="dark"] .access-atlas-map-home-control button:focus-visible,
 [data-bs-theme="dark"] .access-atlas-map-filter-control button:hover,
 [data-bs-theme="dark"] .access-atlas-map-filter-control button:focus-visible,
+[data-bs-theme="dark"] .access-atlas-map-layer-control > button:hover,
+[data-bs-theme="dark"] .access-atlas-map-layer-control > button:focus-visible,
+[data-bs-theme="dark"] .site-map-animation-control button:hover,
+[data-bs-theme="dark"] .site-map-animation-control button:focus-visible,
 [data-bs-theme="dark"] .leaflet-control-fullscreen a:hover,
 [data-bs-theme="dark"] .leaflet-control-fullscreen a:focus-visible {
   background-color: var(--tblr-bg-surface-secondary);

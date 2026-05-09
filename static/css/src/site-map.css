@@ -152,16 +152,18 @@
 /* The animation toggle is a map control, so it must visually read like a control
    while still matching the Tabler theme used by the rest of the app. */
 .site-map-animation-control button {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
+  width: auto;
+  height: 30px;
   min-height: 30px;
-  padding: 0.25rem 0.6rem;
+  padding: 0 0.6rem;
   color: #3b4754;
   background: #fff;
-  border: 1px solid rgba(102, 115, 130, 0.35);
-  border-radius: 0.375rem;
+  border: 0;
+  border-radius: var(--tblr-border-radius);
   cursor: pointer;
   font-size: 0.75rem;
   font-weight: 600;

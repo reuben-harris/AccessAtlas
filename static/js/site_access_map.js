@@ -2,7 +2,8 @@
   const mapElement = document.getElementById("site-access-map");
   const dataElement = document.getElementById("site-access-map-data");
   const preferenceElement = document.getElementById("site-access-map-preference");
-  const tileLayerElement = document.getElementById("site-access-map-tile-layer");
+  const basemapConfigElement = document.getElementById("map-basemap-config");
+  const basemapPreferenceElement = document.getElementById("map-basemap-preference");
   const siteLatitudeElement = document.getElementById("site-access-map-site-latitude");
   const siteLongitudeElement = document.getElementById(
     "site-access-map-site-longitude",
@@ -11,10 +12,11 @@
     document.querySelectorAll('[data-map-toggle="access-record"]'),
   );
   const escapeHtml = window.AccessAtlas?.escapeHtml;
-  const createThemeTileController = window.AccessAtlas?.createThemeTileController;
+  const createBasemapController = window.AccessAtlas?.createBasemapController;
   const fitLayersOrDefault = window.AccessAtlas?.fitLayersOrDefault;
   const sharedAddHomeControl = window.AccessAtlas?.addHomeControl;
   const addFilterControl = window.AccessAtlas?.addFilterControl;
+  const addBasemapControl = window.AccessAtlas?.addBasemapControl;
   const addFullscreenControl = window.AccessAtlas?.addFullscreenControl;
   const createFullscreenSafeOffcanvasController =
     window.AccessAtlas?.createFullscreenSafeOffcanvasController;
@@ -28,11 +30,13 @@
     !mapElement ||
     !dataElement ||
     !preferenceElement ||
-    !tileLayerElement ||
+    !basemapConfigElement ||
+    !basemapPreferenceElement ||
     typeof escapeHtml !== "function" ||
-    typeof createThemeTileController !== "function" ||
+    typeof createBasemapController !== "function" ||
     typeof fitLayersOrDefault !== "function" ||
     typeof sharedAddHomeControl !== "function" ||
+    typeof addBasemapControl !== "function" ||
     typeof addFullscreenControl !== "function" ||
     typeof settleMapLayout !== "function" ||
     typeof createLongitudeNormalizer !== "function" ||
@@ -46,12 +50,13 @@
 
   const mapData = JSON.parse(dataElement.textContent);
   const preference = JSON.parse(preferenceElement.textContent);
+  const basemapConfig = JSON.parse(basemapConfigElement.textContent);
+  const basemapPreference = JSON.parse(basemapPreferenceElement.textContent);
   const savedPreference = preference.value || {};
   const postJSON = window.AccessAtlas?.postJSON;
   const initialFilterCount = Number(mapElement.dataset.filterCount || 0);
   const points = Array.isArray(mapData.points) ? mapData.points : [];
   const tracks = Array.isArray(mapData.tracks) ? mapData.tracks : [];
-  const tileLayer = JSON.parse(tileLayerElement.textContent);
   const defaultCenter = [-41.2865, 174.7762];
   const defaultZoom = 5;
   // Site access-record pages provide site coordinates, so the shared Home
@@ -141,7 +146,12 @@
       : null;
   configureMapConstraints(map);
   featureLayer.addTo(map);
-  const tileController = createThemeTileController(map, tileLayer);
+  const basemapController = createBasemapController(
+    map,
+    basemapConfig,
+    basemapPreference,
+    mapElement,
+  );
 
   function markerIconClass(feature) {
     if (feature.type === "site") {
@@ -351,7 +361,10 @@
     onAdd() {
       // Animation is persisted because users tend to have a stable preference
       // about whether ant-path motion is helpful or distracting.
-      const container = L.DomUtil.create("div", "site-map-animation-control");
+      const container = L.DomUtil.create(
+        "div",
+        "leaflet-bar site-map-animation-control",
+      );
       const button = L.DomUtil.create("button", "", container);
       button.type = "button";
       button.innerHTML =
@@ -374,7 +387,7 @@
     },
   });
 
-  tileController.apply();
+  basemapController.apply();
   sharedAddHomeControl(
     map,
     () => {
@@ -386,12 +399,13 @@
     },
   );
   addFullscreenControl(map);
+  map.addControl(new TrackAnimationControl({ position: "topright" }));
   if (filterPanel && typeof addFilterControl === "function") {
     addFilterControl(map, filterPanel.show, {
       count: initialFilterCount,
     });
   }
-  map.addControl(new TrackAnimationControl({ position: "topright" }));
+  addBasemapControl(map, basemapController);
   let drawnLayers = drawFeatures();
   fitFeatures(drawnLayers);
   settleMapLayout(map, () => {

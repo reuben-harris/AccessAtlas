@@ -41,6 +41,7 @@
         class="job-map"
         data-filter-count="{{ active_filter_chips|length }}"
         data-preference-url="{% url 'account_preference' %}"
+        data-basemap-preference-url="{% url 'account_preference' %}"
         aria-label="Map of active jobs by site"
       ></div>
     </div>
@@ -50,7 +51,8 @@
 {{ map_sites|json_script:"job-map-data" }}
 {{ map_status_layers|json_script:"job-map-status-layers" }}
 {{ map_preference|json_script:"job-map-preference" }}
-{{ map_tile_layer|json_script:"job-map-tile-layer" }}
+{{ map_basemap_config|json_script:"map-basemap-config" }}
+{{ map_basemap_preference|json_script:"map-basemap-preference" }}
 <script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
 <script src="{% static 'vendor/leaflet.fullscreen/Control.FullScreen.umd.js' %}"></script>
 <script src="{% static 'js/job_map.js' %}"></script>

@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from .models import User, UserPreference
 
 JOBS_MAP_PREFERENCE_KEY = "jobs.map"
+MAP_BASEMAP_PREFERENCE_KEY = "maps.basemap"
 SITES_MAP_PREFERENCE_KEY = "sites.map"
 UI_THEME_PREFERENCE_KEY = "ui.theme"
 SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX = "sites.map."
@@ -16,6 +17,7 @@ MAX_PREFERENCE_KEY_LENGTH = 120
 
 ALLOWED_PREFERENCE_KEYS = {
     JOBS_MAP_PREFERENCE_KEY,
+    MAP_BASEMAP_PREFERENCE_KEY,
     SITES_MAP_PREFERENCE_KEY,
     UI_THEME_PREFERENCE_KEY,
 }
@@ -38,6 +40,14 @@ ALLOWED_LIST_FILTER_PREFERENCE_PAGES = {
     "work-programmes",
 }
 ALLOWED_THEME_MODES = {"system", "light", "dark"}
+ALLOWED_BASEMAP_LAYER_IDS = {
+    "carto-dark",
+    "carto-voyager",
+    "esri-open-hybrid-detail",
+    "esri-world-imagery",
+    "osm-standard",
+    "tracestrack-topo",
+}
 MIN_MAP_VIEWPORT_LONGITUDE = -540
 MAX_MAP_VIEWPORT_LONGITUDE = 540
 
@@ -48,6 +58,10 @@ def default_jobs_map_preference() -> dict[str, Any]:
 
 def default_sites_map_preference() -> dict[str, Any]:
     return {}
+
+
+def default_map_basemap_preference() -> dict[str, Any]:
+    return {"light": "carto-voyager", "dark": "carto-dark"}
 
 
 def default_theme_preference() -> dict[str, Any]:
@@ -142,6 +156,20 @@ def validate_preference(key: str, value: object) -> dict[str, Any]:
                 "lng": longitude,
                 "zoom": zoom,
             }
+        return cleaned_value
+
+    if key == MAP_BASEMAP_PREFERENCE_KEY:
+        cleaned_value = default_map_basemap_preference()
+        for theme in ("light", "dark"):
+            layer_id = value.get(theme)
+            if layer_id is None:
+                continue
+            if (
+                not isinstance(layer_id, str)
+                or layer_id not in ALLOWED_BASEMAP_LAYER_IDS
+            ):
+                raise ValidationError(f"{theme} basemap layer is invalid.")
+            cleaned_value[theme] = layer_id
         return cleaned_value
 
     if key == UI_THEME_PREFERENCE_KEY:

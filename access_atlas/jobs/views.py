@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -28,6 +27,7 @@ from access_atlas.core.imports import (
     load_import_rows,
     store_import_rows,
 )
+from access_atlas.core.maps import map_basemap_config, map_basemap_preference
 from access_atlas.core.mixins import (
     FilteredListMixin,
     ObjectFormMixin,
@@ -633,17 +633,8 @@ class JobMapView(FilteredListMixin, LoginRequiredMixin, ListView):
             "key": JOBS_MAP_PREFERENCE_KEY,
             "value": map_preference,
         }
-        context["map_tile_layer"] = {
-            "light": {
-                "url": settings.MAP_TILE_URL,
-                "attribution": settings.MAP_TILE_ATTRIBUTION,
-            },
-            "dark": {
-                "url": settings.MAP_TILE_DARK_URL,
-                "attribution": settings.MAP_TILE_DARK_ATTRIBUTION,
-            },
-            "maxZoom": settings.MAP_TILE_MAX_ZOOM,
-        }
+        context["map_basemap_config"] = map_basemap_config()
+        context["map_basemap_preference"] = map_basemap_preference(self.request.user)
         return context
 
 

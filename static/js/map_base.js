@@ -8,26 +8,159 @@
     return span.innerHTML;
   }
 
-  function createThemeTileController(map, tileLayerConfig) {
-    let activeTileLayer = null;
+  function resolvedTheme() {
+    return document.documentElement.getAttribute("data-bs-theme") === "dark"
+      ? "dark"
+      : "light";
+  }
 
-    function currentTheme() {
-      return document.documentElement.getAttribute("data-bs-theme") === "dark"
-        ? "dark"
-        : "light";
+  function createBasemapController(map, basemapConfig, preference, mapElement) {
+    let activeTileLayer = null;
+    const configuredLayers = Array.isArray(basemapConfig?.layers)
+      ? basemapConfig.layers
+      : [];
+    const layers = configuredLayers.filter(
+      (layer) =>
+        layer && typeof layer.id === "string" && typeof layer.label === "string",
+    );
+    const availableLayers = layers.filter((layer) => isLayerAvailable(layer));
+    const layersById = new Map(availableLayers.map((layer) => [layer.id, layer]));
+    const defaults =
+      basemapConfig && typeof basemapConfig.defaults === "object"
+        ? basemapConfig.defaults
+        : {};
+    const savedPreference =
+      preference && typeof preference.value === "object" ? preference.value : {};
+    const changeHandlers = new Set();
+
+    function fallbackLayerId(theme) {
+      if (layersById.has(defaults[theme])) {
+        return defaults[theme];
+      }
+      return availableLayers[0]?.id || "";
+    }
+
+    const selectedByTheme = {
+      light: layersById.has(savedPreference.light)
+        ? savedPreference.light
+        : fallbackLayerId("light"),
+      dark: layersById.has(savedPreference.dark)
+        ? savedPreference.dark
+        : fallbackLayerId("dark"),
+    };
+
+    function currentLayerId() {
+      const theme = resolvedTheme();
+      return layersById.has(selectedByTheme[theme])
+        ? selectedByTheme[theme]
+        : fallbackLayerId(theme);
+    }
+
+    function currentLayer() {
+      return layersById.get(currentLayerId()) || availableLayers[0] || null;
+    }
+
+    function notifyChange() {
+      for (const handler of changeHandlers) {
+        handler({
+          layerId: currentLayerId(),
+          theme: resolvedTheme(),
+        });
+      }
+    }
+
+    function tileEntries(layer) {
+      if (Array.isArray(layer.tiles)) {
+        return layer.tiles.filter((tile) => tile && typeof tile.url === "string");
+      }
+      return typeof layer?.url === "string" ? [layer] : [];
+    }
+
+    function isLayerAvailable(layer) {
+      return layer?.available !== false && tileEntries(layer).length > 0;
+    }
+
+    function tileOptions(tile) {
+      const options = {
+        attribution: tile.attribution || "",
+      };
+      const maxZoom = Number(tile.maxZoom);
+      if (Number.isFinite(maxZoom)) {
+        options.maxZoom = maxZoom;
+      }
+      const minZoom = Number(tile.minZoom);
+      if (Number.isFinite(minZoom)) {
+        options.minZoom = minZoom;
+      }
+      const tileSize = Number(tile.tileSize);
+      if (Number.isFinite(tileSize)) {
+        options.tileSize = tileSize;
+      }
+      const zoomOffset = Number(tile.zoomOffset);
+      if (Number.isFinite(zoomOffset)) {
+        options.zoomOffset = zoomOffset;
+      }
+      const opacity = Number(tile.opacity);
+      if (Number.isFinite(opacity)) {
+        options.opacity = Math.max(0, Math.min(1, opacity));
+      }
+      const zIndex = Number(tile.zIndex);
+      if (Number.isFinite(zIndex)) {
+        options.zIndex = zIndex;
+      }
+      if (typeof tile.referrerPolicy === "string") {
+        options.referrerPolicy = tile.referrerPolicy;
+      }
+      if (typeof tile.subdomains === "string" || Array.isArray(tile.subdomains)) {
+        options.subdomains = tile.subdomains;
+      }
+      return options;
+    }
+
+    function savePreference() {
+      const url = mapElement?.dataset.basemapPreferenceUrl;
+      const key = preference?.key;
+      const postJSON = accessAtlas.postJSON;
+      if (!url || !key || typeof postJSON !== "function") {
+        return;
+      }
+      postJSON(url, {
+        key,
+        value: {
+          light: selectedByTheme.light,
+          dark: selectedByTheme.dark,
+        },
+      }).catch(() => {});
     }
 
     function apply() {
-      // Recreate the active tile layer when the app theme flips so the base map
-      // follows the same light/dark mode as the surrounding Tabler UI.
-      const themeLayer = tileLayerConfig[currentTheme()] || tileLayerConfig.light;
+      // Recreate the tile layer so theme changes and user layer choices update
+      // attribution and provider-specific options without leaking old layers.
+      const layer = currentLayer();
+      if (!layer) {
+        return;
+      }
       if (activeTileLayer) {
         map.removeLayer(activeTileLayer);
       }
-      activeTileLayer = L.tileLayer(themeLayer.url, {
-        attribution: themeLayer.attribution,
-        maxZoom: tileLayerConfig.maxZoom,
-      }).addTo(map);
+      const tileLayers = tileEntries(layer).map((tile) =>
+        L.tileLayer(tile.url, tileOptions(tile)),
+      );
+      activeTileLayer =
+        tileLayers.length === 1 ? tileLayers[0] : L.layerGroup(tileLayers);
+      activeTileLayer.addTo(map);
+      notifyChange();
+    }
+
+    function setLayer(layerId, options = {}) {
+      if (!layersById.has(layerId)) {
+        return;
+      }
+      selectedByTheme[resolvedTheme()] = layerId;
+      apply();
+      if (options.save !== false) {
+        savePreference();
+      }
     }
 
     const observer = new MutationObserver((mutations) => {
@@ -37,10 +170,47 @@
     });
 
     observer.observe(document.documentElement, { attributes: true });
-    return { apply };
+    return {
+      apply,
+      currentLayerId,
+      isLayerAvailable,
+      tileEntries,
+      layers: () => layers.slice(),
+      onChange(handler) {
+        changeHandlers.add(handler);
+        return () => changeHandlers.delete(handler);
+      },
+      setLayer,
+    };
   }
 
-  function fitLayersOrDefault(map, layers, defaultCenter, defaultZoom, pad = 0.2) {
+  function createThemeTileController(map, tileLayerConfig) {
+    const basemapConfig = {
+      defaults: {
+        light: "light",
+        dark: "dark",
+      },
+      layers: [
+        {
+          id: "light",
+          label: "Light",
+          url: tileLayerConfig.light?.url,
+          attribution: tileLayerConfig.light?.attribution,
+          maxZoom: tileLayerConfig.maxZoom,
+        },
+        {
+          id: "dark",
+          label: "Dark",
+          url: tileLayerConfig.dark?.url,
+          attribution: tileLayerConfig.dark?.attribution,
+          maxZoom: tileLayerConfig.maxZoom,
+        },
+      ].filter((layer) => layer.url),
+    };
+    return createBasemapController(map, basemapConfig, { value: {} }, null);
+  }
+
+  function fitLayersOrDefault(map, layers, defaultCenter, defaultZoom, pad = 0.05) {
     if (layers.length > 0) {
       map.fitBounds(L.featureGroup(layers).getBounds().pad(pad));
       return;
@@ -207,6 +377,222 @@
     });
 
     const control = new FilterControl({ position });
+    map.addControl(control);
+    return control;
+  }
+
+  function addBasemapControl(map, basemapController, options = {}) {
+    const position = options.position || "topright";
+    const title = options.title || "Change map layer";
+    const ariaLabel = options.ariaLabel || "Change map layer";
+    const layers = basemapController?.layers?.() || [];
+
+    if (layers.length < 2) {
+      return null;
+    }
+
+    const BasemapControl = L.Control.extend({
+      onAdd() {
+        const container = L.DomUtil.create(
+          "div",
+          "leaflet-bar access-atlas-map-layer-control",
+        );
+        const button = L.DomUtil.create("button", "", container);
+        const menu = L.DomUtil.create("div", "access-atlas-map-layer-menu", container);
+        const menuId = `map-layer-menu-${Math.random().toString(36).slice(2)}`;
+        const itemButtons = new Map();
+        const itemPreviews = new Map();
+
+        button.type = "button";
+        button.title = title;
+        button.setAttribute("aria-label", ariaLabel);
+        button.setAttribute("aria-haspopup", "menu");
+        button.setAttribute("aria-expanded", "false");
+        button.setAttribute("aria-controls", menuId);
+        button.innerHTML = '<i class="ti ti-layers-subtract" aria-hidden="true"></i>';
+
+        menu.id = menuId;
+        menu.hidden = true;
+        menu.setAttribute("role", "menu");
+
+        function setMenuOpen(isOpen) {
+          menu.hidden = !isOpen;
+          button.setAttribute("aria-expanded", isOpen ? "true" : "false");
+          if (isOpen) {
+            renderPreviews();
+          }
+        }
+
+        function previewZoom(tile) {
+          const currentZoom = Math.round(map.getZoom());
+          const minZoom = Number(tile.minZoom);
+          const maxZoom = Number(tile.maxZoom);
+          return Math.max(
+            Number.isFinite(minZoom) ? minZoom : 0,
+            Math.min(Number.isFinite(maxZoom) ? maxZoom : 22, currentZoom),
+          );
+        }
+
+        function previewTileUrl(tile) {
+          if (!tile.url) {
+            return "";
+          }
+          const mapZoom = previewZoom(tile);
+          const tileSize = Number.isFinite(Number(tile.tileSize))
+            ? Number(tile.tileSize)
+            : 256;
+          const zoomOffset = Number.isFinite(Number(tile.zoomOffset))
+            ? Number(tile.zoomOffset)
+            : 0;
+          const tileZoom = mapZoom + zoomOffset;
+          const scale = 2 ** tileZoom;
+          const point = map
+            .project(map.getCenter(), mapZoom)
+            .divideBy(tileSize)
+            .floor();
+          const x = ((point.x % scale) + scale) % scale;
+          const y = Math.max(0, Math.min(scale - 1, point.y));
+          const subdomains = Array.isArray(tile.subdomains)
+            ? tile.subdomains
+            : String(tile.subdomains || "abc").split("");
+          const subdomain =
+            subdomains.length > 0
+              ? subdomains[Math.abs(x + y) % subdomains.length]
+              : "";
+          return L.Util.template(tile.url, {
+            r: L.Browser.retina ? "@2x" : "",
+            s: subdomain,
+            x,
+            y,
+            z: tileZoom,
+          });
+        }
+
+        function renderPreviews() {
+          for (const layer of layers) {
+            const preview = itemPreviews.get(layer.id);
+            if (!preview) {
+              continue;
+            }
+            for (const tileImage of preview.querySelectorAll(
+              ".access-atlas-map-layer-preview-tile",
+            )) {
+              tileImage.remove();
+            }
+            if (!basemapController.isLayerAvailable(layer)) {
+              continue;
+            }
+            for (const tile of basemapController.tileEntries(layer)) {
+              const tileUrl = previewTileUrl(tile);
+              if (!tileUrl) {
+                continue;
+              }
+              const tileImage = document.createElement("img");
+              tileImage.className = "access-atlas-map-layer-preview-tile";
+              tileImage.alt = "";
+              tileImage.decoding = "async";
+              if (typeof tile.referrerPolicy === "string") {
+                tileImage.referrerPolicy = tile.referrerPolicy;
+              }
+              tileImage.src = tileUrl;
+              preview.appendChild(tileImage);
+            }
+          }
+        }
+
+        function renderActiveLayer() {
+          const activeLayerId = basemapController.currentLayerId();
+          for (const [layerId, itemButton] of itemButtons) {
+            const isActive = layerId === activeLayerId;
+            itemButton.classList.toggle("is-active", isActive);
+            itemButton.setAttribute("aria-checked", isActive ? "true" : "false");
+          }
+        }
+
+        for (const layer of layers) {
+          const itemButton = L.DomUtil.create(
+            "button",
+            "access-atlas-map-layer-item",
+            menu,
+          );
+          itemButton.type = "button";
+          itemButton.setAttribute("role", "menuitemradio");
+          const preview = L.DomUtil.create(
+            "span",
+            "access-atlas-map-layer-preview",
+            itemButton,
+          );
+          const isAvailable = basemapController.isLayerAvailable(layer);
+          const disabledReason =
+            typeof layer.disabledReason === "string"
+              ? layer.disabledReason
+              : "This map layer is not configured.";
+          const label = L.DomUtil.create(
+            "span",
+            "access-atlas-map-layer-label",
+            preview,
+          );
+          const check = L.DomUtil.create(
+            "i",
+            "ti ti-check access-atlas-map-layer-check",
+            preview,
+          );
+          label.textContent = layer.label;
+          check.setAttribute("aria-hidden", "true");
+          itemButton.disabled = !isAvailable;
+          itemButton.classList.toggle("is-unavailable", !isAvailable);
+          if (!isAvailable) {
+            itemButton.setAttribute("aria-disabled", "true");
+            itemButton.title = disabledReason;
+            const unavailable = L.DomUtil.create(
+              "span",
+              "access-atlas-map-layer-unavailable",
+              preview,
+            );
+            unavailable.innerHTML =
+              '<i class="ti ti-lock" aria-hidden="true"></i><span>Setup needed</span>';
+          }
+          itemButtons.set(layer.id, itemButton);
+          itemPreviews.set(layer.id, preview);
+          L.DomEvent.on(itemButton, "click", (event) => {
+            L.DomEvent.stop(event);
+            if (!isAvailable) {
+              return;
+            }
+            basemapController.setLayer(layer.id);
+          });
+        }
+
+        L.DomEvent.disableClickPropagation(container);
+        L.DomEvent.disableScrollPropagation(container);
+        L.DomEvent.on(button, "click", (event) => {
+          L.DomEvent.stop(event);
+          const nextOpen = menu.hidden;
+          setMenuOpen(nextOpen);
+        });
+        document.addEventListener("click", (event) => {
+          if (!container.contains(event.target)) {
+            setMenuOpen(false);
+          }
+        });
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") {
+            setMenuOpen(false);
+          }
+        });
+        basemapController.onChange(renderActiveLayer);
+        map.on("moveend zoomend", () => {
+          if (!menu.hidden) {
+            renderPreviews();
+          }
+        });
+        renderActiveLayer();
+
+        return container;
+      },
+    });
+
+    const control = new BasemapControl({ position });
     map.addControl(control);
     return control;
   }
@@ -452,6 +838,7 @@
   }
 
   accessAtlas.escapeHtml = escapeHtml;
+  accessAtlas.createBasemapController = createBasemapController;
   accessAtlas.createThemeTileController = createThemeTileController;
   accessAtlas.fitLayersOrDefault = fitLayersOrDefault;
   accessAtlas.createLongitudeNormalizer = createLongitudeNormalizer;
@@ -460,6 +847,7 @@
   accessAtlas.markerScaleForZoom = markerScaleForZoom;
   accessAtlas.addHomeControl = addHomeControl;
   accessAtlas.addFilterControl = addFilterControl;
+  accessAtlas.addBasemapControl = addBasemapControl;
   accessAtlas.createFullscreenSafeOffcanvasController =
     createFullscreenSafeOffcanvasController;
   accessAtlas.addFullscreenControl = addFullscreenControl;
