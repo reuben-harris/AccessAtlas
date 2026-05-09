@@ -1,0 +1,32 @@
+{% extends "base/base.html" %}
+{% load form_extras %}
+
+{% block title %}New API Token - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">New API Token</h2>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "includes/form_fields.html" %}
+      {% include "includes/form_error_summary.html" %}
+      <div class="btn-list">
+        <button class="btn btn-primary" type="submit">
+          <i class="ti ti-key" aria-hidden="true"></i>Create token
+        </button>
+        <a class="btn btn-secondary" href="{% url 'api_token_list' %}">
+          <i class="ti ti-x" aria-hidden="true"></i>Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

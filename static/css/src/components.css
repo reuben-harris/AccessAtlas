@@ -13,6 +13,64 @@
   margin: 0;
 }
 
+.api-token-created-alert {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.api-token-created-message {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.api-token-created-value {
+  flex: 1 1 30rem;
+  min-width: 0;
+}
+
+.api-token-table tbody tr,
+.api-token-table tbody td {
+  height: 3.75rem;
+}
+
+.api-token-row-action-cell {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.api-token-row-action-slot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 2.25rem;
+}
+
+.api-token-row-action-form {
+  margin: 0;
+}
+
+.api-token-row-action {
+  display: flex;
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+@media (max-width: 767.98px) {
+  .api-token-created-alert {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .api-token-created-message {
+    white-space: normal;
+  }
+}
+
 .site-warning-indicator {
   display: inline-flex;
   align-items: center;
