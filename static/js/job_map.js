@@ -60,7 +60,7 @@
     sites.map((entry) => entry.site?.longitude),
   );
   const map = L.map(mapElement).setView([-41.2865, 174.7762], 5);
-  const filterPanel = createFullscreenSafeOffcanvasController(mapElement);
+  const filterPanel = createFullscreenSafeOffcanvasController(mapElement, { map });
   configureMapConstraints(map);
   const markerLayer = L.layerGroup().addTo(map);
   const basemapController = createBasemapController(

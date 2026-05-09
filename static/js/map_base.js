@@ -597,10 +597,12 @@
     return control;
   }
 
-  function createFullscreenSafeOffcanvasController(
-    mapElement,
-    offcanvasId = "list-filter-offcanvas",
-  ) {
+  function createFullscreenSafeOffcanvasController(mapElement, options = {}) {
+    const offcanvasId =
+      typeof options === "string"
+        ? options
+        : options.offcanvasId || "list-filter-offcanvas";
+    const map = typeof options === "object" ? options.map : null;
     const offcanvasElement = document.getElementById(offcanvasId);
     if (!offcanvasElement || !mapElement) {
       return null;
@@ -609,9 +611,21 @@
     const originalParent = offcanvasElement.parentNode;
     const placeholder = document.createComment("list filter offcanvas");
     let fullscreenPanelVisible = false;
+    let fullscreenEventsShielded = false;
+    let mapKeyboardSuspended = false;
+    let mapKeyboardWasEnabled = false;
     let fallbackHideTimeout = null;
     originalParent.insertBefore(placeholder, offcanvasElement);
     offcanvasElement.setAttribute("data-bs-backdrop", "false");
+    const fullscreenShieldedEvents = [
+      "click",
+      "contextmenu",
+      "dblclick",
+      "keydown",
+      // TomSelect relies on its document-level mousedown handler to keep
+      // focus while selecting options, so do not stop mousedown here.
+      "wheel",
+    ];
 
     function mapIsFullscreen() {
       return (
@@ -623,7 +637,47 @@
 
     function moveForFullscreen() {
       if (mapIsFullscreen() && offcanvasElement.parentNode !== mapElement) {
+        // Browser fullscreen only displays descendants of the fullscreen
+        // element, so the shared offcanvas has to move into the Leaflet map
+        // before it can appear over a fullscreen map.
         mapElement.appendChild(offcanvasElement);
+      }
+    }
+
+    function stopMapEvent(event) {
+      event.stopPropagation();
+    }
+
+    function setFullscreenEventShield(enabled) {
+      if (fullscreenEventsShielded === enabled) {
+        return;
+      }
+      fullscreenEventsShielded = enabled;
+      const method = enabled ? "addEventListener" : "removeEventListener";
+      for (const eventName of fullscreenShieldedEvents) {
+        offcanvasElement[method](eventName, stopMapEvent);
+      }
+    }
+
+    function setMapKeyboardSuspended(enabled) {
+      const keyboard = map?.keyboard;
+      if (!keyboard) {
+        return;
+      }
+      // Let form widgets keep their normal document-level event flow while
+      // preventing Leaflet from focusing the map and handling keyboard input.
+      if (enabled && !mapKeyboardSuspended) {
+        mapKeyboardWasEnabled = keyboard.enabled();
+        if (mapKeyboardWasEnabled) {
+          keyboard.disable();
+        }
+        mapKeyboardSuspended = true;
+      } else if (!enabled && mapKeyboardSuspended) {
+        if (mapKeyboardWasEnabled) {
+          keyboard.enable();
+        }
+        mapKeyboardSuspended = false;
+        mapKeyboardWasEnabled = false;
       }
     }
 
@@ -632,6 +686,8 @@
         offcanvasElement.parentNode !== originalParent &&
         placeholder.parentNode === originalParent
       ) {
+        setMapKeyboardSuspended(false);
+        setFullscreenEventShield(false);
         originalParent.insertBefore(offcanvasElement, placeholder.nextSibling);
       }
     }
@@ -652,6 +708,8 @@
       window.clearTimeout(fallbackHideTimeout);
       fallbackHideTimeout = null;
       fullscreenPanelVisible = false;
+      setMapKeyboardSuspended(false);
+      setFullscreenEventShield(false);
       offcanvasElement.classList.remove("list-filter-offcanvas--map-fullscreen");
       offcanvasElement.style.removeProperty("visibility");
       offcanvasElement.removeAttribute("aria-modal");
@@ -675,11 +733,18 @@
       offcanvasElement.style.removeProperty("visibility");
       offcanvasElement.removeAttribute("aria-modal");
       offcanvasElement.setAttribute("aria-hidden", "true");
+      setMapKeyboardSuspended(false);
+      setFullscreenEventShield(false);
       restoreParent();
     }
 
     function showFullscreenPanel() {
       moveForFullscreen();
+      // Once the form panel lives inside Leaflet's fullscreen element, keep
+      // clicks, wheels, and keys out of the map without blocking widget
+      // selection flows that depend on document-level mouse events.
+      setMapKeyboardSuspended(true);
+      setFullscreenEventShield(true);
       offcanvasElement.classList.add("list-filter-offcanvas--map-fullscreen");
       offcanvasElement.classList.remove("show");
       offcanvasElement.style.visibility = "visible";
