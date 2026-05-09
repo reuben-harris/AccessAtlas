@@ -13,6 +13,7 @@ from .services import (
     assign_jobs_to_site_visit,
     cancel_trip,
     close_trip,
+    correct_trip_closeout,
     get_trip_cancel_summary,
     invalidate_trip_approval,
     return_trip_to_draft,
@@ -36,6 +37,12 @@ def hidden_post_fields(post_data) -> list[tuple[str, str]]:
 @require_POST
 def assign_job(request, pk):
     site_visit = get_object_or_404(SiteVisit, pk=pk)
+    if site_visit.trip.is_terminal:
+        messages.info(
+            request,
+            "Jobs cannot be assigned to completed or cancelled trips.",
+        )
+        return redirect(site_visit)
     form = AssignJobForm(request.POST, site=site_visit.site)
     if (
         request.method == "POST"
@@ -76,6 +83,12 @@ def unassign_job(request, pk):
     assignment = get_object_or_404(SiteVisitJob, pk=pk)
     site_visit = assignment.site_visit
     job = assignment.job
+    if site_visit.trip.is_terminal:
+        messages.info(
+            request,
+            "Jobs cannot be unassigned from completed or cancelled trips.",
+        )
+        return redirect(site_visit)
     if (
         request.method == "POST"
         and site_visit.trip.status == TripStatus.APPROVED
@@ -170,6 +183,38 @@ def close_trip_view(request, pk):
         messages.success(request, f"Closed trip: {trip.name}")
         return redirect(trip)
     return render(request, "trips/trip_closeout.html", {"trip": trip, "form": form})
+
+
+@login_required
+def correct_trip_closeout_view(request, pk):
+    trip = get_object_or_404(Trip, pk=pk)
+    if trip.status != TripStatus.COMPLETED:
+        messages.info(
+            request,
+            "Closeout correction is only available for completed trips.",
+        )
+        return redirect(trip)
+    form = TripCloseoutForm(request.POST or None, trip=trip, correction=True)
+    if request.method == "POST" and form.is_valid():
+        correct_trip_closeout(trip, form.cleaned_data)
+        messages.success(request, f"Corrected closeout: {trip.name}")
+        return redirect(trip)
+    return render(
+        request,
+        "trips/trip_closeout.html",
+        {
+            "trip": trip,
+            "form": form,
+            "page_title": f"Correct closeout for {trip.name}",
+            "form_notice": (
+                "Closeout correction updates still-linked site visits and jobs. "
+                "Jobs already returned to unassigned are not available here."
+            ),
+            "submit_label": "Save correction",
+            "submit_icon": "ti-device-floppy",
+            "empty_jobs_message": "No still-linked jobs are available to correct.",
+        },
+    )
 
 
 @login_required

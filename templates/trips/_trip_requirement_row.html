@@ -1,6 +1,6 @@
 <tr id="requirement-row-{{ requirement.pk }}">
   <td>
-    {% if requirements_readonly %}
+    {% if requirements_readonly or requirement.is_frozen %}
       <input class="form-check-input" type="checkbox" aria-label="Mark {{ requirement.name }} confirmed" {% if requirement.is_checked %}checked{% endif %} disabled>
     {% else %}
       <form class="m-0" hx-post="{% url 'trip_requirement_toggle' trip.pk requirement.pk %}" hx-trigger="change" hx-target="#requirement-row-{{ requirement.pk }}" hx-swap="outerHTML">
@@ -14,8 +14,9 @@
   <td>{{ requirement.quantity|default:"-" }}</td>
   <td><a href="{{ requirement.job.get_absolute_url }}">{{ requirement.job.title }}</a></td>
   <td><a href="{{ requirement.job.site.get_absolute_url }}">{{ requirement.job.site }}</a></td>
-  {% if requirements_readonly %}
-    {% include "includes/disabled_requirement_row_actions.html" with label=requirement.name disabled_reason=requirements_frozen_reason %}
+  {% if requirements_readonly or requirement.is_frozen %}
+    {% firstof requirements_frozen_reason requirement.frozen_reason as disabled_reason %}
+    {% include "includes/disabled_requirement_row_actions.html" with label=requirement.name disabled_reason=disabled_reason %}
   {% else %}
     {% url 'trip_requirement_update' trip.pk requirement.pk as edit_url %}
     {% url 'trip_requirement_delete' trip.pk requirement.pk as delete_url %}

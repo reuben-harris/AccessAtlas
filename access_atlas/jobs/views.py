@@ -38,7 +38,6 @@ from access_atlas.core.mixins import (
     SortableListMixin,
 )
 from access_atlas.sites.models import Site
-from access_atlas.trips.approval import ApprovedTripChangeMixin
 
 from .filters import JobFilterSet, JobTemplateFilterSet, WorkProgrammeFilterSet
 from .forms import (
@@ -122,7 +121,10 @@ def job_requirement_ordering(sort_value: str) -> tuple[str, ...]:
 
 def job_requirement_queryset(job: Job, sort_value: str = ""):
     """Return requirements for one job using the job detail table sort."""
-    return job.requirements.order_by(*job_requirement_ordering(sort_value))
+    return job.requirements.select_related(
+        "job",
+        "job__site_visit_assignment__site_visit__trip",
+    ).order_by(*job_requirement_ordering(sort_value))
 
 
 def store_import_review(
@@ -588,9 +590,16 @@ class JobListView(
                 "site",
                 "template",
                 "work_programme",
+                "site_visit_assignment__site_visit__trip",
             )
         )
         return self.apply_sort(self.apply_filters(queryset))
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        for job in context["object_list"]:
+            job.edit_frozen_reason = job_edit_frozen_reason(job)
+        return context
 
 
 class JobMapView(FilteredListMixin, LoginRequiredMixin, ListView):
@@ -723,6 +732,7 @@ class JobDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context["detail_sections"] = _job_detail_sections(self.object, "overview")
         context["detail_navigation_label"] = "Job sections"
+        context["job_edit_frozen_reason"] = job_edit_frozen_reason(self.object)
         return context
 
 
@@ -736,6 +746,7 @@ class JobRequirementsView(LoginRequiredMixin, DetailView):
         requirements_readonly = job_requirements_readonly(self.object)
         context["detail_sections"] = _job_detail_sections(self.object, "requirements")
         context["detail_navigation_label"] = "Job sections"
+        context["job_edit_frozen_reason"] = job_edit_frozen_reason(self.object)
         context["requirements"] = job_requirement_queryset(self.object, sort_value)
         context["requirements_readonly"] = requirements_readonly
         context["requirements_frozen_reason"] = job_requirements_frozen_reason(
@@ -775,22 +786,19 @@ class JobCreateView(
 
 
 class JobUpdateView(
-    ApprovedTripChangeMixin,
-    HistoryReasonMixin,
-    ObjectFormMixin,
-    LoginRequiredMixin,
-    UpdateView,
+    HistoryReasonMixin, ObjectFormMixin, LoginRequiredMixin, UpdateView
 ):
     model = Job
     form_class = JobForm
     template_name = "object_form.html"
-    approval_reset_reason = "Returned to submitted after job update"
 
-    def get_approval_trip(self):
-        assignment = getattr(self.object, "site_visit_assignment", None)
-        if assignment is None:
-            return None
-        return assignment.site_visit.trip
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        frozen_reason = job_edit_frozen_reason(self.object)
+        if frozen_reason:
+            messages.info(request, frozen_reason)
+            return redirect(self.object)
+        return super().dispatch(request, *args, **kwargs)
 
 
 @login_required
@@ -914,6 +922,11 @@ def job_requirements_readonly(job: Job) -> bool:
 
 
 def job_requirements_frozen_reason(job: Job) -> str:
+    if job.is_terminal:
+        return (
+            f"This job is {job.get_status_display().lower()}, so its requirements "
+            "are frozen."
+        )
     assignment = getattr(job, "site_visit_assignment", None)
     if assignment is None or not assignment.site_visit.trip.is_terminal:
         return ""
@@ -924,8 +937,19 @@ def job_requirements_frozen_reason(job: Job) -> str:
     )
 
 
+def job_edit_frozen_reason(job: Job) -> str:
+    assignment = getattr(job, "site_visit_assignment", None)
+    if assignment is None or not assignment.site_visit.trip.is_terminal:
+        return ""
+    trip = assignment.site_visit.trip
+    return (
+        f"This job is assigned to {trip.get_status_display().lower()} trip "
+        f'"{trip.name}", so normal job editing is frozen.'
+    )
+
+
 def requirement_is_readonly(requirement: Requirement) -> bool:
-    return job_requirements_readonly(requirement.job)
+    return requirement.is_frozen
 
 
 @login_required
@@ -939,9 +963,7 @@ def toggle_requirement(request, pk):
         pk=pk,
     )
     if requirement_is_readonly(requirement):
-        return HttpResponseForbidden(
-            "Requirements cannot be updated for jobs on completed or cancelled trips."
-        )
+        return HttpResponseForbidden(requirement.frozen_reason)
 
     requirement.is_checked = "is_checked" in request.POST
     requirement._change_reason = "Updated requirement checklist state"

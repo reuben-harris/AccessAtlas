@@ -150,6 +150,10 @@ def trip_action_controls(trip: Trip, user) -> dict[str, object]:
     """Build the trip action/button state that drives the overview template."""
 
     closed_state = trip.get_status_display().lower()
+    edit_disabled_reason = None
+    if trip.is_terminal:
+        edit_disabled_reason = f"This trip is {closed_state} and cannot be edited."
+
     submit_disabled_reason = None
     if trip.is_terminal:
         submit_disabled_reason = (
@@ -195,7 +199,19 @@ def trip_action_controls(trip: Trip, user) -> dict[str, object]:
             f"This trip is already {closed_state} and cannot be closed again."
         )
 
+    closeout_correction_disabled_reason = None
+    if trip.status == TripStatus.CANCELLED:
+        closeout_correction_disabled_reason = (
+            "Closeout correction is only available for completed trips."
+        )
+    elif trip.status != TripStatus.COMPLETED:
+        closeout_correction_disabled_reason = (
+            "Closeout correction is only available after a trip is completed."
+        )
+
     return {
+        "edit_enabled": edit_disabled_reason is None,
+        "edit_disabled_reason": edit_disabled_reason,
         "submit_enabled": submit_disabled_reason is None,
         "submit_disabled_reason": submit_disabled_reason,
         "approve_enabled": approve_disabled_reason is None,
@@ -207,6 +223,8 @@ def trip_action_controls(trip: Trip, user) -> dict[str, object]:
         "cancel_disabled_reason": cancel_disabled_reason,
         "close_enabled": close_disabled_reason is None,
         "close_disabled_reason": close_disabled_reason,
+        "closeout_correction_enabled": closeout_correction_disabled_reason is None,
+        "closeout_correction_disabled_reason": closeout_correction_disabled_reason,
     }
 
 

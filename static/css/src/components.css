@@ -154,6 +154,117 @@
   background: rgba(var(--tblr-primary-rgb), 0.12);
 }
 
+/* Disabled workflow fields stay visible, with the reason exposed by a centered
+   lock overlay so native inputs and TomSelect controls behave consistently. */
+.disabled-form-field-control {
+  display: block;
+}
+
+.disabled-form-field-control-check {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.disabled-form-field-input {
+  position: relative;
+}
+
+.disabled-field-reason-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  color: var(--tblr-warning);
+  background-color: color-mix(in srgb, var(--tblr-bg-surface) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tblr-warning) 32%, transparent);
+  border-radius: var(--tblr-border-radius-lg);
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.18);
+  cursor: help;
+  transform: translate(-50%, -50%);
+  backdrop-filter: blur(1px);
+}
+
+.disabled-field-reason-button:hover,
+.disabled-field-reason-button:focus {
+  color: var(--tblr-warning);
+  background-color: color-mix(in srgb, var(--tblr-bg-surface) 92%, transparent);
+  border-color: color-mix(in srgb, var(--tblr-warning) 58%, transparent);
+}
+
+.disabled-field-reason-button i {
+  font-size: 1.125rem;
+}
+
+.disabled-form-field-control-check .disabled-field-reason-button {
+  position: static;
+  width: 1.875rem;
+  height: 1.875rem;
+  transform: none;
+}
+
+.disabled-form-field-input::after {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border-radius: var(--tblr-border-radius);
+  background: rgba(var(--tblr-body-bg-rgb), 0.08);
+  content: "";
+  pointer-events: none;
+}
+
+.disabled-form-field-control-textarea .disabled-field-reason-button {
+  top: 0;
+  transform: translate(-50%, -0.375rem);
+}
+
+.disabled-form-field-control .form-control:disabled,
+.disabled-form-field-control .form-select:disabled,
+.disabled-form-field-control .form-check-input:disabled,
+.disabled-form-field-control .ts-control {
+  color: var(--tblr-secondary-color);
+  background-color: var(--tblr-bg-surface-secondary);
+  border-color: var(--tblr-border-color);
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.disabled-form-field-control textarea.form-control:disabled {
+  min-height: 6rem;
+}
+
+.disabled-form-field-control .ts-wrapper,
+.disabled-form-field-control .ts-wrapper.form-control,
+.disabled-form-field-control .ts-wrapper.form-select,
+.disabled-form-field-control .ts-wrapper.single .ts-control,
+.disabled-form-field-control .ts-wrapper.single.input-active .ts-control,
+.disabled-form-field-control .ts-wrapper.multi .ts-control {
+  color: var(--tblr-secondary-color);
+  background-color: var(--tblr-bg-surface-secondary);
+  border-color: var(--tblr-border-color);
+  cursor: not-allowed;
+}
+
+.disabled-form-field-control .ts-wrapper,
+.disabled-form-field-control .ts-wrapper *,
+.disabled-form-field-control .ts-control,
+.disabled-form-field-control .ts-control > input {
+  cursor: not-allowed;
+}
+
+.disabled-form-field-control .ts-control,
+.disabled-form-field-control .ts-control * {
+  pointer-events: none;
+}
+
 /* Sortable table headers keep the list-page controls consistent and compact. */
 
 .table-sort-link {

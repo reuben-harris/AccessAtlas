@@ -2,18 +2,37 @@
 {% for field in form.visible_fields %}
   {% if field|field_widget_type == "CheckboxInput" %}
     <div class="mb-3">
-      <label class="form-check">
-        {{ field|render_form_field }}
-        <span class="form-check-label">{{ field.label }}{% required_marker field %}</span>
-      </label>
-      {% if field.help_text %}<div class="form-hint">{{ field.help_text }}</div>{% endif %}
+      {% if field.field.disabled and field.help_text %}
+        <div class="disabled-form-field-control disabled-form-field-control-check">
+          <label class="form-check mb-0">
+            {{ field|render_form_field }}
+            <span class="form-check-label">{{ field.label }}{% required_marker field %}</span>
+          </label>
+          {% include "includes/disabled_field_reason_button.html" with label=field.label reason=field.help_text %}
+        </div>
+      {% else %}
+        <label class="form-check">
+          {{ field|render_form_field }}
+          <span class="form-check-label">{{ field.label }}{% required_marker field %}</span>
+        </label>
+      {% endif %}
+      {% if field.help_text and not field.field.disabled %}<div class="form-hint">{{ field.help_text }}</div>{% endif %}
       {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
     </div>
   {% else %}
     <div class="mb-3">
       <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% required_marker field %}</label>
-      {{ field|render_form_field }}
-      {% if field.help_text %}<div class="form-hint">{{ field.help_text }}</div>{% endif %}
+      {% if field.field.disabled and field.help_text %}
+        <div class="disabled-form-field-control{% if field|field_widget_type == 'Textarea' %} disabled-form-field-control-textarea{% endif %}">
+          <div class="disabled-form-field-input">
+            {{ field|render_form_field }}
+            {% include "includes/disabled_field_reason_button.html" with label=field.label reason=field.help_text %}
+          </div>
+        </div>
+      {% else %}
+        {{ field|render_form_field }}
+      {% endif %}
+      {% if field.help_text and not field.field.disabled %}<div class="form-hint">{{ field.help_text }}</div>{% endif %}
       {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
     </div>
   {% endif %}

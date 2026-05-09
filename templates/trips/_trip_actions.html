@@ -1,7 +1,15 @@
 <div class="btn-list">
-  <a class="btn btn-warning" href="{% url 'trip_update' object.pk %}">
-    <i class="ti ti-pencil" aria-hidden="true"></i>Edit
-  </a>
+  {% if trip_action_controls.edit_enabled %}
+    <a class="btn btn-warning" href="{% url 'trip_update' object.pk %}">
+      <i class="ti ti-pencil" aria-hidden="true"></i>Edit
+    </a>
+  {% else %}
+    <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="{{ trip_action_controls.edit_disabled_reason }}">
+      <button class="btn btn-secondary disabled" type="button" disabled>
+        <i class="ti ti-pencil-off" aria-hidden="true"></i>Edit
+      </button>
+    </span>
+  {% endif %}
 
   {% if trip_action_controls.submit_enabled %}
     <form method="post" action="{% url 'trip_submit' object.pk %}" class="d-inline">
@@ -61,6 +69,18 @@
     <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="{{ trip_action_controls.close_disabled_reason }}">
       <button class="btn btn-secondary disabled" type="button" disabled>
         <i class="ti ti-flag-check" aria-hidden="true"></i>Close trip
+      </button>
+    </span>
+  {% endif %}
+
+  {% if trip_action_controls.closeout_correction_enabled %}
+    <a class="btn btn-outline-warning" href="{% url 'trip_closeout_correction' object.pk %}">
+      <i class="ti ti-flag-cog" aria-hidden="true"></i>Correct closeout
+    </a>
+  {% elif object.is_terminal %}
+    <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="{{ trip_action_controls.closeout_correction_disabled_reason }}">
+      <button class="btn btn-secondary disabled" type="button" disabled>
+        <i class="ti ti-flag-cog" aria-hidden="true"></i>Correct closeout
       </button>
     </span>
   {% endif %}

@@ -5,6 +5,7 @@ from .action_views import (
     assign_job,
     cancel_trip_view,
     close_trip_view,
+    correct_trip_closeout_view,
     return_trip_to_draft_view,
     submit_trip_view,
     unassign_job,
@@ -50,6 +51,7 @@ __all__ = [
     "approve_trip_view",
     "return_trip_to_draft_view",
     "close_trip_view",
+    "correct_trip_closeout_view",
     "cancel_trip_view",
     "toggle_trip_requirement",
 ]

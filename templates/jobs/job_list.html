@@ -59,8 +59,12 @@
             <td><span class="badge {{ job.status|status_badge_class }}">{{ job.get_status_display }}</span></td>
             <td>{{ job.get_priority_display }}</td>
             <td>{{ job.estimated_duration_minutes|default:"-" }} min</td>
-            {% url 'job_update' job.pk as edit_url %}
-            {% include "includes/row_actions.html" with edit_url=edit_url label=job.title %}
+            {% if job.edit_frozen_reason %}
+              {% include "includes/disabled_row_actions.html" with label=job.title disabled_reason=job.edit_frozen_reason %}
+            {% else %}
+              {% url 'job_update' job.pk as edit_url %}
+              {% include "includes/row_actions.html" with edit_url=edit_url label=job.title %}
+            {% endif %}
           </tr>
         {% empty %}
           <tr><td colspan="8" class="text-secondary">No jobs found.</td></tr>

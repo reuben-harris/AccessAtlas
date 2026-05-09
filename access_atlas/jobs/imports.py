@@ -215,7 +215,7 @@ def build_job_import_rows(
                 )
             )
             continue
-        if status in {JobStatus.COMPLETED, JobStatus.CANCELLED} and not closeout_note:
+        if status == JobStatus.CANCELLED and not closeout_note:
             result.append(
                 JobImportRow(
                     index,
@@ -224,7 +224,7 @@ def build_job_import_rows(
                     status=status,
                     closeout_note=closeout_note,
                     work_programme_name=work_programme_name,
-                    error="closeout_note is required for completed or cancelled jobs.",
+                    error="closeout_note is required for cancelled jobs.",
                 )
             )
             continue
