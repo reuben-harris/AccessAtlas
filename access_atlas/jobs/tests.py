@@ -1254,10 +1254,15 @@ def test_job_map_uses_saved_viewport_preference(client):
     assert response.status_code == 200
     content = response.content.decode()
     map_preference = parse_json_script(content, "job-map-preference")
+    basemap_preference = parse_json_script(content, "map-basemap-preference")
     assert map_preference["value"]["viewport"] == {
         "lat": -41.2,
         "lng": 174.7,
         "zoom": 8,
+    }
+    assert basemap_preference["value"] == {
+        "light": "carto-voyager",
+        "dark": "carto-dark",
     }
 
 

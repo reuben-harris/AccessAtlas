@@ -6,14 +6,16 @@ from django.test import override_settings
 from django.urls import reverse
 from django.utils.html import escape
 
-from access_atlas.accounts.models import User
+from access_atlas.accounts.models import User, UserPreference
 from access_atlas.accounts.preferences import (
+    MAP_BASEMAP_PREFERENCE_KEY,
     get_user_preference,
     list_filter_preference_key,
     list_sort_preference_key,
 )
 from access_atlas.core.context_processors import active_nav_item
 from access_atlas.core.list_filters import FILTER_STATE_PARAM, FILTER_STATE_UPDATE
+from access_atlas.core.maps import map_basemap_config, map_basemap_preference
 from access_atlas.core.templatetags.form_extras import required_marker
 from access_atlas.core.templatetags.status_badges import status_badge_class
 from access_atlas.jobs.models import Job, JobTemplate, WorkProgramme
@@ -35,6 +37,88 @@ def user(db):
 def logged_in_client(client, user):
     client.force_login(user)
     return client
+
+
+@override_settings(
+    MAP_ARCGIS_API_KEY="",
+    MAP_TRACESTRACK_API_KEY="",
+)
+def test_map_basemap_config_includes_builtin_keyless_layers():
+    config = map_basemap_config()
+    layers = {layer["id"]: layer for layer in config["layers"]}
+
+    assert config["defaults"] == {"light": "carto-voyager", "dark": "carto-dark"}
+    assert layers["carto-voyager"]["available"] is True
+    assert layers["carto-dark"]["available"] is True
+    assert layers["osm-standard"]["available"] is True
+    assert layers["esri-world-imagery"]["available"] is False
+    assert layers["esri-open-hybrid-detail"]["available"] is False
+    assert layers["tracestrack-topo"]["available"] is False
+    assert "tile.openstreetmap.org/{z}/{x}/{y}.png" in layers["osm-standard"]["url"]
+    assert "disabledReason" in layers["esri-world-imagery"]
+    assert "disabledReason" in layers["esri-open-hybrid-detail"]
+    assert "disabledReason" in layers["tracestrack-topo"]
+
+
+@override_settings(
+    MAP_ARCGIS_API_KEY="arcgis test/key",
+    MAP_TRACESTRACK_API_KEY="tracestrack test/key",
+)
+def test_map_basemap_config_includes_keyed_provider_layers():
+    config = map_basemap_config()
+    layers = {layer["id"]: layer for layer in config["layers"]}
+
+    assert "esri-world-imagery-streets" not in layers
+    assert layers["esri-world-imagery"]["available"] is True
+    assert layers["esri-world-imagery"]["url"] == (
+        "https://ibasemaps-api.arcgis.com/arcgis/rest/services/"
+        "World_Imagery/MapServer/tile/{z}/{y}/{x}?token=arcgis%20test%2Fkey"
+    )
+    assert layers["esri-world-imagery"]["maxZoom"] == 19
+    assert "Esri" in layers["esri-world-imagery"]["attribution"]
+    assert layers["esri-open-hybrid-detail"]["available"] is True
+    assert layers["esri-open-hybrid-detail"]["label"] == "Esri Imagery + Streets"
+    assert layers["esri-open-hybrid-detail"]["tiles"][0] == {
+        "url": (
+            "https://ibasemaps-api.arcgis.com/arcgis/rest/services/"
+            "World_Imagery/MapServer/tile/{z}/{y}/{x}?token=arcgis%20test%2Fkey"
+        ),
+        "attribution": layers["esri-world-imagery"]["attribution"],
+        "maxZoom": 19,
+    }
+    assert layers["esri-open-hybrid-detail"]["tiles"][1]["url"] == (
+        "https://static-map-tiles-api.arcgis.com/arcgis/rest/services/"
+        "static-basemap-tiles-service/v1/open/hybrid/detail/static/"
+        "tile/{z}/{y}/{x}?token=arcgis%20test%2Fkey"
+    )
+    assert layers["esri-open-hybrid-detail"]["tiles"][1]["tileSize"] == 512
+    assert layers["esri-open-hybrid-detail"]["tiles"][1]["zoomOffset"] == -1
+    assert layers["esri-open-hybrid-detail"]["tiles"][1]["minZoom"] == 1
+    assert layers["esri-open-hybrid-detail"]["maxZoom"] == 23
+    assert "Esri" in layers["esri-open-hybrid-detail"]["tiles"][1]["attribution"]
+    assert layers["tracestrack-topo"]["url"] == (
+        "https://tile.tracestrack.com/topo_en/{z}/{x}/{y}.webp"
+        "?key=tracestrack%20test%2Fkey"
+    )
+    assert layers["tracestrack-topo"]["available"] is True
+    assert "Tracestrack" in layers["tracestrack-topo"]["attribution"]
+
+
+@override_settings(
+    MAP_ARCGIS_API_KEY="",
+    MAP_TRACESTRACK_API_KEY="",
+)
+def test_map_basemap_preference_clears_unavailable_saved_layer(user):
+    UserPreference.objects.create(
+        user=user,
+        key=MAP_BASEMAP_PREFERENCE_KEY,
+        value={"light": "esri-world-imagery-streets", "dark": "carto-dark"},
+    )
+
+    preference = map_basemap_preference(user)
+
+    assert preference["value"] == {"light": "carto-voyager", "dark": "carto-dark"}
+    assert not user.preferences.filter(key=MAP_BASEMAP_PREFERENCE_KEY).exists()
 
 
 def test_trip_approval_statuses_use_distinct_badge_colors():

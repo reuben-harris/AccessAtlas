@@ -12,6 +12,7 @@ from access_atlas.accounts.preferences import (
     default_sites_map_preference,
     get_user_preference,
 )
+from access_atlas.core.maps import map_basemap_config, map_basemap_preference
 from access_atlas.core.mixins import (
     FilteredListMixin,
     PaginatedObjectHistoryMixin,
@@ -32,7 +33,6 @@ from .photo_services import (
 from .view_helpers import (
     SiteDetailContextMixin,
     build_site_list_map_data,
-    map_tile_layer,
     site_detail_sections,
     site_list_views,
     site_warning_site_ids,
@@ -108,7 +108,8 @@ class SiteMapView(FilteredListMixin, LoginRequiredMixin, ListView):
             "key": SITES_MAP_PREFERENCE_KEY,
             "value": map_preference,
         }
-        context["map_tile_layer"] = map_tile_layer()
+        context["map_basemap_config"] = map_basemap_config()
+        context["map_basemap_preference"] = map_basemap_preference(self.request.user)
         return context
 
 

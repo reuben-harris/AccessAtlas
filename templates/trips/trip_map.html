@@ -25,13 +25,19 @@
 
   <div class="card trip-map-card access-atlas-map-card--fill">
     <div class="card-body p-0">
-      <div id="trip-map" class="trip-map" aria-label="Map of trip site visits"></div>
+      <div
+        id="trip-map"
+        class="trip-map"
+        data-basemap-preference-url="{% url 'account_preference' %}"
+        aria-label="Map of trip site visits"
+      ></div>
     </div>
   </div>
 </div>
 
 {{ trip_map_data|json_script:"trip-map-data" }}
-{{ map_tile_layer|json_script:"trip-map-tile-layer" }}
+{{ map_basemap_config|json_script:"map-basemap-config" }}
+{{ map_basemap_preference|json_script:"map-basemap-preference" }}
 <script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
 <script src="{% static 'vendor/leaflet.fullscreen/Control.FullScreen.umd.js' %}"></script>
 <script src="{% static 'js/trip_map.js' %}"></script>

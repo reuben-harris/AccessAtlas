@@ -5,11 +5,11 @@ from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import CreateView, DetailView, UpdateView
 
 from access_atlas.core.history import HistoryReasonMixin
+from access_atlas.core.maps import map_basemap_config, map_basemap_preference
 from access_atlas.core.mixins import (
     ObjectFormMixin,
     PaginatedObjectHistoryMixin,
 )
-from access_atlas.sites.view_helpers import map_tile_layer
 
 from .approval import ApprovedTripChangeMixin
 from .forms import AssignJobForm, SiteVisitForm, TripForm
@@ -92,7 +92,8 @@ class TripMapView(LoginRequiredMixin, DetailView):
             self.object, self.request.user
         )
         context["trip_map_data"] = build_trip_map_data(site_visits)
-        context["map_tile_layer"] = map_tile_layer()
+        context["map_basemap_config"] = map_basemap_config()
+        context["map_basemap_preference"] = map_basemap_preference(self.request.user)
         return context
 
 

@@ -2,12 +2,14 @@
   const mapElement = document.getElementById("site-list-map");
   const dataElement = document.getElementById("site-list-map-data");
   const preferenceElement = document.getElementById("site-list-map-preference");
-  const tileLayerElement = document.getElementById("site-list-map-tile-layer");
+  const basemapConfigElement = document.getElementById("map-basemap-config");
+  const basemapPreferenceElement = document.getElementById("map-basemap-preference");
   const escapeHtml = window.AccessAtlas?.escapeHtml;
-  const createThemeTileController = window.AccessAtlas?.createThemeTileController;
+  const createBasemapController = window.AccessAtlas?.createBasemapController;
   const fitLayersOrDefault = window.AccessAtlas?.fitLayersOrDefault;
   const addHomeControl = window.AccessAtlas?.addHomeControl;
   const addFilterControl = window.AccessAtlas?.addFilterControl;
+  const addBasemapControl = window.AccessAtlas?.addBasemapControl;
   const addFullscreenControl = window.AccessAtlas?.addFullscreenControl;
   const createFullscreenSafeOffcanvasController =
     window.AccessAtlas?.createFullscreenSafeOffcanvasController;
@@ -22,12 +24,14 @@
     !mapElement ||
     !dataElement ||
     !preferenceElement ||
-    !tileLayerElement ||
+    !basemapConfigElement ||
+    !basemapPreferenceElement ||
     typeof escapeHtml !== "function" ||
-    typeof createThemeTileController !== "function" ||
+    typeof createBasemapController !== "function" ||
     typeof fitLayersOrDefault !== "function" ||
     typeof addHomeControl !== "function" ||
     typeof addFilterControl !== "function" ||
+    typeof addBasemapControl !== "function" ||
     typeof addFullscreenControl !== "function" ||
     typeof createFullscreenSafeOffcanvasController !== "function" ||
     typeof settleMapLayout !== "function" ||
@@ -42,7 +46,8 @@
 
   const sites = JSON.parse(dataElement.textContent);
   const preference = JSON.parse(preferenceElement.textContent);
-  const tileLayer = JSON.parse(tileLayerElement.textContent);
+  const basemapConfig = JSON.parse(basemapConfigElement.textContent);
+  const basemapPreference = JSON.parse(basemapPreferenceElement.textContent);
   const savedPreference = preference.value || {};
   const defaultCenter = [-41.2865, 174.7762];
   const defaultZoom = 5;
@@ -51,7 +56,12 @@
   const filterPanel = createFullscreenSafeOffcanvasController(mapElement);
   configureMapConstraints(map);
   const markerLayer = L.layerGroup().addTo(map);
-  const tileController = createThemeTileController(map, tileLayer);
+  const basemapController = createBasemapController(
+    map,
+    basemapConfig,
+    basemapPreference,
+    mapElement,
+  );
   const longitudeNormalizer = createLongitudeNormalizer(
     sites.map((site) => site.longitude),
   );
@@ -200,7 +210,8 @@
   if (filterPanel) {
     addFilterControl(map, filterPanel.show, { count: initialFilterCount });
   }
-  tileController.apply();
+  addBasemapControl(map, basemapController);
+  basemapController.apply();
   markers = drawMarkers();
   applySavedViewport();
   settleMapLayout(map, applySavedViewport);

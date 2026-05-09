@@ -1423,11 +1423,16 @@ def test_trip_map_renders_site_visits_and_access_starts_only(client):
     content = response.content.decode()
     assert 'id="trip-map"' in content
     payload = parse_json_script(content, "trip-map-data")
+    basemap_preference = parse_json_script(content, "map-basemap-preference")
     assert payload["visits"][0]["siteCode"] == "AA-001"
     assert payload["visits"][0]["orderLabel"] == "1"
     assert payload["accessPoints"][0]["type"] == "access_start"
     assert len(payload["accessPoints"]) == 1
     assert len(payload["accessTracks"]) == 1
+    assert basemap_preference["value"] == {
+        "light": "carto-voyager",
+        "dark": "carto-dark",
+    }
 
 
 @pytest.mark.django_db

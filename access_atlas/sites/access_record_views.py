@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.views.generic import DetailView, FormView, ListView, UpdateView
 
+from access_atlas.core.maps import map_basemap_config, map_basemap_preference
 from access_atlas.core.mixins import (
     FilteredListMixin,
     PaginatedObjectHistoryMixin,
@@ -36,7 +37,6 @@ from .view_helpers import (
     access_record_detail_sections,
     access_record_list_views,
     build_site_access_map_data,
-    map_tile_layer,
 )
 
 
@@ -108,7 +108,8 @@ class AccessRecordGlobalMapView(FilteredListMixin, LoginRequiredMixin, ListView)
             "key": "",
             "value": {"visible_record_ids": [], "animate_tracks": True},
         }
-        context["map_tile_layer"] = map_tile_layer()
+        context["map_basemap_config"] = map_basemap_config()
+        context["map_basemap_preference"] = map_basemap_preference(self.request.user)
         return context
 
 
@@ -273,7 +274,8 @@ class AccessRecordMapView(LoginRequiredMixin, DetailView):
                 "animate_tracks": True,
             },
         }
-        context["map_tile_layer"] = map_tile_layer()
+        context["map_basemap_config"] = map_basemap_config()
+        context["map_basemap_preference"] = map_basemap_preference(self.request.user)
         context["detail_sections"] = access_record_detail_sections(self.object, "map")
         context["detail_navigation_label"] = "Access record sections"
         return context

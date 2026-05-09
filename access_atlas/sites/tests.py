@@ -734,10 +734,22 @@ def test_site_map_uses_saved_viewport_preference(client):
     preference_payload = parse_json_script(
         response.content.decode(), "site-list-map-preference"
     )
+    basemap_config = parse_json_script(response.content.decode(), "map-basemap-config")
+    basemap_preference = parse_json_script(
+        response.content.decode(), "map-basemap-preference"
+    )
     assert preference_payload["value"]["viewport"] == {
         "lat": -40.5,
         "lng": 175.1,
         "zoom": 7,
+    }
+    assert basemap_config["defaults"] == {
+        "light": "carto-voyager",
+        "dark": "carto-dark",
+    }
+    assert basemap_preference["value"] == {
+        "light": "carto-voyager",
+        "dark": "carto-dark",
     }
 
 
@@ -897,9 +909,11 @@ def test_access_record_global_map_includes_access_features(client):
     assert "New access record" in content
     assert 'id="site-access-map"' in content
     payload = parse_json_script(content, "site-access-map-data")
+    basemap_config = parse_json_script(content, "map-basemap-config")
     assert payload["points"][0]["recordId"] == access_record.pk
     assert payload["points"][0]["siteCode"] == "AA-001"
     assert payload["points"][0]["recordName"] == "Road access"
+    assert "carto-voyager" in {layer["id"] for layer in basemap_config["layers"]}
 
 
 @pytest.mark.django_db

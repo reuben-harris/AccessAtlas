@@ -3,12 +3,14 @@
   const dataElement = document.getElementById("job-map-data");
   const statusLayersElement = document.getElementById("job-map-status-layers");
   const preferenceElement = document.getElementById("job-map-preference");
-  const tileLayerElement = document.getElementById("job-map-tile-layer");
+  const basemapConfigElement = document.getElementById("map-basemap-config");
+  const basemapPreferenceElement = document.getElementById("map-basemap-preference");
   const escapeHtml = window.AccessAtlas?.escapeHtml;
-  const createThemeTileController = window.AccessAtlas?.createThemeTileController;
+  const createBasemapController = window.AccessAtlas?.createBasemapController;
   const fitLayersOrDefault = window.AccessAtlas?.fitLayersOrDefault;
   const sharedAddHomeControl = window.AccessAtlas?.addHomeControl;
   const addFilterControl = window.AccessAtlas?.addFilterControl;
+  const addBasemapControl = window.AccessAtlas?.addBasemapControl;
   const addFullscreenControl = window.AccessAtlas?.addFullscreenControl;
   const createFullscreenSafeOffcanvasController =
     window.AccessAtlas?.createFullscreenSafeOffcanvasController;
@@ -23,12 +25,14 @@
     !dataElement ||
     !statusLayersElement ||
     !preferenceElement ||
-    !tileLayerElement ||
+    !basemapConfigElement ||
+    !basemapPreferenceElement ||
     typeof escapeHtml !== "function" ||
-    typeof createThemeTileController !== "function" ||
+    typeof createBasemapController !== "function" ||
     typeof fitLayersOrDefault !== "function" ||
     typeof sharedAddHomeControl !== "function" ||
     typeof addFilterControl !== "function" ||
+    typeof addBasemapControl !== "function" ||
     typeof addFullscreenControl !== "function" ||
     typeof createFullscreenSafeOffcanvasController !== "function" ||
     typeof settleMapLayout !== "function" ||
@@ -44,7 +48,8 @@
   const sites = JSON.parse(dataElement.textContent);
   const statusLayers = JSON.parse(statusLayersElement.textContent);
   const preference = JSON.parse(preferenceElement.textContent);
-  const tileLayer = JSON.parse(tileLayerElement.textContent);
+  const basemapConfig = JSON.parse(basemapConfigElement.textContent);
+  const basemapPreference = JSON.parse(basemapPreferenceElement.textContent);
   const savedPreference = preference.value || {};
   const postJSON = window.AccessAtlas?.postJSON;
   const initialFilterCount = Number(mapElement.dataset.filterCount || 0);
@@ -58,7 +63,12 @@
   const filterPanel = createFullscreenSafeOffcanvasController(mapElement);
   configureMapConstraints(map);
   const markerLayer = L.layerGroup().addTo(map);
-  const tileController = createThemeTileController(map, tileLayer);
+  const basemapController = createBasemapController(
+    map,
+    basemapConfig,
+    basemapPreference,
+    mapElement,
+  );
   let viewportSaveTimeout = null;
   let visibleMarkers = [];
 
@@ -207,7 +217,8 @@
       count: initialFilterCount,
     });
   }
-  tileController.apply();
+  addBasemapControl(map, basemapController);
+  basemapController.apply();
   visibleMarkers = drawMarkers();
 
   function applySavedViewport() {

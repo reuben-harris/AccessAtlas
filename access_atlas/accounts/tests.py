@@ -7,6 +7,7 @@ from access_atlas.accounts.preferences import (
     JOBS_MAP_PREFERENCE_KEY,
     LIST_FILTER_PREFERENCE_KEY_PREFIX,
     LIST_SORT_PREFERENCE_KEY_PREFIX,
+    MAP_BASEMAP_PREFERENCE_KEY,
     SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX,
     SITES_MAP_PREFERENCE_KEY,
     UI_THEME_PREFERENCE_KEY,
@@ -238,6 +239,45 @@ def test_preference_view_rejects_invalid_sites_map_viewport(client):
     assert response.status_code == 400
     assert not UserPreference.objects.filter(
         user=user, key=SITES_MAP_PREFERENCE_KEY
+    ).exists()
+
+
+@pytest.mark.django_db
+def test_preference_view_saves_map_basemap_preference(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.post(
+        reverse("account_preference"),
+        {
+            "key": MAP_BASEMAP_PREFERENCE_KEY,
+            "value": {"light": "osm-standard", "dark": "carto-dark"},
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    preference = UserPreference.objects.get(user=user, key=MAP_BASEMAP_PREFERENCE_KEY)
+    assert preference.value == {"light": "osm-standard", "dark": "carto-dark"}
+
+
+@pytest.mark.django_db
+def test_preference_view_rejects_invalid_map_basemap_preference(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.post(
+        reverse("account_preference"),
+        {
+            "key": MAP_BASEMAP_PREFERENCE_KEY,
+            "value": {"light": "unknown-layer", "dark": "carto-dark"},
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert not UserPreference.objects.filter(
+        user=user, key=MAP_BASEMAP_PREFERENCE_KEY
     ).exists()
 
 

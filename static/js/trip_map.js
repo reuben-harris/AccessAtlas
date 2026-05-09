@@ -1,11 +1,13 @@
 (() => {
   const mapElement = document.getElementById("trip-map");
   const dataElement = document.getElementById("trip-map-data");
-  const tileLayerElement = document.getElementById("trip-map-tile-layer");
+  const basemapConfigElement = document.getElementById("map-basemap-config");
+  const basemapPreferenceElement = document.getElementById("map-basemap-preference");
   const escapeHtml = window.AccessAtlas?.escapeHtml;
-  const createThemeTileController = window.AccessAtlas?.createThemeTileController;
+  const createBasemapController = window.AccessAtlas?.createBasemapController;
   const fitLayersOrDefault = window.AccessAtlas?.fitLayersOrDefault;
   const addHomeControl = window.AccessAtlas?.addHomeControl;
+  const addBasemapControl = window.AccessAtlas?.addBasemapControl;
   const addFullscreenControl = window.AccessAtlas?.addFullscreenControl;
   const settleMapLayout = window.AccessAtlas?.settleMapLayout;
   const createLongitudeNormalizer = window.AccessAtlas?.createLongitudeNormalizer;
@@ -15,11 +17,13 @@
   if (
     !mapElement ||
     !dataElement ||
-    !tileLayerElement ||
+    !basemapConfigElement ||
+    !basemapPreferenceElement ||
     typeof escapeHtml !== "function" ||
-    typeof createThemeTileController !== "function" ||
+    typeof createBasemapController !== "function" ||
     typeof fitLayersOrDefault !== "function" ||
     typeof addHomeControl !== "function" ||
+    typeof addBasemapControl !== "function" ||
     typeof addFullscreenControl !== "function" ||
     typeof settleMapLayout !== "function" ||
     typeof createLongitudeNormalizer !== "function" ||
@@ -31,7 +35,8 @@
   }
 
   const mapData = JSON.parse(dataElement.textContent);
-  const tileLayer = JSON.parse(tileLayerElement.textContent);
+  const basemapConfig = JSON.parse(basemapConfigElement.textContent);
+  const basemapPreference = JSON.parse(basemapPreferenceElement.textContent);
   const visits = Array.isArray(mapData.visits) ? mapData.visits : [];
   const accessPoints = Array.isArray(mapData.accessPoints) ? mapData.accessPoints : [];
   const accessTracks = Array.isArray(mapData.accessTracks) ? mapData.accessTracks : [];
@@ -48,7 +53,12 @@
   const map = L.map(mapElement).setView(defaultCenter, defaultZoom);
   configureMapConstraints(map);
   const featureLayer = L.layerGroup().addTo(map);
-  const tileController = createThemeTileController(map, tileLayer);
+  const basemapController = createBasemapController(
+    map,
+    basemapConfig,
+    basemapPreference,
+    mapElement,
+  );
   let layers = [];
 
   function visitMarkerLabel(siteVisits) {
@@ -215,10 +225,11 @@
     fitLayersOrDefault(map, layers, defaultCenter, defaultZoom);
   }
 
-  tileController.apply();
+  basemapController.apply();
   layers = drawFeatures();
   resetView();
   addHomeControl(map, resetView);
   addFullscreenControl(map);
+  addBasemapControl(map, basemapController);
   settleMapLayout(map, resetView);
 })();
