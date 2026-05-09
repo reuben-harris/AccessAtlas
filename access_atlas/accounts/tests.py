@@ -242,8 +242,12 @@ def test_preference_view_rejects_invalid_sites_map_viewport(client):
     ).exists()
 
 
+@pytest.mark.parametrize(
+    "light_layer_id",
+    ["osm-standard", "esri-world-imagery", "esri-imagery-streets"],
+)
 @pytest.mark.django_db
-def test_preference_view_saves_map_basemap_preference(client):
+def test_preference_view_saves_map_basemap_preference(client, light_layer_id):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
 
@@ -251,14 +255,14 @@ def test_preference_view_saves_map_basemap_preference(client):
         reverse("account_preference"),
         {
             "key": MAP_BASEMAP_PREFERENCE_KEY,
-            "value": {"light": "osm-standard", "dark": "carto-dark"},
+            "value": {"light": light_layer_id, "dark": "carto-dark"},
         },
         content_type="application/json",
     )
 
     assert response.status_code == 200
     preference = UserPreference.objects.get(user=user, key=MAP_BASEMAP_PREFERENCE_KEY)
-    assert preference.value == {"light": "osm-standard", "dark": "carto-dark"}
+    assert preference.value == {"light": light_layer_id, "dark": "carto-dark"}
 
 
 @pytest.mark.django_db

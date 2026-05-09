@@ -40,13 +40,19 @@ ALLOWED_LIST_FILTER_PREFERENCE_PAGES = {
     "work-programmes",
 }
 ALLOWED_THEME_MODES = {"system", "light", "dark"}
+BASEMAP_LAYER_CARTO_DARK = "carto-dark"
+BASEMAP_LAYER_CARTO_VOYAGER = "carto-voyager"
+BASEMAP_LAYER_ESRI_IMAGERY_STREETS = "esri-imagery-streets"
+BASEMAP_LAYER_ESRI_WORLD_IMAGERY = "esri-world-imagery"
+BASEMAP_LAYER_OSM_STANDARD = "osm-standard"
+BASEMAP_LAYER_TRACESTRACK_TOPO = "tracestrack-topo"
 ALLOWED_BASEMAP_LAYER_IDS = {
-    "carto-dark",
-    "carto-voyager",
-    "esri-open-hybrid-detail",
-    "esri-world-imagery",
-    "osm-standard",
-    "tracestrack-topo",
+    BASEMAP_LAYER_CARTO_DARK,
+    BASEMAP_LAYER_CARTO_VOYAGER,
+    BASEMAP_LAYER_ESRI_IMAGERY_STREETS,
+    BASEMAP_LAYER_ESRI_WORLD_IMAGERY,
+    BASEMAP_LAYER_OSM_STANDARD,
+    BASEMAP_LAYER_TRACESTRACK_TOPO,
 }
 MIN_MAP_VIEWPORT_LONGITUDE = -540
 MAX_MAP_VIEWPORT_LONGITUDE = 540
