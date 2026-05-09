@@ -85,10 +85,14 @@ INSTALLED_APPS = [
     "allauth.socialaccount",
     "allauth.socialaccount.providers.openid_connect",
     "django_filters",
+    "rest_framework",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
     "django_tomselect",
     "simple_history",
     "storages",
     "access_atlas.accounts.apps.AccountsConfig",
+    "access_atlas.api.apps.ApiConfig",
     "access_atlas.core.apps.CoreConfig",
     "access_atlas.sites.apps.SitesConfig",
     "access_atlas.jobs.apps.JobsConfig",
@@ -215,6 +219,46 @@ elif MEDIA_STORAGE_BACKEND != "local":
     raise ValueError("MEDIA_STORAGE_BACKEND must be either 'local' or 's3'.")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        "access_atlas.api.authentication.ApiTokenAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+        "access_atlas.api.permissions.ApiTokenWritePermission",
+    ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
+    ],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 50,
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Access Atlas API",
+    "DESCRIPTION": "REST API for Access Atlas field work planning data.",
+    "VERSION": "0.1.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_DIST": "SIDECAR",
+    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
+    "REDOC_DIST": "SIDECAR",
+    "COMPONENT_SPLIT_REQUEST": True,
+    "ENUM_NAME_OVERRIDES": {
+        "AccessRecordStatus": "access_atlas.sites.models.AccessRecordStatus",
+        "ArrivalMethod": "access_atlas.sites.models.ArrivalMethod",
+        "JobPriority": "access_atlas.jobs.models.Priority",
+        "JobStatus": "access_atlas.jobs.models.JobStatus",
+        "RequirementType": "access_atlas.jobs.models.RequirementType",
+        "SiteSyncStatus": "access_atlas.sites.models.SiteSyncStatus",
+        "SiteVisitStatus": "access_atlas.trips.models.SiteVisitStatus",
+        "TripStatus": "access_atlas.trips.models.TripStatus",
+    },
+}
 
 SITE_FEED_URL = os.getenv("SITE_FEED_URL", "")
 SITE_FEED_TOKEN = os.getenv("SITE_FEED_TOKEN", "")
