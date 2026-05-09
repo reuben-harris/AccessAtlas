@@ -256,3 +256,53 @@ def close_trip(trip: Trip, cleaned_data: dict) -> None:
     trip.status = TripStatus.COMPLETED
     trip.save(update_fields=["status", "updated_at"])
     update_change_reason(trip, "Closed trip")
+
+
+@transaction.atomic
+def correct_trip_closeout(trip: Trip, cleaned_data: dict) -> None:
+    """Apply a deliberate correction to still-linked closeout records."""
+    if trip.status != TripStatus.COMPLETED:
+        raise ValidationError("Only completed trips can have closeout corrections.")
+
+    correction_reason = cleaned_data["correction_reason"].strip()
+    history_reason = f"Corrected trip closeout: {correction_reason}"
+
+    for site_visit in trip.site_visits.all():
+        site_visit.status = cleaned_data[f"site_visit_{site_visit.pk}"]
+        site_visit.save(update_fields=["status", "updated_at"])
+        update_change_reason(site_visit, history_reason)
+
+    for assignment in get_trip_assignments(trip).filter(
+        job__status__in=[
+            JobStatus.ASSIGNED,
+            JobStatus.UNASSIGNED,
+            JobStatus.COMPLETED,
+            JobStatus.CANCELLED,
+        ]
+    ):
+        job = assignment.job
+        outcome = cleaned_data[f"job_{assignment.pk}_outcome"]
+        if outcome == JOB_OUTCOME_COMPLETED:
+            job.status = JobStatus.COMPLETED
+            job.closeout_note = cleaned_data[
+                f"job_{assignment.pk}_closeout_note"
+            ].strip()
+            job.save(update_fields=["status", "closeout_note", "updated_at"])
+            update_change_reason(job, history_reason)
+        elif outcome == JOB_OUTCOME_RETURN:
+            assignment._change_reason = history_reason
+            assignment.delete()
+            job.status = JobStatus.UNASSIGNED
+            job.closeout_note = ""
+            job.save(update_fields=["status", "closeout_note", "updated_at"])
+            update_change_reason(job, history_reason)
+        elif outcome == JOB_OUTCOME_CANCELLED:
+            job.status = JobStatus.CANCELLED
+            job.closeout_note = cleaned_data[
+                f"job_{assignment.pk}_closeout_note"
+            ].strip()
+            job.save(update_fields=["status", "closeout_note", "updated_at"])
+            update_change_reason(job, history_reason)
+
+    trip.save(update_fields=["updated_at"])
+    update_change_reason(trip, history_reason)

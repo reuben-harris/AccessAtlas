@@ -246,6 +246,7 @@ class AssignJobForm(forms.Form):
 class TripCloseoutForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.trip = kwargs.pop("trip")
+        self.correction = kwargs.pop("correction", False)
         super().__init__(*args, **kwargs)
         for site_visit in self.trip.site_visits.select_related("site").all():
             initial_status = (
@@ -269,14 +270,28 @@ class TripCloseoutForm(forms.Form):
             self.fields[self.job_outcome_field(assignment)] = forms.ChoiceField(
                 label=str(assignment.job),
                 choices=TripCloseoutJobOutcome.CHOICES,
-                initial=TripCloseoutJobOutcome.COMPLETED,
+                initial=self.initial_job_outcome(assignment),
                 widget=forms.Select(attrs={"class": "form-select"}),
             )
             self.fields[self.job_reason_field(assignment)] = forms.CharField(
                 label=f"{assignment.job} closeout note",
                 required=False,
+                initial=assignment.job.closeout_note,
                 widget=forms.Textarea(attrs={"class": "form-control", "rows": 2}),
             )
+        if self.correction:
+            self.fields["correction_reason"] = forms.CharField(
+                label="Correction reason",
+                widget=forms.Textarea(attrs={"class": "form-control", "rows": 2}),
+            )
+
+    @staticmethod
+    def initial_job_outcome(assignment) -> str:
+        if assignment.job.status == JobStatus.CANCELLED:
+            return TripCloseoutJobOutcome.CANCELLED
+        if assignment.job.status == JobStatus.UNASSIGNED:
+            return TripCloseoutJobOutcome.RETURN
+        return TripCloseoutJobOutcome.COMPLETED
 
     @staticmethod
     def site_visit_field(site_visit: SiteVisit) -> str:
@@ -301,17 +316,10 @@ class TripCloseoutForm(forms.Form):
         for assignment in assignments:
             outcome = cleaned_data.get(self.job_outcome_field(assignment))
             reason = cleaned_data.get(self.job_reason_field(assignment), "").strip()
-            if (
-                outcome
-                in {
-                    TripCloseoutJobOutcome.COMPLETED,
-                    TripCloseoutJobOutcome.CANCELLED,
-                }
-                and not reason
-            ):
+            if outcome == TripCloseoutJobOutcome.CANCELLED and not reason:
                 self.add_error(
                     self.job_reason_field(assignment),
-                    "A closeout note is required for completed or cancelled jobs.",
+                    "A closeout note is required for cancelled jobs.",
                 )
             if (
                 site_visit_outcomes.get(assignment.site_visit_id)
@@ -325,9 +333,15 @@ class TripCloseoutForm(forms.Form):
         return cleaned_data
 
     def closeout_assignments(self):
-        return get_trip_assignments(self.trip).filter(
-            job__status__in=[JobStatus.ASSIGNED, JobStatus.UNASSIGNED]
-        )
+        statuses = [JobStatus.ASSIGNED, JobStatus.UNASSIGNED]
+        if self.correction:
+            statuses = [
+                JobStatus.ASSIGNED,
+                JobStatus.UNASSIGNED,
+                JobStatus.COMPLETED,
+                JobStatus.CANCELLED,
+            ]
+        return get_trip_assignments(self.trip).filter(job__status__in=statuses)
 
     def site_visit_fields(self):
         return [
@@ -344,3 +358,8 @@ class TripCloseoutForm(forms.Form):
             }
             for assignment in self.closeout_assignments()
         ]
+
+    def correction_reason_field(self):
+        if not self.correction:
+            return None
+        return self["correction_reason"]

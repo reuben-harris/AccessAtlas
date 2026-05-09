@@ -43,6 +43,11 @@ urlpatterns = [
         name="trip_return_to_draft",
     ),
     path("<int:pk>/close/", views.close_trip_view, name="trip_close"),
+    path(
+        "<int:pk>/correct-closeout/",
+        views.correct_trip_closeout_view,
+        name="trip_closeout_correction",
+    ),
     path("<int:pk>/cancel/", views.cancel_trip_view, name="trip_cancel"),
     path(
         "<int:trip_pk>/site-visits/new/",

@@ -15,7 +15,7 @@ from access_atlas.core.mixins import (
     PaginatedObjectHistoryMixin,
 )
 from access_atlas.jobs.forms import RequirementForm
-from access_atlas.jobs.models import Job, Requirement
+from access_atlas.jobs.models import Job, JobStatus, Requirement
 
 from .approval import ApprovedTripChangeMixin
 from .forms import AssignJobForm, SiteVisitForm, TripForm
@@ -62,16 +62,26 @@ def trip_requirement_queryset(trip: Trip, sort_value: str = ""):
     """Return requirements for jobs planned into this trip."""
     return (
         Requirement.objects.filter(job__site_visit_assignment__site_visit__trip=trip)
-        .select_related("job", "job__site")
+        .select_related(
+            "job",
+            "job__site",
+            "job__site_visit_assignment__site_visit__trip",
+        )
         .order_by(*trip_requirement_ordering(sort_value))
     )
 
 
-def trip_requirement_job_queryset(trip: Trip):
+def trip_assigned_job_queryset(trip: Trip):
     return (
         Job.objects.filter(site_visit_assignment__site_visit__trip=trip)
         .select_related("site")
         .order_by("site__code", "title", "id")
+    )
+
+
+def trip_requirement_job_queryset(trip: Trip):
+    return trip_assigned_job_queryset(trip).exclude(
+        status__in=[JobStatus.COMPLETED, JobStatus.CANCELLED]
     )
 
 
@@ -165,16 +175,18 @@ class TripRequirementsView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         sort_value = trip_requirement_sort_value(self.request.GET.get("sort"))
-        assigned_jobs = trip_requirement_job_queryset(self.object)
+        assigned_jobs = trip_assigned_job_queryset(self.object)
+        active_requirement_jobs = trip_requirement_job_queryset(self.object)
         requirements_frozen_reason = trip_requirements_frozen_reason(self.object)
         context["trip"] = self.object
         context["requirements"] = trip_requirement_queryset(self.object, sort_value)
         context["requirements_readonly"] = self.object.is_terminal
         context["requirements_frozen_reason"] = requirements_frozen_reason
         context["has_assigned_jobs"] = assigned_jobs.exists()
+        context["has_active_requirement_jobs"] = active_requirement_jobs.exists()
         context["add_requirement_url"] = (
             reverse("trip_requirement_create", kwargs={"trip_pk": self.object.pk})
-            if context["has_assigned_jobs"] and not self.object.is_terminal
+            if context["has_active_requirement_jobs"] and not self.object.is_terminal
             else ""
         )
         if self.object.is_terminal:
@@ -182,6 +194,10 @@ class TripRequirementsView(LoginRequiredMixin, DetailView):
         elif not context["has_assigned_jobs"]:
             context["add_requirement_disabled_reason"] = (
                 "Add jobs to this trip before creating requirements."
+            )
+        elif not context["has_active_requirement_jobs"]:
+            context["add_requirement_disabled_reason"] = (
+                "Requirements can only be added to active assigned jobs."
             )
         else:
             context["add_requirement_disabled_reason"] = ""
@@ -209,10 +225,8 @@ def toggle_trip_requirement(request, pk, requirement_pk):
         trip_requirement_queryset(trip),
         pk=requirement_pk,
     )
-    if trip.is_terminal:
-        return HttpResponseForbidden(
-            "Requirements cannot be updated on completed or cancelled trips."
-        )
+    if requirement.is_frozen:
+        return HttpResponseForbidden(requirement.frozen_reason)
 
     requirement.is_checked = "is_checked" in request.POST
     requirement._change_reason = "Updated requirement checklist state"
@@ -268,9 +282,12 @@ class TripRequirementCreateView(
     def dispatch(self, request, *args, **kwargs):
         trip = self.get_trip()
         if not trip.is_terminal and not self.get_job_queryset().exists():
+            message = "Add jobs to this trip before creating requirements."
+            if trip_assigned_job_queryset(trip).exists():
+                message = "Requirements can only be added to active assigned jobs."
             messages.info(
                 request,
-                "Add jobs to this trip before creating requirements.",
+                message,
             )
             return redirect(trip.get_requirements_url())
         return super().dispatch(request, *args, **kwargs)
@@ -294,6 +311,13 @@ class TripRequirementUpdateView(
     def get_queryset(self):
         return trip_requirement_queryset(self.get_trip())
 
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if self.object.is_frozen:
+            messages.info(request, self.object.frozen_reason)
+            return redirect(self.get_trip().get_requirements_url())
+        return super().dispatch(request, *args, **kwargs)
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["job_queryset"] = self.get_job_queryset()
@@ -309,6 +333,13 @@ class TripRequirementDeleteView(
 
     def get_queryset(self):
         return trip_requirement_queryset(self.get_trip())
+
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if self.object.is_frozen:
+            messages.info(request, self.object.frozen_reason)
+            return redirect(self.get_trip().get_requirements_url())
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -345,6 +376,16 @@ class TripUpdateView(
     form_class = TripForm
     template_name = "object_form.html"
     approval_reset_reason = "Returned to submitted after trip update"
+
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if self.object.is_terminal:
+            messages.info(
+                request,
+                "Completed or cancelled trips cannot be edited.",
+            )
+            return redirect(self.object)
+        return super().dispatch(request, *args, **kwargs)
 
     def get_approval_trip(self):
         return self.object
@@ -433,6 +474,16 @@ class SiteVisitUpdateView(
     form_class = SiteVisitForm
     template_name = "trips/site_visit_form.html"
     approval_reset_reason = "Returned to submitted after site visit update"
+
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if self.object.trip.is_terminal:
+            messages.info(
+                request,
+                "Site visits cannot be edited on completed or cancelled trips.",
+            )
+            return redirect(self.object)
+        return super().dispatch(request, *args, **kwargs)
 
     def get_approval_trip(self):
         return self.object.trip

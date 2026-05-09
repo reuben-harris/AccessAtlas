@@ -1587,6 +1587,72 @@ def test_terminal_trip_requirements_are_read_only(client):
 
 
 @pytest.mark.django_db
+def test_completed_job_trip_requirements_are_read_only(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    SiteVisitJob.objects.create(site_visit=site_visit, job=job)
+    job.status = JobStatus.COMPLETED
+    job.save(update_fields=["status", "updated_at"])
+    requirement = Requirement.objects.create(job=job, name="Battery")
+    client.force_login(user)
+
+    page_response = client.get(reverse("trip_requirements", kwargs={"pk": trip.pk}))
+    toggle_response = client.post(
+        reverse(
+            "trip_requirement_toggle",
+            kwargs={"pk": trip.pk, "requirement_pk": requirement.pk},
+        ),
+        {"is_checked": "1"},
+        HTTP_HX_REQUEST="true",
+    )
+    create_response = client.get(
+        reverse("trip_requirement_create", kwargs={"trip_pk": trip.pk})
+    )
+    update_response = client.post(
+        reverse(
+            "trip_requirement_update",
+            kwargs={"trip_pk": trip.pk, "pk": requirement.pk},
+        ),
+        {
+            "job": job.pk,
+            "requirement_type": "part",
+            "name": "Updated battery",
+            "quantity": "",
+            "notes": "",
+            "is_required": "on",
+        },
+    )
+
+    content = page_response.content.decode()
+    assert page_response.status_code == 200
+    assert "This job is completed" in content
+    assert "Requirements can only be added to active assigned jobs." in content
+    assert toggle_response.status_code == 403
+    assert create_response.status_code == 302
+    assert create_response.url == trip.get_requirements_url()
+    assert update_response.status_code == 302
+    assert update_response.url == trip.get_requirements_url()
+    requirement.refresh_from_db()
+    assert requirement.name == "Battery"
+    assert requirement.is_checked is False
+
+
+@pytest.mark.django_db
 def test_approved_trip_requirement_toggle_does_not_reset_approval(client):
     leader = User.objects.create_user(email="leader@example.com")
     approver = User.objects.create_user(email="approver@example.com")
@@ -2753,7 +2819,7 @@ def test_close_trip_resolves_site_visits_and_jobs(client):
     returned_visit = SiteVisit.objects.create(trip=trip, site=site)
     cancelled_visit = SiteVisit.objects.create(trip=trip, site=site)
     completed_job = Job.objects.create(site=site, title="Complete")
-    returned_job = Job.objects.create(site=site, title="Return")
+    returned_job = Job.objects.create(site=site, title="Wrong cable")
     cancelled_job = Job.objects.create(site=site, title="Cancel")
     completed_assignment = SiteVisitJob.objects.create(
         site_visit=completed_visit, job=completed_job
@@ -2817,6 +2883,46 @@ def test_close_trip_resolves_site_visits_and_jobs(client):
 
 
 @pytest.mark.django_db
+def test_close_trip_allows_completed_job_without_closeout_note(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+        status=TripStatus.SUBMITTED,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Complete")
+    assignment = assign_job_to_site_visit(site_visit, job)
+    client.force_login(user)
+
+    response = client.post(
+        reverse("trip_close", kwargs={"pk": trip.pk}),
+        {
+            f"site_visit_{site_visit.pk}": SiteVisitStatus.COMPLETED,
+            f"job_{assignment.pk}_outcome": "completed",
+            f"job_{assignment.pk}_closeout_note": "",
+        },
+    )
+
+    assert response.status_code == 302
+    trip.refresh_from_db()
+    job.refresh_from_db()
+    assert trip.status == TripStatus.COMPLETED
+    assert job.status == JobStatus.COMPLETED
+    assert job.closeout_note == ""
+
+
+@pytest.mark.django_db
 def test_close_trip_requires_reason_for_cancelled_jobs(client):
     user = User.objects.create_user(email="user@example.com")
     site = Site.objects.create(
@@ -2856,6 +2962,246 @@ def test_close_trip_requires_reason_for_cancelled_jobs(client):
 
 
 @pytest.mark.django_db
+def test_completed_trip_closeout_correction_updates_still_linked_jobs(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+        status=TripStatus.SUBMITTED,
+    )
+    completed_visit = SiteVisit.objects.create(trip=trip, site=site)
+    cancelled_visit = SiteVisit.objects.create(trip=trip, site=site)
+    completed_job = Job.objects.create(site=site, title="Complete")
+    cancelled_job = Job.objects.create(site=site, title="Cancel")
+    completed_assignment = assign_job_to_site_visit(completed_visit, completed_job)
+    cancelled_assignment = assign_job_to_site_visit(cancelled_visit, cancelled_job)
+    client.force_login(user)
+    client.post(
+        reverse("trip_close", kwargs={"pk": trip.pk}),
+        {
+            f"site_visit_{completed_visit.pk}": SiteVisitStatus.COMPLETED,
+            f"site_visit_{cancelled_visit.pk}": SiteVisitStatus.COMPLETED,
+            f"job_{completed_assignment.pk}_outcome": "completed",
+            f"job_{completed_assignment.pk}_closeout_note": "",
+            f"job_{cancelled_assignment.pk}_outcome": "cancelled",
+            f"job_{cancelled_assignment.pk}_closeout_note": "No longer needed.",
+        },
+    )
+
+    response = client.post(
+        reverse("trip_closeout_correction", kwargs={"pk": trip.pk}),
+        {
+            "correction_reason": "Supervisor review",
+            f"site_visit_{completed_visit.pk}": SiteVisitStatus.SKIPPED,
+            f"site_visit_{cancelled_visit.pk}": SiteVisitStatus.COMPLETED,
+            f"job_{completed_assignment.pk}_outcome": "cancelled",
+            f"job_{completed_assignment.pk}_closeout_note": "Not completed.",
+            f"job_{cancelled_assignment.pk}_outcome": "completed",
+            f"job_{cancelled_assignment.pk}_closeout_note": "",
+        },
+    )
+
+    assert response.status_code == 302
+    trip.refresh_from_db()
+    completed_visit.refresh_from_db()
+    cancelled_visit.refresh_from_db()
+    completed_job.refresh_from_db()
+    cancelled_job.refresh_from_db()
+    assert trip.status == TripStatus.COMPLETED
+    assert completed_visit.status == SiteVisitStatus.SKIPPED
+    assert cancelled_visit.status == SiteVisitStatus.COMPLETED
+    assert completed_job.status == JobStatus.CANCELLED
+    assert completed_job.closeout_note == "Not completed."
+    assert cancelled_job.status == JobStatus.COMPLETED
+    assert cancelled_job.closeout_note == ""
+    history_reason = "Corrected trip closeout: Supervisor review"
+    assert trip.history.first().history_change_reason == history_reason
+    assert completed_visit.history.first().history_change_reason == history_reason
+    assert cancelled_visit.history.first().history_change_reason == history_reason
+    assert completed_job.history.first().history_change_reason == history_reason
+    assert cancelled_job.history.first().history_change_reason == history_reason
+
+
+@pytest.mark.django_db
+def test_closeout_correction_records_history_when_returning_job(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+        status=TripStatus.SUBMITTED,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Return after review")
+    assignment = assign_job_to_site_visit(site_visit, job)
+    client.force_login(user)
+    client.post(
+        reverse("trip_close", kwargs={"pk": trip.pk}),
+        {
+            f"site_visit_{site_visit.pk}": SiteVisitStatus.COMPLETED,
+            f"job_{assignment.pk}_outcome": "completed",
+            f"job_{assignment.pk}_closeout_note": "",
+        },
+    )
+
+    response = client.post(
+        reverse("trip_closeout_correction", kwargs={"pk": trip.pk}),
+        {
+            "correction_reason": "Wrong completion box selected",
+            f"site_visit_{site_visit.pk}": SiteVisitStatus.SKIPPED,
+            f"job_{assignment.pk}_outcome": "return",
+            f"job_{assignment.pk}_closeout_note": "",
+        },
+    )
+
+    history_reason = "Corrected trip closeout: Wrong completion box selected"
+    assert response.status_code == 302
+    job.refresh_from_db()
+    site_visit.refresh_from_db()
+    trip.refresh_from_db()
+    assert trip.status == TripStatus.COMPLETED
+    assert site_visit.status == SiteVisitStatus.SKIPPED
+    assert job.status == JobStatus.UNASSIGNED
+    assert job.closeout_note == ""
+    assert not SiteVisitJob.objects.filter(pk=assignment.pk).exists()
+    assert trip.history.first().history_change_reason == history_reason
+    assert site_visit.history.first().history_change_reason == history_reason
+    assert job.history.first().history_change_reason == history_reason
+    deleted_assignment_history = SiteVisitJob.history.filter(id=assignment.pk).first()
+    assert deleted_assignment_history.history_type == "-"
+    assert deleted_assignment_history.history_change_reason == history_reason
+
+
+@pytest.mark.django_db
+def test_closeout_correction_requires_reason(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+        status=TripStatus.SUBMITTED,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Complete")
+    assignment = assign_job_to_site_visit(site_visit, job)
+    client.force_login(user)
+    client.post(
+        reverse("trip_close", kwargs={"pk": trip.pk}),
+        {
+            f"site_visit_{site_visit.pk}": SiteVisitStatus.COMPLETED,
+            f"job_{assignment.pk}_outcome": "completed",
+            f"job_{assignment.pk}_closeout_note": "",
+        },
+    )
+
+    response = client.post(
+        reverse("trip_closeout_correction", kwargs={"pk": trip.pk}),
+        {
+            "correction_reason": "",
+            f"site_visit_{site_visit.pk}": SiteVisitStatus.COMPLETED,
+            f"job_{assignment.pk}_outcome": "cancelled",
+            f"job_{assignment.pk}_closeout_note": "Cancelled.",
+        },
+    )
+
+    assert response.status_code == 200
+    job.refresh_from_db()
+    assert job.status == JobStatus.COMPLETED
+
+
+@pytest.mark.django_db
+def test_returned_jobs_are_not_available_for_closeout_correction(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+        status=TripStatus.SUBMITTED,
+    )
+    completed_visit = SiteVisit.objects.create(trip=trip, site=site)
+    returned_visit = SiteVisit.objects.create(trip=trip, site=site)
+    completed_job = Job.objects.create(site=site, title="Complete")
+    returned_job = Job.objects.create(site=site, title="Return")
+    completed_assignment = assign_job_to_site_visit(completed_visit, completed_job)
+    returned_assignment = assign_job_to_site_visit(returned_visit, returned_job)
+    client.force_login(user)
+    client.post(
+        reverse("trip_close", kwargs={"pk": trip.pk}),
+        {
+            f"site_visit_{completed_visit.pk}": SiteVisitStatus.COMPLETED,
+            f"site_visit_{returned_visit.pk}": SiteVisitStatus.SKIPPED,
+            f"job_{completed_assignment.pk}_outcome": "completed",
+            f"job_{completed_assignment.pk}_closeout_note": "",
+            f"job_{returned_assignment.pk}_outcome": "return",
+            f"job_{returned_assignment.pk}_closeout_note": "",
+        },
+    )
+
+    response = client.get(reverse("trip_closeout_correction", kwargs={"pk": trip.pk}))
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "Complete" in content
+    assert "Wrong cable" not in content
+    assert not SiteVisitJob.objects.filter(job=returned_job).exists()
+
+
+@pytest.mark.django_db
+def test_cancelled_trip_closeout_correction_redirects(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+        status=TripStatus.CANCELLED,
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("trip_closeout_correction", kwargs={"pk": trip.pk}))
+
+    assert response.status_code == 302
+    assert response.url == trip.get_absolute_url()
+
+
+@pytest.mark.django_db
 def test_terminal_trip_detail_disables_close_and_cancel_actions(client):
     user = User.objects.create_user(email="user@example.com")
     trip = Trip.objects.create(
@@ -2878,6 +3224,148 @@ def test_terminal_trip_detail_disables_close_and_cancel_actions(client):
     )
     assert b"cannot be cancelled" in response.content
     assert b"cannot be closed again" in response.content
+
+
+@pytest.mark.django_db
+def test_completed_trip_detail_links_to_closeout_correction(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+        status=TripStatus.COMPLETED,
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("trip_detail", kwargs={"pk": trip.pk}))
+
+    assert response.status_code == 200
+    assert (
+        reverse("trip_closeout_correction", kwargs={"pk": trip.pk}).encode()
+        in response.content
+    )
+    assert b"Correct closeout" in response.content
+
+
+@pytest.mark.django_db
+def test_terminal_trip_edit_urls_redirect(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+        status=TripStatus.COMPLETED,
+    )
+    client.force_login(user)
+
+    get_response = client.get(reverse("trip_update", kwargs={"pk": trip.pk}))
+    post_response = client.post(
+        reverse("trip_update", kwargs={"pk": trip.pk}),
+        {
+            "name": "Updated trip",
+            "start_date": "2026-04-21",
+            "end_date": "2026-04-22",
+            "trip_leader": user.pk,
+            "notes": "",
+        },
+    )
+
+    assert get_response.status_code == 302
+    assert get_response.url == trip.get_absolute_url()
+    assert post_response.status_code == 302
+    assert post_response.url == trip.get_absolute_url()
+    trip.refresh_from_db()
+    assert trip.name == "Trip"
+
+
+@pytest.mark.django_db
+def test_terminal_trip_site_visit_update_url_redirects(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+        status=TripStatus.COMPLETED,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    client.force_login(user)
+
+    get_response = client.get(
+        reverse("site_visit_update", kwargs={"pk": site_visit.pk})
+    )
+    post_response = client.post(
+        reverse("site_visit_update", kwargs={"pk": site_visit.pk}),
+        {
+            "site": site.pk,
+            "planned_day": "",
+            "status": SiteVisitStatus.SKIPPED,
+            "notes": "Updated",
+        },
+    )
+
+    assert get_response.status_code == 302
+    assert get_response.url == site_visit.get_absolute_url()
+    assert post_response.status_code == 302
+    assert post_response.url == site_visit.get_absolute_url()
+    site_visit.refresh_from_db()
+    assert site_visit.status == SiteVisitStatus.PLANNED
+    assert site_visit.notes == ""
+
+
+@pytest.mark.django_db
+def test_terminal_trip_assignment_urls_redirect_without_changes(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    assigned_job = Job.objects.create(site=site, title="Assigned")
+    assignment = assign_job_to_site_visit(site_visit, assigned_job)
+    unassigned_job = Job.objects.create(site=site, title="Unassigned")
+    trip.status = TripStatus.COMPLETED
+    trip.save(update_fields=["status", "updated_at"])
+    client.force_login(user)
+
+    assign_response = client.post(
+        reverse("assign_job", kwargs={"pk": site_visit.pk}),
+        {"jobs": [unassigned_job.pk]},
+    )
+    unassign_response = client.post(
+        reverse("unassign_job", kwargs={"pk": assignment.pk})
+    )
+
+    assert assign_response.status_code == 302
+    assert assign_response.url == site_visit.get_absolute_url()
+    assert unassign_response.status_code == 302
+    assert unassign_response.url == site_visit.get_absolute_url()
+    assigned_job.refresh_from_db()
+    unassigned_job.refresh_from_db()
+    assert assigned_job.status == JobStatus.ASSIGNED
+    assert unassigned_job.status == JobStatus.UNASSIGNED
+    assert SiteVisitJob.objects.filter(pk=assignment.pk).exists()
+    assert not SiteVisitJob.objects.filter(job=unassigned_job).exists()
 
 
 @pytest.mark.django_db

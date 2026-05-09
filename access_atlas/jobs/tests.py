@@ -1,3 +1,5 @@
+import re
+
 import pytest
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -16,6 +18,8 @@ from access_atlas.accounts.preferences import (
 from access_atlas.core.list_filters import FILTER_STATE_PARAM, FILTER_STATE_UPDATE
 from access_atlas.core.test_utils import parse_json_script
 from access_atlas.jobs.forms import (
+    ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON,
+    ASSIGNED_JOB_SITE_DISABLED_REASON,
     AssignWorkProgrammeJobForm,
     JobForm,
     JobFromTemplateForm,
@@ -402,7 +406,7 @@ def test_job_cannot_be_manually_set_to_assigned_without_assignment():
 
 
 @pytest.mark.django_db
-def test_terminal_job_requires_closeout_note():
+def test_cancelled_job_requires_closeout_note_but_completed_job_does_not():
     site = create_site()
     job = Job(site=site, title="Inspect cabinet", status="cancelled")
 
@@ -410,10 +414,10 @@ def test_terminal_job_requires_closeout_note():
         job.full_clean()
 
     job.status = JobStatus.COMPLETED
-    with pytest.raises(ValidationError):
-        job.full_clean()
+    job.full_clean()
 
-    job.closeout_note = "Work completed during historical import."
+    job.status = JobStatus.CANCELLED
+    job.closeout_note = "Cancelled during historical import."
     job.full_clean()
 
 
@@ -424,6 +428,77 @@ def test_job_form_does_not_offer_assigned_status():
 
     assert "assigned" not in status_values
     assert "blocked" not in status_values
+
+
+@pytest.mark.django_db
+def test_assigned_job_form_disables_assignment_controlled_fields():
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=User.objects.create_user(email="leader@example.com"),
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    assign_job_to_site_visit(site_visit, job)
+
+    form = JobForm(instance=job)
+
+    assert form.fields["site"].disabled is True
+    assert form.fields["status"].disabled is True
+    assert form.fields["closeout_note"].disabled is True
+    assert form.fields["site"].help_text == ASSIGNED_JOB_SITE_DISABLED_REASON
+    assert (
+        form.fields["status"].help_text == ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON
+    )
+    assert (
+        form.fields["closeout_note"].help_text
+        == ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON
+    )
+
+
+@pytest.mark.django_db
+def test_assigned_job_update_form_shows_frozen_assignment_controlled_fields(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    assign_job_to_site_visit(site_visit, job)
+
+    response = client.get(reverse("job_update", kwargs={"pk": job.pk}))
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert 'name="site"' in content
+    assert 'name="status"' in content
+    assert 'name="closeout_note"' in content
+    assert re.search(r'<select\b(?=[^>]*\bname="site")(?=[^>]*\bdisabled\b)', content)
+    assert re.search(r'<select\b(?=[^>]*\bname="status")(?=[^>]*\bdisabled\b)', content)
+    assert re.search(
+        r'<textarea\b(?=[^>]*\bname="closeout_note")(?=[^>]*\bdisabled\b)',
+        content,
+    )
+    assert content.count("disabled-form-field-control") >= 3
+    assert content.count("disabled-field-reason-button") >= 3
+    assert content.count('data-bs-toggle="popover"') >= 3
+    assert content.count(ASSIGNED_JOB_SITE_DISABLED_REASON) == 1
+    assert content.count(ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON) == 2
+    assert (
+        f'<div class="form-hint">{ASSIGNED_JOB_SITE_DISABLED_REASON}</div>'
+        not in content
+    )
+    assert (
+        f'<div class="form-hint">{ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON}</div>'
+        not in content
+    )
 
 
 def test_job_form_marks_site_select_as_searchable():
@@ -625,6 +700,30 @@ def test_terminal_trip_job_requirements_are_read_only(client):
 
 
 @pytest.mark.django_db
+def test_completed_job_requirements_are_read_only(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    job = Job.objects.create(
+        site=site, title="Inspect cabinet", status=JobStatus.COMPLETED
+    )
+    requirement = Requirement.objects.create(job=job, name="Patch cable")
+
+    page_response = client.get(job.get_requirements_url())
+    toggle_response = client.post(
+        reverse("requirement_toggle", kwargs={"pk": requirement.pk}),
+        {"is_checked": "1"},
+        HTTP_HX_REQUEST="true",
+    )
+
+    assert page_response.status_code == 200
+    assert "This job is completed" in page_response.content.decode()
+    assert toggle_response.status_code == 403
+    requirement.refresh_from_db()
+    assert requirement.is_checked is False
+
+
+@pytest.mark.django_db
 def test_approved_trip_job_requirement_toggle_does_not_reset_approval(client):
     leader = User.objects.create_user(email="leader@example.com")
     approver = User.objects.create_user(email="approver@example.com")
@@ -704,6 +803,44 @@ def test_terminal_trip_job_requirement_structure_is_read_only(client):
     requirement.refresh_from_db()
     assert requirement.name == "Patch cable"
     assert Requirement.objects.filter(pk=requirement.pk).exists()
+
+
+@pytest.mark.django_db
+def test_terminal_trip_job_update_is_frozen(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    assign_job_to_site_visit(site_visit, job)
+    trip.status = TripStatus.COMPLETED
+    trip.save(update_fields=["status", "updated_at"])
+
+    get_response = client.get(reverse("job_update", kwargs={"pk": job.pk}))
+    post_response = client.post(
+        reverse("job_update", kwargs={"pk": job.pk}),
+        {
+            "site": site.pk,
+            "work_programme": "",
+            "title": "Updated cabinet",
+            "description": "",
+            "estimated_duration_minutes": "",
+            "priority": "normal",
+        },
+    )
+
+    assert get_response.status_code == 302
+    assert get_response.url == job.get_absolute_url()
+    assert post_response.status_code == 302
+    assert post_response.url == job.get_absolute_url()
+    job.refresh_from_db()
+    assert job.title == "Inspect cabinet"
 
 
 @pytest.mark.django_db
@@ -900,7 +1037,47 @@ def test_job_update_sets_and_clears_work_programme(client):
 
 
 @pytest.mark.django_db
-def test_editing_assigned_job_on_approved_trip_requires_confirmation_and_resubmits(
+def test_assigned_job_update_keeps_status_and_closeout_note_under_trip_closeout(
+    client,
+):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    assign_job_to_site_visit(site_visit, job)
+    other_site = create_site("AA-002")
+
+    response = client.post(
+        reverse("job_update", kwargs={"pk": job.pk}),
+        {
+            "site": other_site.pk,
+            "work_programme": "",
+            "title": "Updated cabinet",
+            "description": "",
+            "estimated_duration_minutes": "",
+            "priority": "normal",
+            "status": JobStatus.CANCELLED,
+            "closeout_note": "Should not land.",
+        },
+    )
+
+    assert response.status_code == 302
+    job.refresh_from_db()
+    assert job.site == site
+    assert job.title == "Updated cabinet"
+    assert job.status == JobStatus.ASSIGNED
+    assert job.closeout_note == ""
+
+
+@pytest.mark.django_db
+def test_editing_assigned_job_on_approved_trip_does_not_reset_approval(
     client,
 ):
     from access_atlas.trips.models import TripApproval, TripStatus
@@ -920,23 +1097,8 @@ def test_editing_assigned_job_on_approved_trip_requires_confirmation_and_resubmi
     job = Job.objects.create(site=site, title="Site job")
     assign_job_to_site_visit(site_visit, job)
     TripApproval.objects.create(trip=trip, approver=approver, approval_round=1)
+    work_programme = WorkProgramme.objects.create(name="2026 Field Work")
     client.force_login(leader)
-
-    initial_response = client.post(
-        reverse("job_update", kwargs={"pk": job.pk}),
-        {
-            "site": site.pk,
-            "template": "",
-            "title": "Updated title",
-            "description": "",
-            "estimated_duration_minutes": "",
-            "priority": "normal",
-            "status": JobStatus.ASSIGNED,
-        },
-    )
-
-    assert initial_response.status_code == 200
-    assert b"Approval reset" in initial_response.content
 
     response = client.post(
         reverse("job_update", kwargs={"pk": job.pk}),
@@ -944,11 +1106,12 @@ def test_editing_assigned_job_on_approved_trip_requires_confirmation_and_resubmi
             "site": site.pk,
             "template": "",
             "title": "Updated title",
-            "description": "",
-            "estimated_duration_minutes": "",
-            "priority": "normal",
-            "status": JobStatus.ASSIGNED,
-            "confirm_trip_approval_reset": "on",
+            "description": "Allowed metadata update.",
+            "work_programme": work_programme.pk,
+            "estimated_duration_minutes": "45",
+            "priority": "high",
+            "status": JobStatus.CANCELLED,
+            "closeout_note": "Should not land.",
         },
     )
 
@@ -956,8 +1119,15 @@ def test_editing_assigned_job_on_approved_trip_requires_confirmation_and_resubmi
     trip.refresh_from_db()
     job.refresh_from_db()
     assert job.title == "Updated title"
-    assert trip.status == TripStatus.SUBMITTED
-    assert trip.approval_round == 2
+    assert job.description == "Allowed metadata update."
+    assert job.work_programme == work_programme
+    assert job.estimated_duration_minutes == 45
+    assert job.priority == Priority.HIGH
+    assert job.status == JobStatus.ASSIGNED
+    assert job.closeout_note == ""
+    assert trip.status == TripStatus.APPROVED
+    assert trip.approval_round == 1
+    assert TripApproval.objects.filter(trip=trip, approval_round=1).count() == 1
 
 
 @pytest.mark.django_db
@@ -1094,6 +1264,34 @@ def test_job_list_links_to_map_view(client):
 
     assert response.status_code == 200
     assert reverse("job_map") in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_job_list_disables_edit_for_jobs_on_terminal_trips(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    frozen_job = Job.objects.create(site=site, title="Frozen job")
+    editable_job = Job.objects.create(site=site, title="Editable job")
+    assign_job_to_site_visit(site_visit, frozen_job)
+    trip.status = TripStatus.COMPLETED
+    trip.save(update_fields=["status", "updated_at"])
+
+    response = client.get(reverse("job_list"))
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "normal job editing is frozen" in content
+    assert 'aria-label="Edit Frozen job"' in content
+    assert reverse("job_update", kwargs={"pk": frozen_job.pk}) not in content
+    assert reverse("job_update", kwargs={"pk": editable_job.pk}) in content
 
 
 @pytest.mark.django_db
@@ -1919,7 +2117,27 @@ def test_job_import_rejects_assigned_status(client):
 
 
 @pytest.mark.django_db
-def test_job_import_requires_closeout_note_for_terminal_status(client):
+def test_job_import_requires_closeout_note_for_cancelled_status(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    create_site()
+    JobTemplate.objects.create(title="Replace sensor", is_active=True)
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        b"site_code,template_title,status\nAA-001,Replace sensor,cancelled\n",
+        content_type="text/csv",
+    )
+
+    response = client.post(reverse("job_import"), {"csv_file": csv_file})
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "closeout_note is required for cancelled jobs." in content
+    assert_import_create_button_disabled(content, "Create jobs")
+
+
+@pytest.mark.django_db
+def test_job_import_allows_completed_status_without_closeout_note(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
     create_site()
@@ -1929,13 +2147,14 @@ def test_job_import_requires_closeout_note_for_terminal_status(client):
         b"site_code,template_title,status\nAA-001,Replace sensor,completed\n",
         content_type="text/csv",
     )
+    client.post(reverse("job_import"), {"csv_file": csv_file})
 
-    response = client.post(reverse("job_import"), {"csv_file": csv_file})
+    response = client.post(reverse("job_import_confirm"))
 
-    content = response.content.decode()
-    assert response.status_code == 200
-    assert "closeout_note is required for completed or cancelled jobs." in content
-    assert_import_create_button_disabled(content, "Create jobs")
+    assert response.status_code == 302
+    job = Job.objects.get()
+    assert job.status == JobStatus.COMPLETED
+    assert job.closeout_note == ""
 
 
 @pytest.mark.django_db

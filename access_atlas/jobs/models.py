@@ -212,21 +212,18 @@ class Job(models.Model):
             raise ValidationError(
                 {"status": "A job can only be assigned when linked to a site visit."}
             )
-        if (
-            self.status in {JobStatus.COMPLETED, JobStatus.CANCELLED}
-            and not self.closeout_note.strip()
-        ):
+        if self.status == JobStatus.CANCELLED and not self.closeout_note.strip():
             raise ValidationError(
-                {
-                    "closeout_note": (
-                        "A closeout note is required for completed or cancelled jobs."
-                    )
-                }
+                {"closeout_note": ("A closeout note is required for cancelled jobs.")}
             )
 
     @property
     def is_assigned(self) -> bool:
         return hasattr(self, "site_visit_assignment")
+
+    @property
+    def is_terminal(self) -> bool:
+        return self.status in {JobStatus.COMPLETED, JobStatus.CANCELLED}
 
 
 class Requirement(models.Model):
@@ -248,3 +245,23 @@ class Requirement(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+    @property
+    def frozen_reason(self) -> str:
+        if self.job.is_terminal:
+            return (
+                f"This job is {self.job.get_status_display().lower()}, so its "
+                "requirements are frozen."
+            )
+        assignment = getattr(self.job, "site_visit_assignment", None)
+        if assignment is None or not assignment.site_visit.trip.is_terminal:
+            return ""
+        trip = assignment.site_visit.trip
+        return (
+            f"This job is assigned to {trip.get_status_display().lower()} trip "
+            f'"{trip.name}", so its requirements are frozen.'
+        )
+
+    @property
+    def is_frozen(self) -> bool:
+        return self.frozen_reason != ""

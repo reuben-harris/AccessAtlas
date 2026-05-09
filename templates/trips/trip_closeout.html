@@ -1,19 +1,34 @@
 {% extends "base/base.html" %}
 {% load form_extras %}
 
-{% block title %}Close {{ trip.name }} - Access Atlas{% endblock %}
+{% block title %}{% if page_title %}{{ page_title }}{% else %}Close {{ trip.name }}{% endif %} - Access Atlas{% endblock %}
 
 {% block content %}
 <div class="page-header d-print-none">
   <div class="row align-items-center">
     <div class="col">
-      <h2 class="page-title">Close {{ trip.name }}</h2>
+      <h2 class="page-title">{% if page_title %}{{ page_title }}{% else %}Close {{ trip.name }}{% endif %}</h2>
     </div>
   </div>
 </div>
 
+{% if form_notice %}
+  {% include "includes/stacked_alert.html" with alert_title="Closeout correction" alert_body=form_notice alert_class="alert-warning" %}
+{% endif %}
+
 <form method="post">
   {% csrf_token %}
+  {% if form.correction_reason_field %}
+    <div class="card mb-3">
+      <div class="card-body">
+        {% with field=form.correction_reason_field %}
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% required_marker field %}</label>
+          {{ field }}
+          {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        {% endwith %}
+      </div>
+    </div>
+  {% endif %}
   <div class="card">
     <div class="card-header"><h3 class="card-title">Site Visits</h3></div>
     <div class="card-body">
@@ -44,14 +59,14 @@
           {% for error in group.reason.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
         </div>
       {% empty %}
-        <p class="text-secondary mb-0">No unresolved jobs are assigned to this trip.</p>
+        <p class="text-secondary mb-0">{{ empty_jobs_message|default:"No unresolved jobs are assigned to this trip." }}</p>
       {% endfor %}
     </div>
   </div>
 
   <div class="btn-list mt-3">
     <button class="btn btn-success" type="submit">
-      <i class="ti ti-flag-check" aria-hidden="true"></i>Close trip
+      <i class="ti {{ submit_icon|default:'ti-flag-check' }}" aria-hidden="true"></i>{{ submit_label|default:"Close trip" }}
     </button>
     <a class="btn btn-secondary" href="{{ trip.get_absolute_url }}">
       <i class="ti ti-arrow-left" aria-hidden="true"></i>Back

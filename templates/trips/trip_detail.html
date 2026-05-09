@@ -62,8 +62,12 @@
             </td>
             <td><span class="badge {{ visit.status|status_badge_class }}">{{ visit.get_status_display }}</span></td>
             <td>{{ visit.sitevisitjob_set.count }}</td>
-            {% url 'site_visit_update' visit.pk as edit_url %}
-            {% include "includes/row_actions.html" with edit_url=edit_url label=visit.site %}
+            {% if object.is_terminal %}
+              {% include "includes/disabled_row_actions.html" with label=visit.site disabled_reason="Site visits cannot be edited on completed or cancelled trips." %}
+            {% else %}
+              {% url 'site_visit_update' visit.pk as edit_url %}
+              {% include "includes/row_actions.html" with edit_url=edit_url label=visit.site %}
+            {% endif %}
           </tr>
         {% empty %}
           <tr><td colspan="6" class="text-secondary">No site visits found.</td></tr>
@@ -96,8 +100,12 @@
             <td><span class="badge {{ assignment.job.status|status_badge_class }}">{{ assignment.job.get_status_display }}</span></td>
             <td>{{ assignment.job.get_priority_display }}</td>
             <td>{{ assignment.job.estimated_duration_minutes|default:"-" }} min</td>
-            {% url 'job_update' assignment.job.pk as edit_url %}
-            {% include "includes/row_actions.html" with edit_url=edit_url label=assignment.job.title %}
+            {% if object.is_terminal %}
+              {% include "includes/disabled_row_actions.html" with label=assignment.job.title disabled_reason="Jobs cannot be edited on completed or cancelled trips." %}
+            {% else %}
+              {% url 'job_update' assignment.job.pk as edit_url %}
+              {% include "includes/row_actions.html" with edit_url=edit_url label=assignment.job.title %}
+            {% endif %}
           </tr>
         {% empty %}
           <tr><td colspan="8" class="text-secondary">No jobs assigned to this trip.</td></tr>

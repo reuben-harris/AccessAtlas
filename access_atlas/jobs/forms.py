@@ -21,6 +21,13 @@ from .models import (
     WorkProgramme,
 )
 
+ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON = (
+    "This field is managed by trip closeout while the job is assigned to a trip."
+)
+ASSIGNED_JOB_SITE_DISABLED_REASON = (
+    "Site cannot be changed while this job is assigned to a trip."
+)
+
 
 class JobTemplateForm(forms.ModelForm):
     class Meta:
@@ -70,6 +77,12 @@ class JobForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance.pk and self.instance.is_assigned:
+            self.fields["site"].disabled = True
+            self.fields["site"].help_text = ASSIGNED_JOB_SITE_DISABLED_REASON
+            for field_name in ("status", "closeout_note"):
+                field = self.fields[field_name]
+                field.disabled = True
+                field.help_text = ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON
             return
         choices = [
             (value, label)
