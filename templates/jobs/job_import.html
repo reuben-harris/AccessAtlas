@@ -20,13 +20,13 @@
         <h3 class="card-title">CSV Specification</h3>
       </div>
       <div class="card-body">
-        <p>The CSV must include <code>site_code</code> and <code>template_title</code>. It can also include <code>status</code>, <code>closeout_note</code>, and <code>work_programme</code>.</p>
-        <pre class="mb-3"><code>site_code,template_title,status,closeout_note,work_programme</code></pre>
-        <p>Each row creates a job by copying an active job template for a synced site. Status can be <code>unassigned</code>, <code>completed</code>, or <code>cancelled</code>. Completed and cancelled jobs require a closeout note. Work programme names must already exist.</p>
+        <p>The CSV must include <code>site_code</code> and <code>template_title</code>. It can also include <code>status</code>, <code>completed_date</code>, <code>closeout_note</code>, and <code>work_programme</code>.</p>
+        <pre class="mb-3"><code>site_code,template_title,status,completed_date,closeout_note,work_programme</code></pre>
+        <p>Each row creates a job by copying an active job template for a synced site. Status can be <code>unassigned</code>, <code>completed</code>, or <code>cancelled</code>. Completed jobs require a <code>completed_date</code> in <code>YYYY-MM-DD</code> format. Cancelled jobs require a closeout note. Work programme names must already exist.</p>
         <p>Example CSV: <code>{{ example_path }}</code></p>
-        <pre class="mb-0"><code>site_code,template_title,status,closeout_note,work_programme
-AA-001,Replace sensor,unassigned,,2026 Field Work
-AA-002,Inspect cabinet,completed,Imported from existing completed work log,2026 Field Work</code></pre>
+        <pre class="mb-0"><code>site_code,template_title,status,completed_date,closeout_note,work_programme
+AA-001,Replace sensor,unassigned,,,2026 Field Work
+AA-002,Inspect cabinet,completed,2026-05-12,Imported from existing completed work log,2026 Field Work</code></pre>
       </div>
     </div>
   </div>
@@ -47,6 +47,7 @@ AA-002,Inspect cabinet,completed,Imported from existing completed work log,2026 
             {% include "includes/sortable_th.html" with label="Template Title" sort_key="template-title" %}
             {% include "includes/sortable_th.html" with label="Work Programme" sort_key="work-programme" %}
             {% include "includes/sortable_th.html" with label="Status" sort_key="status" %}
+            {% include "includes/sortable_th.html" with label="Completed Date" sort_key="completed-date" %}
             {% include "includes/sortable_th.html" with label="Closeout Note" sort_key="closeout-note" %}
             {% include "includes/sortable_th.html" with label="Result" sort_key="result" %}
           </tr>
@@ -59,6 +60,7 @@ AA-002,Inspect cabinet,completed,Imported from existing completed work log,2026 
               <td>{{ row.template_title|default:"-" }}</td>
               <td>{{ row.work_programme_name|default:"-" }}</td>
               <td>{{ row.status_label|default:"-" }}</td>
+              <td>{{ row.completed_date|date:"Y-m-d"|default:"-" }}</td>
               <td>{{ row.closeout_note|default:"-" }}</td>
               <td>
                 {% if row.is_valid %}

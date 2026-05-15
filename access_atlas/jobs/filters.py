@@ -406,6 +406,32 @@ class JobFilterSet(AccessAtlasFilterSet):
         lookup_expr="lte",
     )
     due_date__empty = EmptyValueFilter(field_name="work_programme__end_date")
+    completed_date = django_filters.DateFilter(
+        field_name="completed_date",
+        lookup_expr="exact",
+    )
+    completed_date__not = django_filters.DateFilter(
+        field_name="completed_date",
+        lookup_expr="exact",
+        exclude=True,
+    )
+    completed_date__gt = django_filters.DateFilter(
+        field_name="completed_date",
+        lookup_expr="gt",
+    )
+    completed_date__gte = django_filters.DateFilter(
+        field_name="completed_date",
+        lookup_expr="gte",
+    )
+    completed_date__lt = django_filters.DateFilter(
+        field_name="completed_date",
+        lookup_expr="lt",
+    )
+    completed_date__lte = django_filters.DateFilter(
+        field_name="completed_date",
+        lookup_expr="lte",
+    )
+    completed_date__empty = EmptyValueFilter(field_name="completed_date")
     estimated_duration_minutes = django_filters.NumberFilter(
         field_name="estimated_duration_minutes",
         lookup_expr="exact",
@@ -484,6 +510,7 @@ class JobFilterSet(AccessAtlasFilterSet):
             choices=work_programme_choices,
         ),
         FilterFieldSpec("due_date", "Due date", "date", DATE_OPERATORS),
+        FilterFieldSpec("completed_date", "Completed date", "date", DATE_OPERATORS),
         FilterFieldSpec(
             "estimated_duration_minutes",
             "Estimate",

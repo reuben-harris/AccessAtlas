@@ -330,6 +330,14 @@ class TripCloseoutForm(forms.Form):
                     self.job_outcome_field(assignment),
                     "A job cannot be completed when its site visit is skipped.",
                 )
+            if (
+                outcome == TripCloseoutJobOutcome.COMPLETED
+                and assignment.site_visit.planned_day is None
+            ):
+                self.add_error(
+                    self.job_outcome_field(assignment),
+                    "A job cannot be completed until its site visit has a date.",
+                )
         return cleaned_data
 
     def closeout_assignments(self):
