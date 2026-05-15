@@ -16,9 +16,17 @@
       </h2>
     </div>
     <div class="col-auto ms-auto">
-      <a class="btn btn-warning" href="{% url 'site_visit_update' object.pk %}">
-        <i class="ti ti-pencil" aria-hidden="true"></i>Edit
-      </a>
+      {% if object.trip.is_terminal %}
+        <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="Site visits cannot be edited on completed or cancelled trips.">
+          <button class="btn btn-secondary disabled" type="button" disabled>
+            <i class="ti ti-pencil-off" aria-hidden="true"></i>Edit
+          </button>
+        </span>
+      {% else %}
+        <a class="btn btn-warning" href="{% url 'site_visit_update' object.pk %}">
+          <i class="ti ti-pencil" aria-hidden="true"></i>Edit
+        </a>
+      {% endif %}
     </div>
   </div>
 </div>

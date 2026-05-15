@@ -79,6 +79,11 @@ urlpatterns = [
         views.SiteVisitUpdateView.as_view(),
         name="site_visit_update",
     ),
+    path(
+        "site-visits/<int:pk>/delete/",
+        views.SiteVisitDeleteView.as_view(),
+        name="site_visit_delete",
+    ),
     path("site-visits/<int:pk>/assign/", views.assign_job, name="assign_job"),
     path("assignments/<int:pk>/unassign/", views.unassign_job, name="unassign_job"),
 ]

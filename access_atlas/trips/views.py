@@ -12,6 +12,7 @@ from .action_views import (
 )
 from .detail_views import (
     SiteVisitCreateView,
+    SiteVisitDeleteView,
     SiteVisitDetailView,
     SiteVisitHistoryDetailView,
     SiteVisitHistoryView,
@@ -45,6 +46,7 @@ __all__ = [
     "TripCreateView",
     "TripUpdateView",
     "SiteVisitDetailView",
+    "SiteVisitDeleteView",
     "SiteVisitHistoryView",
     "SiteVisitHistoryDetailView",
     "SiteVisitCreateView",

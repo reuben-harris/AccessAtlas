@@ -22,9 +22,27 @@
       </h2>
     </div>
     <div class="col-auto ms-auto">
-      <a class="btn btn-warning" href="{% url 'site_visit_update' object.pk %}">
-        <i class="ti ti-pencil" aria-hidden="true"></i>Edit
-      </a>
+      <div class="btn-list">
+        {% if object.trip.is_terminal %}
+          <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="Site visits cannot be edited on completed or cancelled trips.">
+            <button class="btn btn-secondary disabled" type="button" disabled>
+              <i class="ti ti-pencil-off" aria-hidden="true"></i>Edit
+            </button>
+          </span>
+          <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="Site visits cannot be deleted from completed or cancelled trips.">
+            <button class="btn btn-secondary disabled" type="button" disabled>
+              <i class="ti ti-trash-off" aria-hidden="true"></i>Delete
+            </button>
+          </span>
+        {% else %}
+          <a class="btn btn-warning" href="{% url 'site_visit_update' object.pk %}">
+            <i class="ti ti-pencil" aria-hidden="true"></i>Edit
+          </a>
+          <a class="btn btn-danger" href="{% url 'site_visit_delete' object.pk %}">
+            <i class="ti ti-trash" aria-hidden="true"></i>Delete
+          </a>
+        {% endif %}
+      </div>
     </div>
   </div>
 </div>
@@ -53,9 +71,17 @@
             <td><a href="{{ assignment.job.get_absolute_url }}">{{ assignment.job.title }}</a></td>
             <td><span class="badge {{ assignment.job.status|status_badge_class }}">{{ assignment.job.get_status_display }}</span></td>
             <td class="text-end row-actions">
-              <a class="btn btn-icon btn-warning row-edit-button" href="{% url 'job_update' assignment.job.pk %}" aria-label="Edit {{ assignment.job.title }}" title="Edit {{ assignment.job.title }}">
-                <i class="ti ti-pencil" aria-hidden="true"></i>
-              </a>
+              {% if object.trip.is_terminal %}
+                <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="Jobs cannot be edited on completed or cancelled trips.">
+                  <button class="btn btn-icon btn-warning row-edit-button disabled" type="button" aria-label="Edit {{ assignment.job.title }}" title="Edit {{ assignment.job.title }}" disabled>
+                    <i class="ti ti-pencil-off" aria-hidden="true"></i>
+                  </button>
+                </span>
+              {% else %}
+                <a class="btn btn-icon btn-warning row-edit-button" href="{% url 'job_update' assignment.job.pk %}" aria-label="Edit {{ assignment.job.title }}" title="Edit {{ assignment.job.title }}">
+                  <i class="ti ti-pencil" aria-hidden="true"></i>
+                </a>
+              {% endif %}
               {% if not object.trip.is_terminal %}
                 <form class="d-inline" method="post" action="{% url 'unassign_job' assignment.pk %}">
                   {% csrf_token %}

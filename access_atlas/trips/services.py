@@ -24,6 +24,11 @@ class TripCancelSummary:
     can_cancel: bool
 
 
+@dataclass(frozen=True)
+class SiteVisitDeleteSummary:
+    jobs_to_return: int
+
+
 def get_trip_assignments(trip: Trip):
     return SiteVisitJob.objects.select_related(
         "job", "site_visit", "site_visit__site"
@@ -42,6 +47,14 @@ def get_trip_cancel_summary(trip: Trip) -> TripCancelSummary:
         jobs_to_return=assignments.filter(job__status=JobStatus.ASSIGNED).count(),
         can_cancel=can_cancel,
     )
+
+
+def get_site_visit_delete_summary(site_visit) -> SiteVisitDeleteSummary:
+    jobs_to_return = SiteVisitJob.objects.filter(
+        site_visit=site_visit,
+        job__status=JobStatus.ASSIGNED,
+    ).count()
+    return SiteVisitDeleteSummary(jobs_to_return=jobs_to_return)
 
 
 def user_can_approve_trip(trip: Trip, user) -> bool:
@@ -191,6 +204,38 @@ def unassign_site_visit_job(assignment: SiteVisitJob) -> None:
         job.completed_date = None
         job.save(update_fields=["status", "completed_date", "updated_at"])
         update_change_reason(job, "Unassigned from site visit")
+
+
+@transaction.atomic
+def delete_site_visit(site_visit, user) -> None:
+    """Delete a planned site visit and return its assigned jobs to unassigned."""
+    trip = site_visit.trip
+    if trip.is_terminal:
+        raise ValidationError(
+            "Site visits cannot be deleted from completed or cancelled trips."
+        )
+
+    for assignment in SiteVisitJob.objects.select_related("job").filter(
+        site_visit=site_visit
+    ):
+        job = assignment.job
+        assignment._change_reason = "Returned job during site visit deletion"
+        assignment.delete()
+        if job.status == JobStatus.ASSIGNED:
+            job.status = JobStatus.UNASSIGNED
+            job.save(update_fields=["status", "updated_at"])
+            update_change_reason(
+                job,
+                "Returned to unassigned during site visit deletion",
+            )
+
+    site_visit._change_reason = "Deleted site visit"
+    site_visit.delete()
+    invalidate_trip_approval(
+        trip,
+        user,
+        "Returned to submitted after site visit deletion",
+    )
 
 
 @transaction.atomic
