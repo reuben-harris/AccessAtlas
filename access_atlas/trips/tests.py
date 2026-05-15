@@ -3459,3 +3459,48 @@ def test_terminal_trip_close_and_cancel_urls_redirect(client):
     assert close_response.url == trip.get_absolute_url()
     assert cancel_response.status_code == 302
     assert cancel_response.url == trip.get_absolute_url()
+
+
+@pytest.mark.django_db
+def test_site_visit_delete_confirmation_shows_context_and_return_count(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = create_requirement_site(code="AA-001", name="Site A")
+    trip = create_trip(user)
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    assigned_job = Job.objects.create(site=site, title="Return this job")
+    completed_job = Job.objects.create(
+        site=site,
+        title="Already completed",
+        status=JobStatus.COMPLETED,
+        completed_date=date(2026, 4, 21),
+    )
+    assign_job_to_site_visit(site_visit, assigned_job)
+    SiteVisitJob.objects.create(site_visit=site_visit, job=completed_job)
+    client.force_login(user)
+
+    response = client.get(reverse("site_visit_delete", kwargs={"pk": site_visit.pk}))
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Site" in content
+    assert "AA-001 - Site A" in content
+    assert "Trip" in content
+    assert trip.name in content
+    assert "Jobs to return to unassigned" in content
+    assert ("Jobs to return to unassigned", 1) in response.context[
+        "delete_summary_rows"
+    ]
+
+
+@pytest.mark.django_db
+def test_terminal_trip_site_visit_delete_url_redirects(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = create_trip(user, status=TripStatus.CANCELLED)
+    site = create_requirement_site()
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    client.force_login(user)
+
+    response = client.get(reverse("site_visit_delete", kwargs={"pk": site_visit.pk}))
+
+    assert response.status_code == 302
+    assert response.url == site_visit.get_absolute_url()

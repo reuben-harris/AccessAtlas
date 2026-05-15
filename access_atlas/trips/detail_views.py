@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ValidationError
 from django.db.models import F
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
@@ -21,6 +22,7 @@ from access_atlas.jobs.models import Job, JobStatus, Requirement
 from .approval import ApprovedTripChangeMixin
 from .forms import AssignJobForm, SiteVisitForm, TripForm
 from .models import SiteVisit, SiteVisitJob, Trip
+from .services import delete_site_visit, get_site_visit_delete_summary
 from .view_helpers import (
     build_trip_map_data,
     site_visit_detail_sections,
@@ -496,3 +498,46 @@ class TripHistoryDetailView(ObjectHistoryDetailMixin, TripHistoryView):
 
 class SiteVisitHistoryDetailView(ObjectHistoryDetailMixin, SiteVisitHistoryView):
     pass
+
+
+class SiteVisitDeleteView(LoginRequiredMixin, DeleteView):
+    model = SiteVisit
+    template_name = "object_confirm_delete.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if self.object.trip.is_terminal:
+            messages.info(
+                request,
+                "Site visits cannot be deleted from completed or cancelled trips.",
+            )
+            return redirect(self.object)
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        trip = self.object.trip
+        try:
+            delete_site_visit(self.object, request.user)
+        except ValidationError as exc:
+            messages.error(request, exc.message)
+            return redirect(self.object)
+        messages.success(request, "Deleted site visit.")
+        return redirect(trip)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        summary = get_site_visit_delete_summary(self.object)
+        context["delete_title"] = "Delete site visit"
+        context["delete_message"] = (
+            "This will delete the Site Visit and return assigned jobs to unassigned."
+        )
+        context["delete_summary_rows"] = [
+            ("Site", self.object.site),
+            ("Trip", self.object.trip),
+            ("Jobs to return to unassigned", summary.jobs_to_return),
+        ]
+        return context
+
+    def get_cancel_url(self):
+        return self.object.get_absolute_url()

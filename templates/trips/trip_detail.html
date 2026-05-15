@@ -62,12 +62,27 @@
             </td>
             <td><span class="badge {{ visit.status|status_badge_class }}">{{ visit.get_status_display }}</span></td>
             <td>{{ visit.sitevisitjob_set.count }}</td>
-            {% if object.is_terminal %}
-              {% include "includes/disabled_row_actions.html" with label=visit.site disabled_reason="Site visits cannot be edited on completed or cancelled trips." %}
-            {% else %}
-              {% url 'site_visit_update' visit.pk as edit_url %}
-              {% include "includes/row_actions.html" with edit_url=edit_url label=visit.site %}
-            {% endif %}
+            <td class="text-end row-actions">
+              {% if object.is_terminal %}
+                <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="Site visits cannot be edited on completed or cancelled trips.">
+                  <button class="btn btn-icon btn-warning row-edit-button disabled" type="button" aria-label="Edit {{ visit.site }}" title="Edit {{ visit.site }}" disabled>
+                    <i class="ti ti-pencil-off" aria-hidden="true"></i>
+                  </button>
+                </span>
+                <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="Site visits cannot be deleted from completed or cancelled trips.">
+                  <button class="btn btn-icon btn-danger row-delete-button disabled" type="button" aria-label="Delete {{ visit.site }}" title="Delete {{ visit.site }}" disabled>
+                    <i class="ti ti-trash-off" aria-hidden="true"></i>
+                  </button>
+                </span>
+              {% else %}
+                <a class="btn btn-icon btn-warning row-edit-button" href="{% url 'site_visit_update' visit.pk %}" aria-label="Edit {{ visit.site }}" title="Edit {{ visit.site }}">
+                  <i class="ti ti-pencil" aria-hidden="true"></i>
+                </a>
+                <a class="btn btn-icon btn-danger row-delete-button" href="{% url 'site_visit_delete' visit.pk %}" aria-label="Delete {{ visit.site }}" title="Delete {{ visit.site }}">
+                  <i class="ti ti-trash" aria-hidden="true"></i>
+                </a>
+              {% endif %}
+            </td>
           </tr>
         {% empty %}
           <tr><td colspan="6" class="text-secondary">No site visits found.</td></tr>
