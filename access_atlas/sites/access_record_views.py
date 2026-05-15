@@ -79,18 +79,28 @@ class AccessRecordListView(
         return context
 
 
-class AccessRecordGlobalMapView(FilteredListMixin, LoginRequiredMixin, ListView):
+class AccessRecordGlobalMapView(
+    SortableListMixin,
+    FilteredListMixin,
+    LoginRequiredMixin,
+    ListView,
+):
     model = AccessRecord
     template_name = "sites/access_record_global_map.html"
     filterset_class = AccessRecordFilterSet
     search_placeholder = "Search access records"
     filter_preference_page_key = "access-records"
+    sort_preference_page_key = "access-records"
+    default_sort = "site"
+    sort_field_map = AccessRecordListView.sort_field_map
 
     def get_queryset(self):
-        queryset = AccessRecord.objects.select_related("site").prefetch_related(
-            "versions"
+        queryset = (
+            AccessRecord.objects.select_related("site")
+            .prefetch_related("versions")
+            .annotate(latest_version_number=Max("versions__version_number"))
         )
-        return self.apply_filters(queryset).order_by("site__code", "name")
+        return self.apply_sort(self.apply_filters(queryset))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -106,7 +116,12 @@ class AccessRecordGlobalMapView(FilteredListMixin, LoginRequiredMixin, ListView)
         )
         context["site_access_map_preference"] = {
             "key": "",
-            "value": {"visible_record_ids": [], "animate_tracks": True},
+            "value": {
+                "visible_record_ids": [
+                    access_record.pk for access_record in access_records
+                ],
+                "animate_tracks": True,
+            },
         }
         context["map_basemap_config"] = map_basemap_config()
         context["map_basemap_preference"] = map_basemap_preference(self.request.user)

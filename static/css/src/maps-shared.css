@@ -107,7 +107,7 @@
   top: 0;
   right: calc(100% + 0.5rem);
   width: 13.25rem;
-  max-height: min(32rem, calc(100vh - 7rem));
+  max-height: min(26rem, calc(100dvh - 7rem));
   padding: 0.375rem;
   color: var(--tblr-body-color);
   background: #fff;
@@ -115,6 +115,8 @@
   border-radius: var(--tblr-border-radius);
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.18);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .access-atlas-map-layer-menu[hidden] {
@@ -375,6 +377,12 @@
 
   .access-atlas-map-card--fill {
     min-height: 20rem;
+  }
+
+  .access-atlas-map-layer-menu {
+    right: 0;
+    max-width: calc(100vw - 2rem);
+    max-height: min(22rem, calc(100dvh - 6rem));
   }
 }
 

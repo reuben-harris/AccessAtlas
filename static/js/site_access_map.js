@@ -314,13 +314,19 @@
 
   function updateToggleButton(button, isVisible) {
     const icon = button.querySelector("i");
+    const label = button.querySelector("[data-map-toggle-label]");
+    button.classList.toggle("is-visible", isVisible);
     button.classList.toggle("btn-secondary", isVisible);
     button.classList.toggle("btn-outline-secondary", !isVisible);
     button.title = isVisible ? "Hide on map" : "Show on map";
+    button.setAttribute("aria-pressed", isVisible ? "true" : "false");
     button.setAttribute(
       "aria-label",
       isVisible ? "Hide access record on map" : "Show access record on map",
     );
+    if (label) {
+      label.textContent = isVisible ? "Hide" : "Show";
+    }
     if (!icon) {
       return;
     }

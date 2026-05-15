@@ -52,6 +52,14 @@
   list-style: none;
 }
 
+.job-map-popup-list--scroll {
+  /* Cap long site job lists at roughly fifteen rows so the popup stays usable. */
+  max-height: 31rem;
+  padding-right: 0.25rem;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
 .job-map-popup-list li {
   display: flex;
   align-items: center;

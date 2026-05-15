@@ -1,5 +1,5 @@
 {% extends "base/base.html" %}
-{% load static %}
+{% load static status_badges %}
 
 {% block title %}Access Records Map - Access Atlas{% endblock %}
 
@@ -26,15 +26,65 @@
   {% include "sites/_access_record_view_toolbar.html" %}
   {% include "includes/list_controls.html" with filter_layout="map_offcanvas" %}
 
-  <div class="card site-access-map-card access-atlas-map-card--fill">
-    <div class="card-body p-0">
-      <div
-        id="site-access-map"
-        class="site-access-map"
-        data-filter-count="{{ active_filter_chips|length }}"
-        data-basemap-preference-url="{% url 'account_preference' %}"
-        aria-label="Map of access record features"
-      ></div>
+  <div class="access-record-map-layout access-atlas-map-card--fill">
+    <div class="card access-record-map-list-card">
+      <div class="table-responsive">
+        <table class="table table-vcenter access-record-map-table">
+          <thead>
+            <tr>
+              <th class="w-1">Map</th>
+              {% include "includes/sortable_th.html" with label="Site" sort_key="site" %}
+              {% include "includes/sortable_th.html" with label="Name" sort_key="name" %}
+              {% include "includes/sortable_th.html" with label="Status" sort_key="status" %}
+              {% include "includes/sortable_th.html" with label="Latest" sort_key="latest-revision" %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for access_record in object_list %}
+              <tr>
+                <td>
+                  <button
+                    type="button"
+                    class="btn btn-icon btn-sm btn-secondary access-record-map-toggle"
+                    data-map-toggle="access-record"
+                    data-record-id="{{ access_record.pk }}"
+                    title="Hide on map"
+                    aria-label="Hide access record on map"
+                    aria-pressed="true"
+                  >
+                    <i class="ti ti-eye" aria-hidden="true"></i>
+                    <span class="visually-hidden" data-map-toggle-label>Hide</span>
+                  </button>
+                </td>
+                <td><a href="{{ access_record.site.get_absolute_url }}">{% include "includes/site_label.html" with site=access_record.site %}</a></td>
+                <td><a href="{{ access_record.get_absolute_url }}">{{ access_record.name }}</a></td>
+                <td><span class="badge {{ access_record.status|status_badge_class }}">{{ access_record.get_status_display }}</span></td>
+                <td>
+                  {% if access_record.latest_version_number %}
+                    v{{ access_record.latest_version_number }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5" class="text-secondary">No access records found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card site-access-map-card access-record-map-card">
+      <div class="card-body p-0">
+        <div
+          id="site-access-map"
+          class="site-access-map"
+          data-filter-count="{{ active_filter_chips|length }}"
+          data-basemap-preference-url="{% url 'account_preference' %}"
+          aria-label="Map of access record features"
+        ></div>
+      </div>
     </div>
   </div>
 </div>
@@ -45,5 +95,6 @@
 {{ map_basemap_preference|json_script:"map-basemap-preference" }}
 <script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
 <script src="{% static 'vendor/leaflet.fullscreen/Control.FullScreen.umd.js' %}"></script>
+<script src="{% static 'vendor/leaflet-ant-path/leaflet-ant-path.js' %}"></script>
 <script src="{% static 'js/site_access_map.js' %}"></script>
 {% endblock %}
