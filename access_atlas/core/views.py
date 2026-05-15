@@ -1,10 +1,14 @@
+import platform
 from dataclasses import dataclass
 from math import pi
 from urllib.parse import urlencode
 
+from django import __version__ as django_version
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db import DatabaseError, connection
 from django.db.models import Count
+from django.http import JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
@@ -52,6 +56,35 @@ JOB_STATUS_CHART_COLORS = {
     JobStatus.CANCELLED: "#d63939",
 }
 JOB_STATUS_CHART_CIRCUMFERENCE = 2 * pi * 44
+
+
+def healthz(request):
+    """Return a narrow health response for container and load-balancer checks."""
+    database_status = "ok"
+    status_code = 200
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+    except DatabaseError:
+        database_status = "unavailable"
+        status_code = 503
+
+    return JsonResponse(
+        {
+            "status": "ok" if status_code == 200 else "degraded",
+            "application": "Access Atlas",
+            "django_version": django_version,
+            "python_version": platform.python_version(),
+            "database": {"status": database_status},
+        },
+        status=status_code,
+    )
+
+
+def page_not_found(request, exception):
+    """Render a useful 404 page when Django debug error pages are disabled."""
+    return render(request, "404.html", status=404)
 
 
 @dataclass(frozen=True)
