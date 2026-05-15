@@ -19,7 +19,7 @@ disabled until the key is configured.
 
 ## ArcGIS Imagery Layers
 
-[1. Follow this guide here to create an API key with the correct scope.](https://developers.arcgis.com/openlayers/maps/raster-tile-basemaps/display-multiple-basemap-layers/#set-up-authentication)
+1. [Follow this guide here to create an API key with the correct scope.](https://developers.arcgis.com/openlayers/maps/raster-tile-basemaps/display-multiple-basemap-layers/#set-up-authentication)
 2. Set the key in the Access Atlas environment, check .env.example for reference.
 
 ## Tracestrack Topo
