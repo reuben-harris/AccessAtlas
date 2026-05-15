@@ -218,6 +218,21 @@
   color: #fff;
 }
 
+/* Keep Django validation state visible after Tom Select replaces a select. */
+.ts-wrapper.is-invalid .ts-control,
+.ts-wrapper.form-select.is-invalid .ts-control,
+.ts-wrapper.form-control.is-invalid .ts-control {
+  border-color: var(--tblr-danger);
+  box-shadow: 0 0 0 0.125rem rgba(var(--tblr-danger-rgb), 0.18);
+}
+
+.ts-wrapper.is-invalid.focus .ts-control,
+.ts-wrapper.form-select.is-invalid.focus .ts-control,
+.ts-wrapper.form-control.is-invalid.focus .ts-control {
+  border-color: var(--tblr-danger);
+  box-shadow: 0 0 0 0.125rem rgba(var(--tblr-danger-rgb), 0.25);
+}
+
 [data-bs-theme="dark"] .ts-wrapper.plugin-remove_button:not(.rtl) .item .remove {
   border-left-color: rgba(255, 255, 255, 0.14);
 }
