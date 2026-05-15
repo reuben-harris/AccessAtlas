@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import pytest
 from django.test import override_settings
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.html import escape
 
 from access_atlas.accounts.models import User, UserPreference
@@ -605,17 +606,18 @@ def test_dashboard_shows_actionable_sections(logged_in_client, user):
         change_note="Initial upload",
         uploaded_by=user,
     )
+    today = timezone.localdate()
     active_trip = Trip.objects.create(
         name="Upcoming Trip",
-        start_date="2026-05-10",
-        end_date="2026-05-12",
+        start_date=today,
+        end_date=today + timezone.timedelta(days=2),
         trip_leader=user,
         status=TripStatus.APPROVED,
     )
     Trip.objects.create(
         name="Cancelled Trip",
-        start_date="2026-05-11",
-        end_date="2026-05-12",
+        start_date=today + timezone.timedelta(days=1),
+        end_date=today + timezone.timedelta(days=2),
         trip_leader=user,
         status=TripStatus.CANCELLED,
     )
