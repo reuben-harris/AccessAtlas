@@ -1,0 +1,19 @@
+{% extends "base/base.html" %}
+
+{% block title %}Page not found - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="empty">
+  <div class="empty-header">404</div>
+  <p class="empty-title">Page not found</p>
+  <p class="empty-subtitle text-secondary">
+    The page may have moved, been removed, or the link may be incorrect.
+  </p>
+  <div class="empty-action">
+    <a class="btn btn-primary" href="{% url 'dashboard' %}">
+      <i class="ti ti-home" aria-hidden="true"></i>
+      Home
+    </a>
+  </div>
+</div>
+{% endblock %}

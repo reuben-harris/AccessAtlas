@@ -11,6 +11,7 @@ from .autocomplete_views import (
 )
 
 urlpatterns = [
+    path("healthz/", views.healthz, name="healthz"),
     path("", views.dashboard, name="dashboard"),
     path("search/", views.search, name="search"),
     path("history/", views.global_history, name="global_history"),
