@@ -1,5 +1,5 @@
 FROM ghcr.io/astral-sh/uv:0.11.9 AS uv
-FROM node:25-slim AS frontend
+FROM node:26-slim AS frontend
 
 WORKDIR /app
 
