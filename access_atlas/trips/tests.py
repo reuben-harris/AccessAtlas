@@ -870,6 +870,7 @@ def test_assign_job_view_rejects_non_unassigned_job(client):
         site=site,
         title="Completed job",
         status=JobStatus.COMPLETED,
+        completed_date=date(2026, 4, 21),
         closeout_note="Done",
     )
     client.force_login(user)
@@ -908,6 +909,7 @@ def test_assign_jobs_to_site_visit_rolls_back_when_any_job_is_ineligible():
         site=site,
         title="Completed job",
         status=JobStatus.COMPLETED,
+        completed_date=date(2026, 4, 21),
         closeout_note="Done",
     )
 
@@ -1643,7 +1645,8 @@ def test_completed_job_trip_requirements_are_read_only(client):
     job = Job.objects.create(site=site, title="Inspect cabinet")
     SiteVisitJob.objects.create(site_visit=site_visit, job=job)
     job.status = JobStatus.COMPLETED
-    job.save(update_fields=["status", "updated_at"])
+    job.completed_date = date(2026, 4, 21)
+    job.save(update_fields=["status", "completed_date", "updated_at"])
     requirement = Requirement.objects.create(job=job, name="Battery")
     client.force_login(user)
 
@@ -2819,8 +2822,9 @@ def test_cancel_trip_blocks_when_child_work_has_moved_forward(client):
     job = Job.objects.create(site=site, title="Site job")
     SiteVisitJob.objects.create(site_visit=site_visit, job=job)
     job.status = JobStatus.COMPLETED
+    job.completed_date = date(2026, 4, 21)
     job.closeout_note = "Completed before trip cancellation."
-    job.save(update_fields=["status", "closeout_note", "updated_at"])
+    job.save(update_fields=["status", "completed_date", "closeout_note", "updated_at"])
     client.force_login(user)
 
     response = client.post(reverse("trip_cancel", kwargs={"pk": trip.pk}))
@@ -2851,7 +2855,11 @@ def test_close_trip_resolves_site_visits_and_jobs(client):
         trip_leader=user,
         status=TripStatus.SUBMITTED,
     )
-    completed_visit = SiteVisit.objects.create(trip=trip, site=site)
+    completed_visit = SiteVisit.objects.create(
+        trip=trip,
+        site=site,
+        planned_day=date(2026, 4, 21),
+    )
     returned_visit = SiteVisit.objects.create(trip=trip, site=site)
     cancelled_visit = SiteVisit.objects.create(trip=trip, site=site)
     completed_job = Job.objects.create(site=site, title="Complete")
@@ -2894,6 +2902,7 @@ def test_close_trip_resolves_site_visits_and_jobs(client):
     assert completed_visit.status == SiteVisitStatus.COMPLETED
     assert returned_visit.status == SiteVisitStatus.SKIPPED
     assert completed_job.status == JobStatus.COMPLETED
+    assert completed_job.completed_date == date(2026, 4, 21)
     assert completed_job.closeout_note == "Completed on site."
     assert returned_job.status == JobStatus.UNASSIGNED
     assert cancelled_job.status == JobStatus.CANCELLED
@@ -2936,7 +2945,11 @@ def test_close_trip_allows_completed_job_without_closeout_note(client):
         trip_leader=user,
         status=TripStatus.SUBMITTED,
     )
-    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    site_visit = SiteVisit.objects.create(
+        trip=trip,
+        site=site,
+        planned_day=date(2026, 4, 21),
+    )
     job = Job.objects.create(site=site, title="Complete")
     assignment = assign_job_to_site_visit(site_visit, job)
     client.force_login(user)
@@ -2955,6 +2968,7 @@ def test_close_trip_allows_completed_job_without_closeout_note(client):
     job.refresh_from_db()
     assert trip.status == TripStatus.COMPLETED
     assert job.status == JobStatus.COMPLETED
+    assert job.completed_date == date(2026, 4, 21)
     assert job.closeout_note == ""
 
 
@@ -3015,8 +3029,16 @@ def test_completed_trip_closeout_correction_updates_still_linked_jobs(client):
         trip_leader=user,
         status=TripStatus.SUBMITTED,
     )
-    completed_visit = SiteVisit.objects.create(trip=trip, site=site)
-    cancelled_visit = SiteVisit.objects.create(trip=trip, site=site)
+    completed_visit = SiteVisit.objects.create(
+        trip=trip,
+        site=site,
+        planned_day=date(2026, 4, 21),
+    )
+    cancelled_visit = SiteVisit.objects.create(
+        trip=trip,
+        site=site,
+        planned_day=date(2026, 4, 22),
+    )
     completed_job = Job.objects.create(site=site, title="Complete")
     cancelled_job = Job.objects.create(site=site, title="Cancel")
     completed_assignment = assign_job_to_site_visit(completed_visit, completed_job)
@@ -3057,8 +3079,10 @@ def test_completed_trip_closeout_correction_updates_still_linked_jobs(client):
     assert completed_visit.status == SiteVisitStatus.SKIPPED
     assert cancelled_visit.status == SiteVisitStatus.COMPLETED
     assert completed_job.status == JobStatus.CANCELLED
+    assert completed_job.completed_date is None
     assert completed_job.closeout_note == "Not completed."
     assert cancelled_job.status == JobStatus.COMPLETED
+    assert cancelled_job.completed_date == date(2026, 4, 22)
     assert cancelled_job.closeout_note == ""
     history_reason = "Corrected trip closeout: Supervisor review"
     assert trip.history.first().history_change_reason == history_reason
@@ -3086,7 +3110,11 @@ def test_closeout_correction_records_history_when_returning_job(client):
         trip_leader=user,
         status=TripStatus.SUBMITTED,
     )
-    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    site_visit = SiteVisit.objects.create(
+        trip=trip,
+        site=site,
+        planned_day=date(2026, 4, 21),
+    )
     job = Job.objects.create(site=site, title="Return after review")
     assignment = assign_job_to_site_visit(site_visit, job)
     client.force_login(user)
@@ -3145,7 +3173,11 @@ def test_closeout_correction_requires_reason(client):
         trip_leader=user,
         status=TripStatus.SUBMITTED,
     )
-    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    site_visit = SiteVisit.objects.create(
+        trip=trip,
+        site=site,
+        planned_day=date(2026, 4, 21),
+    )
     job = Job.objects.create(site=site, title="Complete")
     assignment = assign_job_to_site_visit(site_visit, job)
     client.force_login(user)
@@ -3191,7 +3223,11 @@ def test_returned_jobs_are_not_available_for_closeout_correction(client):
         trip_leader=user,
         status=TripStatus.SUBMITTED,
     )
-    completed_visit = SiteVisit.objects.create(trip=trip, site=site)
+    completed_visit = SiteVisit.objects.create(
+        trip=trip,
+        site=site,
+        planned_day=date(2026, 4, 21),
+    )
     returned_visit = SiteVisit.objects.create(trip=trip, site=site)
     completed_job = Job.objects.create(site=site, title="Complete")
     returned_job = Job.objects.create(site=site, title="Return")

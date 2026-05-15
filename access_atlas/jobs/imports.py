@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
 from django.db import transaction
 from django.db.models import Q
+from django.utils.dateparse import parse_date
 
 from access_atlas.core.imports import (
     has_import_row_errors,
@@ -16,7 +18,7 @@ from .models import Job, JobStatus, JobTemplate, WorkProgramme
 from .services import create_job_from_template
 
 REQUIRED_HEADERS = ["site_code", "template_title"]
-OPTIONAL_HEADERS = ["status", "closeout_note", "work_programme"]
+OPTIONAL_HEADERS = ["status", "completed_date", "closeout_note", "work_programme"]
 IMPORTABLE_STATUSES = {
     JobStatus.UNASSIGNED,
     JobStatus.COMPLETED,
@@ -32,6 +34,7 @@ class JobImportRow:
     site_code: str
     template_title: str
     status: str = JobStatus.UNASSIGNED
+    completed_date: date | None = None
     closeout_note: str = ""
     work_programme_name: str = ""
     site: Site | None = None
@@ -51,6 +54,9 @@ class JobImportRow:
             "site_code": self.site_code,
             "template_title": self.template_title,
             "status": self.status,
+            "completed_date": (
+                self.completed_date.isoformat() if self.completed_date else ""
+            ),
             "closeout_note": self.closeout_note,
             "work_programme_id": self.work_programme.pk
             if self.work_programme
@@ -160,8 +166,12 @@ def build_job_import_rows(
         site_code = (row.get("site_code") or "").strip()
         template_title = (row.get("template_title") or "").strip()
         status = normalize_import_status(row.get("status") or "")
+        completed_date_value = (row.get("completed_date") or "").strip()
         closeout_note = (row.get("closeout_note") or "").strip()
         work_programme_name = (row.get("work_programme") or "").strip()
+        completed_date = (
+            parse_date(completed_date_value) if completed_date_value else None
+        )
 
         if not site_code:
             result.append(
@@ -170,6 +180,7 @@ def build_job_import_rows(
                     site_code,
                     template_title,
                     status=status,
+                    completed_date=completed_date,
                     closeout_note=closeout_note,
                     work_programme_name=work_programme_name,
                     error="Missing site_code.",
@@ -183,6 +194,7 @@ def build_job_import_rows(
                     site_code,
                     template_title,
                     status=status,
+                    completed_date=completed_date,
                     closeout_note=closeout_note,
                     work_programme_name=work_programme_name,
                     error="Missing template_title.",
@@ -196,6 +208,7 @@ def build_job_import_rows(
                     site_code,
                     template_title,
                     status=status,
+                    completed_date=completed_date,
                     closeout_note=closeout_note,
                     work_programme_name=work_programme_name,
                     error="Assigned jobs must be planned through a site visit.",
@@ -209,9 +222,50 @@ def build_job_import_rows(
                     site_code,
                     template_title,
                     status=status,
+                    completed_date=completed_date,
                     closeout_note=closeout_note,
                     work_programme_name=work_programme_name,
                     error="Unknown status.",
+                )
+            )
+            continue
+        if completed_date_value and completed_date is None:
+            result.append(
+                JobImportRow(
+                    index,
+                    site_code,
+                    template_title,
+                    status=status,
+                    closeout_note=closeout_note,
+                    work_programme_name=work_programme_name,
+                    error="completed_date must use YYYY-MM-DD.",
+                )
+            )
+            continue
+        if status == JobStatus.COMPLETED and completed_date is None:
+            result.append(
+                JobImportRow(
+                    index,
+                    site_code,
+                    template_title,
+                    status=status,
+                    closeout_note=closeout_note,
+                    work_programme_name=work_programme_name,
+                    error="completed_date is required for completed jobs.",
+                )
+            )
+            continue
+        if status != JobStatus.COMPLETED and completed_date is not None:
+            result.append(
+                JobImportRow(
+                    index,
+                    site_code,
+                    template_title,
+                    status=status,
+                    completed_date=completed_date,
+                    closeout_note=closeout_note,
+                    work_programme_name=work_programme_name,
+                    error="completed_date is only allowed for completed jobs.",
                 )
             )
             continue
@@ -222,6 +276,7 @@ def build_job_import_rows(
                     site_code,
                     template_title,
                     status=status,
+                    completed_date=completed_date,
                     closeout_note=closeout_note,
                     work_programme_name=work_programme_name,
                     error="closeout_note is required for cancelled jobs.",
@@ -236,6 +291,7 @@ def build_job_import_rows(
                     site_code,
                     template_title,
                     status=status,
+                    completed_date=completed_date,
                     closeout_note=closeout_note,
                     work_programme_name=work_programme_name,
                     error="Unknown site_code.",
@@ -253,6 +309,7 @@ def build_job_import_rows(
                     site_code,
                     template_title,
                     status=status,
+                    completed_date=completed_date,
                     closeout_note=closeout_note,
                     work_programme_name=work_programme_name,
                     error="Unknown active template_title.",
@@ -266,6 +323,7 @@ def build_job_import_rows(
                     site_code,
                     template_title,
                     status=status,
+                    completed_date=completed_date,
                     closeout_note=closeout_note,
                     work_programme_name=work_programme_name,
                     error="template_title matches more than one active job template.",
@@ -285,6 +343,7 @@ def build_job_import_rows(
                         site_code,
                         template_title,
                         status=status,
+                        completed_date=completed_date,
                         closeout_note=closeout_note,
                         work_programme_name=work_programme_name,
                         error="Unknown work_programme.",
@@ -298,6 +357,7 @@ def build_job_import_rows(
                 site_code=site_code,
                 template_title=template_title,
                 status=status,
+                completed_date=completed_date,
                 closeout_note=closeout_note,
                 work_programme_name=work_programme_name,
                 site=site,
@@ -362,6 +422,7 @@ def rows_from_session(session_rows: list[dict[str, object]]) -> list[JobImportRo
                 site_code=str(row["site_code"]),
                 template_title=str(row["template_title"]),
                 status=str(row.get("status") or JobStatus.UNASSIGNED),
+                completed_date=parse_date(str(row.get("completed_date") or "")),
                 closeout_note=str(row.get("closeout_note") or ""),
                 work_programme_name=str(row.get("work_programme_name") or ""),
                 site=site,
@@ -385,10 +446,22 @@ def create_jobs_from_import_rows(rows: list[JobImportRow]) -> list[Job]:
             change_reason="Imported from CSV using job template",
             work_programme=row.work_programme,
         )
-        if row.status != JobStatus.UNASSIGNED or row.closeout_note:
+        if (
+            row.status != JobStatus.UNASSIGNED
+            or row.closeout_note
+            or row.completed_date
+        ):
             job.status = row.status
+            job.completed_date = row.completed_date
             job.closeout_note = row.closeout_note
             job._change_reason = "Imported from CSV using job template"
-            job.save(update_fields=["status", "closeout_note", "updated_at"])
+            job.save(
+                update_fields=[
+                    "status",
+                    "completed_date",
+                    "closeout_note",
+                    "updated_at",
+                ]
+            )
         jobs.append(job)
     return jobs

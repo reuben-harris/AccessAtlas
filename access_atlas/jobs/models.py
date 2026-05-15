@@ -177,6 +177,7 @@ class Job(models.Model):
         choices=JobStatus.choices,
         default=JobStatus.UNASSIGNED,
     )
+    completed_date = models.DateField(null=True, blank=True)
     closeout_note = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -215,6 +216,14 @@ class Job(models.Model):
         if self.status == JobStatus.CANCELLED and not self.closeout_note.strip():
             raise ValidationError(
                 {"closeout_note": ("A closeout note is required for cancelled jobs.")}
+            )
+        if self.status == JobStatus.COMPLETED and self.completed_date is None:
+            raise ValidationError(
+                {"completed_date": "A completed date is required for completed jobs."}
+            )
+        if self.status != JobStatus.COMPLETED and self.completed_date is not None:
+            raise ValidationError(
+                {"completed_date": ("Only completed jobs can have a completed date.")}
             )
 
     @property

@@ -79,7 +79,7 @@ class JobForm(forms.ModelForm):
         if self.instance.pk and self.instance.is_assigned:
             self.fields["site"].disabled = True
             self.fields["site"].help_text = ASSIGNED_JOB_SITE_DISABLED_REASON
-            for field_name in ("status", "closeout_note"):
+            for field_name in ("status", "completed_date", "closeout_note"):
                 field = self.fields[field_name]
                 field.disabled = True
                 field.help_text = ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON
@@ -101,10 +101,15 @@ class JobForm(forms.ModelForm):
             "estimated_duration_minutes",
             "priority",
             "status",
+            "completed_date",
             "closeout_note",
         ]
         labels = {
+            "completed_date": "Completed date",
             "closeout_note": "Closeout note",
+        }
+        widgets = {
+            "completed_date": DatePicker(),
         }
 
 

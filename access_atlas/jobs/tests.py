@@ -414,11 +414,37 @@ def test_cancelled_job_requires_closeout_note_but_completed_job_does_not():
         job.full_clean()
 
     job.status = JobStatus.COMPLETED
+    job.completed_date = parse_date("2026-04-21")
     job.full_clean()
 
     job.status = JobStatus.CANCELLED
+    job.completed_date = None
     job.closeout_note = "Cancelled during historical import."
     job.full_clean()
+
+
+@pytest.mark.django_db
+def test_completed_date_is_valid_only_for_completed_jobs():
+    site = create_site()
+    job = Job(
+        site=site,
+        title="Inspect cabinet",
+        status=JobStatus.COMPLETED,
+    )
+
+    with pytest.raises(ValidationError) as missing_date:
+        job.full_clean()
+
+    assert "completed_date" in missing_date.value.message_dict
+
+    job.completed_date = parse_date("2026-04-21")
+    job.full_clean()
+
+    job.status = JobStatus.UNASSIGNED
+    with pytest.raises(ValidationError) as invalid_date:
+        job.full_clean()
+
+    assert "completed_date" in invalid_date.value.message_dict
 
 
 def test_job_form_does_not_offer_assigned_status():
@@ -428,6 +454,13 @@ def test_job_form_does_not_offer_assigned_status():
 
     assert "assigned" not in status_values
     assert "blocked" not in status_values
+
+
+def test_job_form_exposes_completed_date_for_terminal_manual_updates():
+    form = JobForm()
+
+    assert "completed_date" in form.fields
+    assert form.fields["completed_date"].label == "Completed date"
 
 
 @pytest.mark.django_db
@@ -447,10 +480,15 @@ def test_assigned_job_form_disables_assignment_controlled_fields():
 
     assert form.fields["site"].disabled is True
     assert form.fields["status"].disabled is True
+    assert form.fields["completed_date"].disabled is True
     assert form.fields["closeout_note"].disabled is True
     assert form.fields["site"].help_text == ASSIGNED_JOB_SITE_DISABLED_REASON
     assert (
         form.fields["status"].help_text == ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON
+    )
+    assert (
+        form.fields["completed_date"].help_text
+        == ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON
     )
     assert (
         form.fields["closeout_note"].help_text
@@ -479,18 +517,23 @@ def test_assigned_job_update_form_shows_frozen_assignment_controlled_fields(clie
     assert response.status_code == 200
     assert 'name="site"' in content
     assert 'name="status"' in content
+    assert 'name="completed_date"' in content
     assert 'name="closeout_note"' in content
     assert re.search(r'<select\b(?=[^>]*\bname="site")(?=[^>]*\bdisabled\b)', content)
     assert re.search(r'<select\b(?=[^>]*\bname="status")(?=[^>]*\bdisabled\b)', content)
     assert re.search(
+        r'<input\b(?=[^>]*\bname="completed_date")(?=[^>]*\bdisabled\b)',
+        content,
+    )
+    assert re.search(
         r'<textarea\b(?=[^>]*\bname="closeout_note")(?=[^>]*\bdisabled\b)',
         content,
     )
-    assert content.count("disabled-form-field-control") >= 3
-    assert content.count("disabled-field-reason-button") >= 3
-    assert content.count('data-bs-toggle="popover"') >= 3
+    assert content.count("disabled-form-field-control") >= 4
+    assert content.count("disabled-field-reason-button") >= 4
+    assert content.count('data-bs-toggle="popover"') >= 4
     assert content.count(ASSIGNED_JOB_SITE_DISABLED_REASON) == 1
-    assert content.count(ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON) == 2
+    assert content.count(ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON) == 3
     assert (
         f'<div class="form-hint">{ASSIGNED_JOB_SITE_DISABLED_REASON}</div>'
         not in content
@@ -705,7 +748,10 @@ def test_completed_job_requirements_are_read_only(client):
     client.force_login(user)
     site = create_site()
     job = Job.objects.create(
-        site=site, title="Inspect cabinet", status=JobStatus.COMPLETED
+        site=site,
+        title="Inspect cabinet",
+        status=JobStatus.COMPLETED,
+        completed_date=parse_date("2026-04-21"),
     )
     requirement = Requirement.objects.create(job=job, name="Patch cable")
 
@@ -1441,6 +1487,7 @@ def test_job_list_filters_any_supported_status(client):
         site=site,
         title="Visible completed job",
         status=JobStatus.COMPLETED,
+        completed_date=parse_date("2026-04-21"),
         closeout_note="Completed in the field.",
     )
 
@@ -1466,6 +1513,7 @@ def test_job_list_saves_and_restores_filter_preference(client):
         site=site,
         title="Saved completed job",
         status=JobStatus.COMPLETED,
+        completed_date=parse_date("2026-04-21"),
         closeout_note="Completed in the field.",
     )
 
@@ -1550,6 +1598,7 @@ def test_job_list_summarizes_all_selected_status_filters(client):
         site=site,
         title="Completed job",
         status=JobStatus.COMPLETED,
+        completed_date=parse_date("2026-04-21"),
         closeout_note="Completed in the field.",
     )
 
@@ -1630,6 +1679,7 @@ def test_job_map_applies_shared_status_filter(client):
         site=site,
         title="Completed job",
         status=JobStatus.COMPLETED,
+        completed_date=parse_date("2026-04-21"),
         closeout_note="Completed in the field.",
     )
 
@@ -1669,6 +1719,7 @@ def test_job_charts_apply_shared_status_filter(client):
         site=site,
         title="Completed job",
         status=JobStatus.COMPLETED,
+        completed_date=parse_date("2026-04-21"),
         closeout_note="Completed in the field.",
     )
 
@@ -1765,6 +1816,7 @@ def test_job_map_includes_jobs_and_status_layers(client):
         site=site,
         title="Closed work",
         status=JobStatus.COMPLETED,
+        completed_date=parse_date("2026-04-21"),
         closeout_note="Completed in the field.",
     )
     Job.objects.create(
@@ -1863,7 +1915,7 @@ def test_job_import_parser_rejects_unsupported_headers():
 
     assert rows[0].error == (
         "CSV headers must include site_code,template_title and may also include "
-        "status,closeout_note,work_programme."
+        "status,completed_date,closeout_note,work_programme."
     )
 
 
@@ -1878,7 +1930,7 @@ def test_job_import_parser_rejects_missing_required_headers():
 
     assert rows[0].error == (
         "CSV headers must include site_code,template_title and may also include "
-        "status,closeout_note,work_programme."
+        "status,completed_date,closeout_note,work_programme."
     )
 
 
@@ -1967,7 +2019,10 @@ def test_job_import_page_includes_specification_and_example_path(client):
 
     content = response.content.decode()
     assert response.status_code == 200
-    assert "site_code,template_title,status,closeout_note,work_programme" in content
+    assert (
+        "site_code,template_title,status,completed_date,closeout_note,work_programme"
+        in content
+    )
     assert "docs/examples/job-test-import.csv" in content
     assert "Create jobs" not in content
 
@@ -2082,9 +2137,10 @@ def test_job_import_confirm_creates_terminal_jobs_from_status_column(client):
     csv_file = SimpleUploadedFile(
         "jobs.csv",
         (
-            b"site_code,template_title,status,closeout_note\n"
-            b"AA-001,Replace sensor,completed,Completed before import\n"
-            b"AA-001,Replace sensor,cancelled,Cancelled before import\n"
+            b"site_code,template_title,status,completed_date,closeout_note\n"
+            b"AA-001,Replace sensor,completed,2026-04-21,"
+            b"Completed before import\n"
+            b"AA-001,Replace sensor,cancelled,,Cancelled before import\n"
         ),
         content_type="text/csv",
     )
@@ -2095,6 +2151,10 @@ def test_job_import_confirm_creates_terminal_jobs_from_status_column(client):
     assert response.status_code == 302
     jobs = list(Job.objects.order_by("pk"))
     assert [job.status for job in jobs] == [JobStatus.COMPLETED, JobStatus.CANCELLED]
+    assert [job.completed_date for job in jobs] == [
+        parse_date("2026-04-21"),
+        None,
+    ]
     assert [job.closeout_note for job in jobs] == [
         "Completed before import",
         "Cancelled before import",
@@ -2188,7 +2248,10 @@ def test_job_import_allows_completed_status_without_closeout_note(client):
     JobTemplate.objects.create(title="Replace sensor", is_active=True)
     csv_file = SimpleUploadedFile(
         "jobs.csv",
-        b"site_code,template_title,status\nAA-001,Replace sensor,completed\n",
+        (
+            b"site_code,template_title,status,completed_date\n"
+            b"AA-001,Replace sensor,completed,2026-04-21\n"
+        ),
         content_type="text/csv",
     )
     client.post(reverse("job_import"), {"csv_file": csv_file})
@@ -2198,7 +2261,74 @@ def test_job_import_allows_completed_status_without_closeout_note(client):
     assert response.status_code == 302
     job = Job.objects.get()
     assert job.status == JobStatus.COMPLETED
+    assert job.completed_date == parse_date("2026-04-21")
     assert job.closeout_note == ""
+
+
+@pytest.mark.django_db
+def test_job_import_requires_completed_date_for_completed_status(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    create_site()
+    JobTemplate.objects.create(title="Replace sensor", is_active=True)
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        b"site_code,template_title,status\nAA-001,Replace sensor,completed\n",
+        content_type="text/csv",
+    )
+
+    response = client.post(reverse("job_import"), {"csv_file": csv_file})
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "completed_date is required for completed jobs." in content
+    assert_import_create_button_disabled(content, "Create jobs")
+
+
+@pytest.mark.django_db
+def test_job_import_rejects_invalid_completed_date(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    create_site()
+    JobTemplate.objects.create(title="Replace sensor", is_active=True)
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        (
+            b"site_code,template_title,status,completed_date\n"
+            b"AA-001,Replace sensor,completed,21/04/2026\n"
+        ),
+        content_type="text/csv",
+    )
+
+    response = client.post(reverse("job_import"), {"csv_file": csv_file})
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "completed_date must use YYYY-MM-DD." in content
+    assert_import_create_button_disabled(content, "Create jobs")
+
+
+@pytest.mark.django_db
+def test_job_import_rejects_completed_date_for_non_completed_status(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    create_site()
+    JobTemplate.objects.create(title="Replace sensor", is_active=True)
+    csv_file = SimpleUploadedFile(
+        "jobs.csv",
+        (
+            b"site_code,template_title,status,completed_date\n"
+            b"AA-001,Replace sensor,unassigned,2026-04-21\n"
+        ),
+        content_type="text/csv",
+    )
+
+    response = client.post(reverse("job_import"), {"csv_file": csv_file})
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "completed_date is only allowed for completed jobs." in content
+    assert_import_create_button_disabled(content, "Create jobs")
 
 
 @pytest.mark.django_db
