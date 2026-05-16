@@ -58,6 +58,8 @@
   const savedPreference = preference.value || {};
   const postJSON = window.AccessAtlas?.postJSON;
   const initialFilterCount = Number(mapElement.dataset.filterCount || 0);
+  const visibilityPreferenceMode =
+    mapElement.dataset.visibilityPreferenceMode === "hidden" ? "hidden" : "visible";
   const points = Array.isArray(mapData.points) ? mapData.points : [];
   const tracks = Array.isArray(mapData.tracks) ? mapData.tracks : [];
   const defaultCenter = [-41.2865, 174.7762];
@@ -94,10 +96,16 @@
         .map((recordId) => Number(recordId))
         .filter((recordId) => Number.isInteger(recordId))
     : [];
+  const savedHiddenRecordIds = Array.isArray(savedPreference.hidden_record_ids)
+    ? savedPreference.hidden_record_ids
+        .map((recordId) => Number(recordId))
+        .filter((recordId) => Number.isInteger(recordId))
+    : [];
   const hasSavedVisibilityPreference = Object.hasOwn(
     savedPreference,
     "visible_record_ids",
   );
+  const hiddenRecordIds = new Set(savedHiddenRecordIds);
   const animateTracksEnabled = {
     value:
       typeof savedPreference.animate_tracks === "boolean"
@@ -105,7 +113,11 @@
         : true,
   };
   const visibleRecordIds = new Set(
-    hasSavedVisibilityPreference ? savedVisibleRecordIds : allRecordIds,
+    visibilityPreferenceMode === "hidden"
+      ? allRecordIds.filter((recordId) => !hiddenRecordIds.has(recordId))
+      : hasSavedVisibilityPreference
+        ? savedVisibleRecordIds
+        : allRecordIds,
   );
   // Visibility is per-record rather than per-feature so a user can hide an
   // entire access record and all of its points/tracks together.
@@ -146,6 +158,13 @@
   const filterPanel =
     typeof createFullscreenSafeOffcanvasController === "function"
       ? createFullscreenSafeOffcanvasController(mapElement, { map })
+      : null;
+  const accessRecordPanel =
+    typeof createFullscreenSafeOffcanvasController === "function"
+      ? createFullscreenSafeOffcanvasController(mapElement, {
+          map,
+          offcanvasId: "access-record-layer-offcanvas",
+        })
       : null;
   configureMapConstraints(map);
   featureLayer.addTo(map);
@@ -313,13 +332,19 @@
 
   function updateToggleButton(button, isVisible) {
     const icon = button.querySelector("i");
+    const label = button.querySelector("[data-map-toggle-label]");
+    button.classList.toggle("is-visible", isVisible);
     button.classList.toggle("btn-secondary", isVisible);
     button.classList.toggle("btn-outline-secondary", !isVisible);
     button.title = isVisible ? "Hide on map" : "Show on map";
+    button.setAttribute("aria-pressed", isVisible ? "true" : "false");
     button.setAttribute(
       "aria-label",
       isVisible ? "Hide access record on map" : "Show access record on map",
     );
+    if (label) {
+      label.textContent = isVisible ? "Hide" : "Show";
+    }
     if (!icon) {
       return;
     }
@@ -332,10 +357,14 @@
     if (!url || typeof postJSON !== "function") {
       return;
     }
+    const visibilityPreference =
+      visibilityPreferenceMode === "hidden"
+        ? { hidden_record_ids: Array.from(hiddenRecordIds) }
+        : { visible_record_ids: Array.from(visibleRecordIds) };
     postJSON(url, {
       key: preference.key,
       value: {
-        visible_record_ids: Array.from(visibleRecordIds),
+        ...visibilityPreference,
         animate_tracks: animateTracksEnabled.value,
       },
     }).catch(() => {});
@@ -386,6 +415,45 @@
     },
   });
 
+  const AccessRecordLayerControl = L.Control.extend({
+    onAdd() {
+      const container = L.DomUtil.create(
+        "div",
+        "leaflet-bar access-record-map-layer-control",
+      );
+      const button = L.DomUtil.create("button", "", container);
+      button.type = "button";
+      button.title = "Show access records";
+      button.setAttribute("aria-label", "Show access records on map");
+      button.innerHTML = '<i class="ti ti-eye" aria-hidden="true"></i>';
+      this._badge = L.DomUtil.create(
+        "span",
+        "access-atlas-map-filter-badge access-record-map-layer-badge",
+        button,
+      );
+
+      L.DomEvent.disableClickPropagation(container);
+      L.DomEvent.on(button, "click", (event) => {
+        L.DomEvent.stop(event);
+        accessRecordPanel.show();
+      });
+
+      this.setCount(visibleRecordIds.size);
+      return container;
+    },
+    setCount(count) {
+      const normalizedCount = Number(count);
+      const visibleCount = Number.isFinite(normalizedCount)
+        ? Math.max(0, normalizedCount)
+        : 0;
+      if (!this._badge) {
+        return;
+      }
+      this._badge.textContent = String(visibleCount);
+      this._badge.classList.toggle("is-warning", visibleCount === 0);
+    },
+  });
+
   basemapController.apply();
   sharedAddHomeControl(
     map,
@@ -399,6 +467,11 @@
   );
   addFullscreenControl(map);
   map.addControl(new TrackAnimationControl({ position: "topright" }));
+  let accessRecordLayerControl = null;
+  if (accessRecordPanel) {
+    accessRecordLayerControl = new AccessRecordLayerControl({ position: "topright" });
+    map.addControl(accessRecordLayerControl);
+  }
   if (filterPanel && typeof addFilterControl === "function") {
     addFilterControl(map, filterPanel.show, {
       count: initialFilterCount,
@@ -427,14 +500,17 @@
     button.addEventListener("click", () => {
       if (visibleRecordIds.has(recordId)) {
         visibleRecordIds.delete(recordId);
+        hiddenRecordIds.add(recordId);
       } else {
         visibleRecordIds.add(recordId);
+        hiddenRecordIds.delete(recordId);
       }
       updateToggleButton(button, visibleRecordIds.has(recordId));
       longitudeNormalizer = createLongitudeNormalizer(visibleFeatureLongitudes());
       displaySiteLongitude = longitudeNormalizer(siteLongitude);
       drawnLayers = drawFeatures();
       fitFeatures(drawnLayers);
+      accessRecordLayerControl?.setCount(visibleRecordIds.size);
       savePreference();
     });
   }
