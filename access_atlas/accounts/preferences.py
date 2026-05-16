@@ -9,6 +9,7 @@ from .models import User, UserPreference
 JOBS_MAP_PREFERENCE_KEY = "jobs.map"
 MAP_BASEMAP_PREFERENCE_KEY = "maps.basemap"
 SITES_MAP_PREFERENCE_KEY = "sites.map"
+ACCESS_RECORDS_MAP_PREFERENCE_KEY = "access-records.map"
 UI_THEME_PREFERENCE_KEY = "ui.theme"
 SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX = "sites.map."
 LIST_SORT_PREFERENCE_KEY_PREFIX = "lists.sort."
@@ -19,6 +20,7 @@ ALLOWED_PREFERENCE_KEYS = {
     JOBS_MAP_PREFERENCE_KEY,
     MAP_BASEMAP_PREFERENCE_KEY,
     SITES_MAP_PREFERENCE_KEY,
+    ACCESS_RECORDS_MAP_PREFERENCE_KEY,
     UI_THEME_PREFERENCE_KEY,
 }
 ALLOWED_LIST_SORT_PREFERENCE_PAGES = {
@@ -218,19 +220,40 @@ def validate_preference(key: str, value: object) -> dict[str, Any]:
                 cleaned_params[param_name.strip()] = cleaned_values
         return {"params": cleaned_params}
 
-    if key.startswith(SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX):
+    if key == ACCESS_RECORDS_MAP_PREFERENCE_KEY or key.startswith(
+        SITE_ACCESS_MAP_PREFERENCE_KEY_PREFIX
+    ):
         visible_record_ids = value.get("visible_record_ids")
-        if not isinstance(visible_record_ids, list):
-            raise ValidationError("visible_record_ids must be a list.")
-        cleaned_ids: list[int] = []
-        for record_id in visible_record_ids:
-            if not isinstance(record_id, int) or record_id <= 0:
-                raise ValidationError(
-                    "visible_record_ids contains an invalid record id."
-                )
-            if record_id not in cleaned_ids:
-                cleaned_ids.append(record_id)
-        cleaned_value = {"visible_record_ids": cleaned_ids}
+        hidden_record_ids = value.get("hidden_record_ids")
+        if visible_record_ids is None and hidden_record_ids is None:
+            raise ValidationError(
+                "visible_record_ids or hidden_record_ids must be a list."
+            )
+
+        def clean_record_ids(record_ids: object, field_name: str) -> list[int]:
+            if not isinstance(record_ids, list):
+                raise ValidationError(f"{field_name} must be a list.")
+            cleaned_ids: list[int] = []
+            for record_id in record_ids:
+                if not isinstance(record_id, int) or record_id <= 0:
+                    raise ValidationError(
+                        f"{field_name} contains an invalid record id."
+                    )
+                if record_id not in cleaned_ids:
+                    cleaned_ids.append(record_id)
+            return cleaned_ids
+
+        cleaned_value = {}
+        if visible_record_ids is not None:
+            cleaned_value["visible_record_ids"] = clean_record_ids(
+                visible_record_ids,
+                "visible_record_ids",
+            )
+        if hidden_record_ids is not None:
+            cleaned_value["hidden_record_ids"] = clean_record_ids(
+                hidden_record_ids,
+                "hidden_record_ids",
+            )
         animate_tracks = value.get("animate_tracks")
         if animate_tracks is not None:
             if not isinstance(animate_tracks, bool):

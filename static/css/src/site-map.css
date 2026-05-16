@@ -106,6 +106,52 @@
   border-radius: var(--tblr-card-border-radius);
 }
 
+.access-record-map-card {
+  height: auto;
+  min-height: 0;
+  margin-bottom: 0;
+}
+
+.access-record-layer-offcanvas {
+  --tblr-offcanvas-width: min(42rem, calc(100vw - 1rem));
+}
+
+.access-record-layer-offcanvas .offcanvas-body {
+  padding: 0;
+  overflow: auto;
+}
+
+.access-record-map-table-wrap {
+  min-height: 0;
+}
+
+.access-record-map-table {
+  min-width: 38rem;
+  margin-bottom: 0;
+}
+
+.access-record-map-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--tblr-bg-surface);
+}
+
+.access-record-map-toggle {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  transition:
+    color 0.16s ease,
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    opacity 0.16s ease;
+}
+
+.access-record-map-toggle:not(.is-visible) {
+  opacity: 0.72;
+}
+
 .site-access-map-marker {
   background: transparent;
   border: 0;
@@ -203,6 +249,11 @@
   border-color: rgba(26, 95, 180, 0.45);
 }
 
+.site-map-animation-control button.is-on .form-check-input {
+  background-color: #1a5fb4;
+  border-color: #1a5fb4;
+}
+
 [data-bs-theme="dark"] .site-map-animation-control button {
   color: var(--tblr-body-color);
   background: var(--tblr-bg-surface);
@@ -218,4 +269,20 @@
   color: #8cb6ff;
   background: rgba(140, 182, 255, 0.18);
   border-color: rgba(140, 182, 255, 0.45);
+}
+
+[data-bs-theme="dark"] .access-record-map-table thead {
+  background: var(--tblr-bg-surface);
+}
+
+[data-bs-theme="dark"] .site-map-animation-control button.is-on .form-check-input {
+  background-color: #8cb6ff;
+  border-color: #8cb6ff;
+}
+
+@media (max-width: 991.98px) {
+  .access-record-map-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(12rem, 34%) minmax(20rem, 1fr);
+  }
 }
