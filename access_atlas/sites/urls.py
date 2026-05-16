@@ -47,6 +47,11 @@ urlpatterns = [
         name="site_history",
     ),
     path(
+        "<int:pk>/history/<int:history_id>/",
+        views.SiteHistoryDetailView.as_view(),
+        name="site_history_detail",
+    ),
+    path(
         "<int:site_pk>/access-records/new/",
         views.AccessRecordCreateView.as_view(),
         name="access_record_create",
@@ -70,6 +75,11 @@ urlpatterns = [
         "access-records/<int:pk>/history/",
         views.AccessRecordHistoryView.as_view(),
         name="access_record_history",
+    ),
+    path(
+        "access-records/<int:pk>/history/<int:history_id>/",
+        views.AccessRecordHistoryDetailView.as_view(),
+        name="access_record_history_detail",
     ),
     path(
         "access-records/<int:pk>/revisions/",

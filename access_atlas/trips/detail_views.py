@@ -12,6 +12,7 @@ from access_atlas.core.history import HistoryReasonMixin
 from access_atlas.core.maps import map_basemap_config, map_basemap_preference
 from access_atlas.core.mixins import (
     ObjectFormMixin,
+    ObjectHistoryDetailMixin,
     PaginatedObjectHistoryMixin,
 )
 from access_atlas.jobs.forms import RequirementForm
@@ -487,3 +488,11 @@ class SiteVisitUpdateView(
 
     def get_approval_trip(self):
         return self.object.trip
+
+
+class TripHistoryDetailView(ObjectHistoryDetailMixin, TripHistoryView):
+    pass
+
+
+class SiteVisitHistoryDetailView(ObjectHistoryDetailMixin, SiteVisitHistoryView):
+    pass

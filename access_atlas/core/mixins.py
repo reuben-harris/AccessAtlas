@@ -1,6 +1,7 @@
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 
 from access_atlas.accounts.preferences import (
@@ -9,6 +10,12 @@ from access_atlas.accounts.preferences import (
     list_sort_preference_key,
     set_user_preference,
 )
+from access_atlas.core.global_history import (
+    append_query_string,
+    history_detail_url,
+    history_object_filter_query,
+)
+from access_atlas.core.history_diff import build_history_diff
 from access_atlas.core.list_filters import (
     FILTER_STATE_PARAM,
     FILTER_STATE_UPDATE,
@@ -358,6 +365,12 @@ class PaginatedObjectHistoryMixin:
     def get_history_queryset(self):
         return self.object.history.all()
 
+    def get_history_detail_url(self, record) -> str:
+        return append_query_string(
+            history_detail_url(record),
+            history_object_filter_query(record.instance),
+        )
+
     def get_history_context(self) -> dict:
         # History pages are DetailViews, not ListViews, so pagination state is
         # assembled manually here and then reused by the shared history partial.
@@ -369,6 +382,8 @@ class PaginatedObjectHistoryMixin:
 
         paginator = Paginator(self.get_history_queryset(), per_page)
         page_obj = paginator.get_page(self.request.GET.get("page"))
+        for record in page_obj.object_list:
+            record.history_detail_url = self.get_history_detail_url(record)
         preserved_query_items: list[tuple[str, str]] = []
         for key in self.request.GET:
             if key in {self.page_size_param, "page"}:
@@ -378,6 +393,11 @@ class PaginatedObjectHistoryMixin:
 
         return {
             "history_records": page_obj.object_list,
+            "history_object_type": self.object._meta.verbose_name.title(),
+            "object_global_history_url": append_query_string(
+                reverse("global_history"),
+                history_object_filter_query(self.object),
+            ),
             "is_paginated": page_obj.has_other_pages(),
             "page_obj": page_obj,
             "paginator": paginator,
@@ -387,3 +407,47 @@ class PaginatedObjectHistoryMixin:
             "page_size_options": page_size_options,
             "per_page_preserved_query_items": preserved_query_items,
         }
+
+
+class ObjectHistoryDetailMixin:
+    """Render a single simple-history record with previous/current diff data."""
+
+    template_name = "object_history_detail.html"
+
+    def get_history_record(self):
+        if hasattr(self, "_history_record"):
+            return self._history_record
+        self._history_record = get_object_or_404(
+            self.get_history_queryset(),
+            history_id=self.kwargs["history_id"],
+        )
+        return self._history_record
+
+    def get_adjacent_history_records(self, history_record):
+        records = list(
+            self.get_history_queryset().order_by("history_date", "history_id")
+        )
+        record_ids = [record.history_id for record in records]
+        index = record_ids.index(history_record.history_id)
+        previous_record = records[index - 1] if index > 0 else None
+        next_record = records[index + 1] if index < len(records) - 1 else None
+        return previous_record, next_record
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        history_record = self.get_history_record()
+        previous_record, next_record = self.get_adjacent_history_records(history_record)
+        context.update(
+            {
+                "history_record": history_record,
+                "history_diff": build_history_diff(history_record, previous_record),
+                "previous_history_url": self.get_history_detail_url(previous_record)
+                if previous_record
+                else "",
+                "next_history_url": self.get_history_detail_url(next_record)
+                if next_record
+                else "",
+                "object_history_url": self.object.get_history_url(),
+            }
+        )
+        return context

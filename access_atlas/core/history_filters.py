@@ -13,6 +13,12 @@ from access_atlas.core.list_filters import (
     SEARCH_OPERATOR,
     AccessAtlasFilterSet,
     FilterFieldSpec,
+    FilterOperator,
+)
+
+OBJECT_ID_OPERATORS = (
+    FilterOperator("exact", "is"),
+    FilterOperator("not", "is not", "__not"),
 )
 
 
@@ -25,6 +31,8 @@ class GlobalHistoryFilterSet(AccessAtlasFilterSet):
         choices=history_object_type_choices,
         exclude=True,
     )
+    object_id = django_filters.CharFilter()
+    object_id__not = django_filters.CharFilter()
     action = django_filters.MultipleChoiceFilter(choices=HISTORY_ACTION_CHOICES)
     action__not = django_filters.MultipleChoiceFilter(
         choices=HISTORY_ACTION_CHOICES,
@@ -50,6 +58,13 @@ class GlobalHistoryFilterSet(AccessAtlasFilterSet):
             "multiselect",
             CHOICE_OPERATORS,
             choices=history_object_type_choices,
+        ),
+        FilterFieldSpec(
+            "object_id",
+            "Object ID",
+            "text",
+            OBJECT_ID_OPERATORS,
+            placeholder="Object ID",
         ),
         FilterFieldSpec(
             "action",

@@ -29,6 +29,11 @@ urlpatterns = [
         name="work_programme_history",
     ),
     path(
+        "work-programmes/<int:pk>/history/<int:history_id>/",
+        views.WorkProgrammeHistoryDetailView.as_view(),
+        name="work_programme_history_detail",
+    ),
+    path(
         "work-programmes/<int:pk>/edit/",
         views.WorkProgrammeUpdateView.as_view(),
         name="work_programme_update",
@@ -51,6 +56,11 @@ urlpatterns = [
         name="job_requirements",
     ),
     path("<int:pk>/history/", views.JobHistoryView.as_view(), name="job_history"),
+    path(
+        "<int:pk>/history/<int:history_id>/",
+        views.JobHistoryDetailView.as_view(),
+        name="job_history_detail",
+    ),
     path("<int:pk>/edit/", views.JobUpdateView.as_view(), name="job_update"),
     path(
         "<int:job_pk>/requirements/new/",
@@ -97,6 +107,11 @@ urlpatterns = [
         "templates/<int:pk>/history/",
         views.JobTemplateHistoryView.as_view(),
         name="job_template_history",
+    ),
+    path(
+        "templates/<int:pk>/history/<int:history_id>/",
+        views.JobTemplateHistoryDetailView.as_view(),
+        name="job_template_history_detail",
     ),
     path(
         "templates/<int:pk>/edit/",

@@ -18,6 +18,7 @@ from access_atlas.accounts.preferences import (
     set_user_preference,
 )
 from access_atlas.core.context_processors import active_nav_item
+from access_atlas.core.history_diff import build_history_diff
 from access_atlas.core.list_filters import FILTER_STATE_PARAM, FILTER_STATE_UPDATE
 from access_atlas.core.maps import map_basemap_config, map_basemap_preference
 from access_atlas.core.templatetags.form_extras import required_marker
@@ -737,7 +738,7 @@ def test_global_history_filters_by_object_type_action_and_user(client, user):
     response = client.get(
         reverse("global_history"),
         {
-            "object_type": "Site",
+            "object_type": "site",
             "action": "Changed",
             "user": str(user.pk),
         },
@@ -759,18 +760,183 @@ def test_global_history_filter_update_marker_saves_filter_preference(client, use
         reverse("global_history"),
         {
             FILTER_STATE_PARAM: FILTER_STATE_UPDATE,
-            "object_type": "Site",
+            "object_type": "site",
             "action": "Created",
         },
     )
 
     assert response.status_code == 302
     assert response.url == (
-        f"{reverse('global_history')}?object_type=Site&action=Created"
+        f"{reverse('global_history')}?object_type=site&action=Created"
     )
     assert get_user_preference(user, list_filter_preference_key("history")) == {
-        "params": {"object_type": ["Site"], "action": ["Created"]}
+        "params": {"object_type": ["site"], "action": ["Created"]}
     }
+
+
+@pytest.mark.django_db
+def test_global_history_filters_by_specific_object(logged_in_client):
+    selected_site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Selected Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    Site.objects.create(
+        source_name="dummy",
+        external_id="002",
+        code="AA-002",
+        name="Other Site",
+        latitude=-42.1,
+        longitude=175.1,
+    )
+    selected_site.name = "Selected Site Updated"
+    selected_site.save()
+
+    response = logged_in_client.get(
+        reverse("global_history"),
+        {
+            "object_type": "site",
+            "object_id": str(selected_site.pk),
+        },
+    )
+
+    assert response.status_code == 200
+    entries = list(response.context["entries"])
+    assert entries
+    assert {entry.object_type_slug for entry in entries} == {"site"}
+    assert {entry.object_id for entry in entries} == {str(selected_site.pk)}
+    assert all("Selected Site" in entry.object_display for entry in entries)
+
+
+@pytest.mark.django_db
+def test_global_history_date_links_use_canonical_detail_url_with_context(
+    logged_in_client,
+    site,
+):
+    job = Job.objects.create(site=site, title="History job")
+    job.title = "History job updated"
+    job.save()
+
+    response = logged_in_client.get(
+        reverse("global_history"),
+        {
+            "object_type": "job",
+            "object_id": str(job.pk),
+        },
+    )
+
+    assert response.status_code == 200
+    entry = response.context["entries"][0]
+    expected_url = f"{entry.history_detail_url}?object_type=job&amp;object_id={job.pk}"
+    assert expected_url in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_object_history_links_to_filtered_global_history(logged_in_client, site):
+    job = Job.objects.create(site=site, title="History job")
+    job.title = "History job updated"
+    job.save()
+
+    response = logged_in_client.get(reverse("job_history", kwargs={"pk": job.pk}))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    global_history_url = reverse("global_history")
+    assert f"{global_history_url}?object_type=job&amp;object_id={job.pk}" in content
+    assert "View in global history" in content
+    for record in response.context["history_records"]:
+        detail_url = reverse(
+            "global_history_detail",
+            kwargs={"object_type": "job", "history_id": record.history_id},
+        )
+        expected_url = f"{detail_url}?object_type=job&object_id={job.pk}"
+        assert record.history_detail_url == expected_url
+
+
+@pytest.mark.django_db
+def test_global_history_detail_preserves_object_context_for_adjacent_links(
+    logged_in_client,
+    site,
+):
+    job = Job.objects.create(site=site, title="History job")
+    job.title = "History job updated"
+    job.save()
+    job.description = "Second update"
+    job.save()
+    records = list(job.history.order_by("history_date", "history_id"))
+    middle_record = records[1]
+
+    response = logged_in_client.get(
+        reverse(
+            "global_history_detail",
+            kwargs={"object_type": "job", "history_id": middle_record.history_id},
+        ),
+        {
+            "object_type": "job",
+            "object_id": str(job.pk),
+        },
+    )
+
+    assert response.status_code == 200
+    query_string = f"?object_type=job&object_id={job.pk}"
+    assert response.context["previous_history_url"].endswith(query_string)
+    assert response.context["next_history_url"].endswith(query_string)
+
+
+@pytest.mark.django_db
+def test_global_history_detail_404s_for_unknown_slug(logged_in_client):
+    response = logged_in_client.get(
+        reverse(
+            "global_history_detail",
+            kwargs={"object_type": "missing", "history_id": 1},
+        ),
+    )
+
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_global_history_detail_does_not_resolve_history_id_under_wrong_slug(
+    logged_in_client,
+    site,
+):
+    site_history_id = site.history.first().history_id
+
+    response = logged_in_client.get(
+        reverse(
+            "global_history_detail",
+            kwargs={"object_type": "job", "history_id": site_history_id},
+        ),
+    )
+
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_history_diff_marks_changed_raw_json_lines(site):
+    site.name = "Updated raw history site"
+    site.save()
+    previous_record, current_record = list(
+        site.history.order_by("history_date", "history_id")
+    )
+
+    diff = build_history_diff(current_record, previous_record)
+
+    assert any(
+        line.changed and line.text.strip().startswith('"name":')
+        for line in diff.before_json_lines
+    )
+    assert any(
+        line.changed and line.text.strip().startswith('"name":')
+        for line in diff.after_json_lines
+    )
+    assert not any(
+        line.changed and line.text.strip().startswith('"code":')
+        for line in diff.after_json_lines
+    )
 
 
 @pytest.mark.django_db

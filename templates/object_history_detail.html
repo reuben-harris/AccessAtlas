@@ -1,0 +1,131 @@
+{% extends "base/base.html" %}
+{% load history_extras %}
+
+{% block title %}{{ object }} History - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">{{ object }}</h2>
+      <div class="text-secondary">
+        Object: {{ history_object_type|default:"Object" }} · {{ history_record.history_date }}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if detail_sections %}
+  {% include "includes/detail_section_nav.html" %}
+{% endif %}
+
+<div class="row row-cards">
+  <div class="col-12 col-lg-4">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Change</h3>
+      </div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-4">When</dt>
+          <dd class="col-8">{{ history_record.history_date }}</dd>
+          <dt class="col-4">Type</dt>
+          <dd class="col-8">{{ history_record.get_history_type_display }}</dd>
+          <dt class="col-4">Reason</dt>
+          <dd class="col-8">{{ history_record|change_reason }}</dd>
+          <dt class="col-4">User</dt>
+          <dd class="col-8">{{ history_record.history_user|default:"System" }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title">Difference</h3>
+        <div class="btn-list">
+          {% if previous_history_url %}
+            <a class="btn btn-sm btn-outline-primary" href="{{ previous_history_url }}">
+              <i class="ti ti-chevron-left" aria-hidden="true"></i>
+              Previous
+            </a>
+          {% else %}
+            <button class="btn btn-sm btn-outline-secondary" type="button" disabled>
+              <i class="ti ti-chevron-left" aria-hidden="true"></i>
+              Previous
+            </button>
+          {% endif %}
+          {% if next_history_url %}
+            <a class="btn btn-sm btn-outline-primary" href="{{ next_history_url }}">
+              Next
+              <i class="ti ti-chevron-right" aria-hidden="true"></i>
+            </a>
+          {% else %}
+            <button class="btn btn-sm btn-outline-secondary" type="button" disabled>
+              Next
+              <i class="ti ti-chevron-right" aria-hidden="true"></i>
+            </button>
+          {% endif %}
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-vcenter mb-0">
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th class="text-danger">Before</th>
+              <th class="text-success">After</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in history_diff.rows %}
+              <tr>
+                <td>{{ row.label }}</td>
+                <td><pre class="mb-0 text-danger">{{ row.before_display }}</pre></td>
+                <td><pre class="mb-0 text-success">{{ row.after_display }}</pre></td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="3" class="text-secondary">
+                  {% if history_record.history_type == "+" %}
+                    Object created.
+                  {% elif history_record.history_type == "-" %}
+                    Object deleted.
+                  {% else %}
+                    No field changes found.
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if history_diff.previous_missing %}
+        <div class="card-body border-top text-warning">
+          Previous history data was unavailable, so this update is compared with an empty baseline.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-12 col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Pre-change data</h3>
+      </div>
+      <div class="card-body">
+        <pre class="history-json-block mb-0">{% for line in history_diff.before_json_lines %}<span class="history-json-line{% if line.changed %} history-json-line--removed{% endif %}">{{ line.text }}</span>{% endfor %}</pre>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Post-change data</h3>
+      </div>
+      <div class="card-body">
+        <pre class="history-json-block mb-0">{% for line in history_diff.after_json_lines %}<span class="history-json-line{% if line.changed %} history-json-line--added{% endif %}">{{ line.text }}</span>{% endfor %}</pre>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

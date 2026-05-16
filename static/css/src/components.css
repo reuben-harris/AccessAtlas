@@ -290,6 +290,29 @@
   font-size: 0.95rem;
 }
 
+/* History JSON panels highlight line-level changes in the raw before/after data. */
+.history-json-block {
+  white-space: pre;
+}
+
+.history-json-line {
+  display: block;
+  margin: 0 -0.5rem;
+  padding: 1px 0.5rem;
+  border-radius: var(--tblr-border-radius-sm);
+  line-height: 1.45;
+}
+
+.history-json-line--removed {
+  background: rgba(214, 57, 57, 0.18);
+  box-shadow: inset 3px 0 0 var(--tblr-danger, #d63939);
+}
+
+.history-json-line--added {
+  background: rgba(47, 179, 68, 0.18);
+  box-shadow: inset 3px 0 0 var(--tblr-success, #2fb344);
+}
+
 .row-actions {
   width: 1%;
   white-space: nowrap;

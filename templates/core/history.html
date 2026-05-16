@@ -28,7 +28,13 @@
       <tbody>
         {% for entry in entries %}
           <tr>
-            <td>{{ entry.date }}</td>
+            <td>
+              {% if entry.history_detail_url %}
+                <a href="{{ entry.history_detail_url }}{% if history_detail_query_string %}?{{ history_detail_query_string }}{% endif %}">{{ entry.date }}</a>
+              {% else %}
+                {{ entry.date }}
+              {% endif %}
+            </td>
             <td>
               {% if entry.object_url %}
                 <a href="{{ entry.object_url }}">{{ entry.object_display }}</a>

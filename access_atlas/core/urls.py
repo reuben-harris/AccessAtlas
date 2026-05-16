@@ -16,6 +16,11 @@ urlpatterns = [
     path("search/", views.search, name="search"),
     path("history/", views.global_history, name="global_history"),
     path(
+        "history/<slug:object_type>/<int:history_id>/",
+        views.global_history_detail,
+        name="global_history_detail",
+    ),
+    path(
         "autocomplete/sites/",
         SiteAutocompleteView.as_view(),
         name="autocomplete_sites",
