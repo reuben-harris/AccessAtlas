@@ -29,7 +29,38 @@ ASSIGNED_JOB_SITE_DISABLED_REASON = (
 )
 
 
+class DurationMinutesField(forms.CharField):
+    """Parse duration minutes as text so invalid input reaches server validation."""
+
+    def __init__(self, *args, **kwargs):
+        attrs = {"inputmode": "numeric", **kwargs.pop("attrs", {})}
+        kwargs["widget"] = forms.TextInput(attrs=attrs)
+        super().__init__(*args, **kwargs)
+
+    def clean(self, value):
+        value = super().clean(value)
+        if value in self.empty_values:
+            return None
+
+        try:
+            duration_minutes = int(value)
+        except (TypeError, ValueError) as exc:
+            raise forms.ValidationError(
+                "Enter duration as a whole number of minutes."
+            ) from exc
+
+        if duration_minutes <= 0:
+            raise forms.ValidationError("Enter a duration greater than 0 minutes.")
+
+        return duration_minutes
+
+
 class JobTemplateForm(forms.ModelForm):
+    estimated_duration_minutes = DurationMinutesField(
+        required=False,
+        label="Estimated duration minutes",
+    )
+
     class Meta:
         model = JobTemplate
         fields = [
@@ -72,6 +103,10 @@ class JobForm(forms.ModelForm):
     work_programme = TomSelectModelChoiceField(
         config=work_programme_tomselect_config(),
         required=False,
+    )
+    estimated_duration_minutes = DurationMinutesField(
+        required=False,
+        label="Estimated duration minutes",
     )
 
     def __init__(self, *args, **kwargs):
