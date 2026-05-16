@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@tabler/core": "1.4.0",
-    "@tabler/icons-webfont": "3.34.1",
+    "@tabler/icons-webfont": "3.44.0",
     "chart.js": "^4.5.1",
     "flatpickr": "4.6.13",
     "frappe-gantt": "^1.2.2",
