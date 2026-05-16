@@ -13,6 +13,18 @@
   margin: 0;
 }
 
+.offcanvas-header {
+  position: relative;
+  padding-right: 4rem;
+}
+
+.offcanvas-close-button {
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  transform: translateY(-50%);
+}
+
 .api-token-created-alert {
   display: flex;
   align-items: center;

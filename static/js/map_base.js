@@ -434,6 +434,36 @@
           button.setAttribute("aria-expanded", isOpen ? "true" : "false");
           if (isOpen) {
             renderPreviews();
+            updateMenuOverflow();
+          } else {
+            resetMenuOverflow();
+          }
+        }
+
+        function resetMenuOverflow() {
+          menu.style.removeProperty("max-height");
+          menu.style.removeProperty("overflow-y");
+        }
+
+        function updateMenuOverflow() {
+          // The layer menu is anchored inside the Leaflet map, so constrain it
+          // to the actual visible map area rather than the browser viewport.
+          resetMenuOverflow();
+          const mapRect = map.getContainer().getBoundingClientRect();
+          const menuRect = menu.getBoundingClientRect();
+          const availableHeight = Math.floor(mapRect.bottom - menuRect.top - 24);
+          if (!Number.isFinite(availableHeight) || availableHeight <= 0) {
+            return;
+          }
+          if (menu.scrollHeight > availableHeight) {
+            menu.style.maxHeight = `${availableHeight}px`;
+            menu.style.overflowY = "auto";
+          }
+        }
+
+        function updateOpenMenuOverflow() {
+          if (!menu.hidden) {
+            updateMenuOverflow();
           }
         }
 
@@ -598,8 +628,11 @@
         map.on("moveend zoomend", () => {
           if (!menu.hidden) {
             renderPreviews();
+            updateMenuOverflow();
           }
         });
+        map.on("resize", updateOpenMenuOverflow);
+        window.addEventListener("resize", updateOpenMenuOverflow);
         renderActiveLayer();
 
         return container;
@@ -622,6 +655,7 @@
       return null;
     }
 
+    offcanvasElement.dataset.mapOffcanvasControlled = "true";
     const originalParent = offcanvasElement.parentNode;
     const placeholder = document.createComment("list filter offcanvas");
     let fullscreenPanelVisible = false;
@@ -752,6 +786,70 @@
       restoreParent();
     }
 
+    function panelIsShown() {
+      return fullscreenPanelVisible || offcanvasElement.classList.contains("show");
+    }
+
+    function hide() {
+      if (fullscreenPanelVisible) {
+        hideFullscreenPanel();
+        return;
+      }
+
+      const Offcanvas = getOffcanvasConstructor();
+      if (typeof Offcanvas !== "function") {
+        fallbackHide();
+        return;
+      }
+
+      try {
+        Offcanvas.getOrCreateInstance(offcanvasElement, {
+          backdrop: false,
+          scroll: true,
+        }).hide();
+      } catch (_error) {
+        fallbackHide();
+      }
+    }
+
+    function targetOpensThisPanel(target) {
+      if (!(target instanceof Element)) {
+        return false;
+      }
+      const trigger = target.closest("[data-bs-target], [href]");
+      if (!trigger) {
+        return false;
+      }
+      const panelTarget =
+        trigger.getAttribute("data-bs-target") || trigger.getAttribute("href");
+      return panelTarget === `#${offcanvasId}`;
+    }
+
+    function targetIsFloatingWidget(target) {
+      return (
+        target instanceof Element &&
+        Boolean(target.closest(".flatpickr-calendar, .ts-dropdown"))
+      );
+    }
+
+    function handleDocumentPointerDown(event) {
+      if (
+        !panelIsShown() ||
+        offcanvasElement.contains(event.target) ||
+        targetOpensThisPanel(event.target) ||
+        targetIsFloatingWidget(event.target)
+      ) {
+        return;
+      }
+      hide();
+    }
+
+    function handleDocumentKeydown(event) {
+      if (event.key === "Escape" && panelIsShown()) {
+        hide();
+      }
+    }
+
     function showFullscreenPanel() {
       moveForFullscreen();
       // Once the form panel lives inside Leaflet's fullscreen element, keep
@@ -815,6 +913,8 @@
       event.preventDefault();
       fallbackHide();
     });
+    document.addEventListener("pointerdown", handleDocumentPointerDown, true);
+    document.addEventListener("keydown", handleDocumentKeydown);
     document.addEventListener("fullscreenchange", () => {
       if (!document.fullscreenElement) {
         hideFullscreenPanel();
@@ -822,7 +922,7 @@
       }
     });
 
-    return { show };
+    return { hide, show };
   }
 
   function addFullscreenControl(map, options = {}) {
