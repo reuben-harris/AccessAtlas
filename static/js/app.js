@@ -217,8 +217,77 @@
     }
   }
 
+  function initializeOffcanvasDismiss() {
+    const Offcanvas = window.bootstrap?.Offcanvas;
+
+    function visibleOffcanvases() {
+      return Array.from(
+        document.querySelectorAll(
+          ".offcanvas.show:not([data-map-offcanvas-controlled])",
+        ),
+      );
+    }
+
+    function hideOffcanvas(offcanvas) {
+      if (typeof Offcanvas === "function") {
+        Offcanvas.getOrCreateInstance(offcanvas, {
+          backdrop: false,
+          scroll: true,
+        }).hide();
+        return;
+      }
+      offcanvas.classList.remove("show");
+      offcanvas.setAttribute("aria-hidden", "true");
+      offcanvas.removeAttribute("aria-modal");
+    }
+
+    function targetOpensOffcanvas(target, offcanvas) {
+      if (!(target instanceof Element)) {
+        return false;
+      }
+      const trigger = target.closest("[data-bs-target], [href]");
+      if (!trigger || !offcanvas.id) {
+        return false;
+      }
+      const panelTarget =
+        trigger.getAttribute("data-bs-target") || trigger.getAttribute("href");
+      return panelTarget === `#${offcanvas.id}`;
+    }
+
+    function targetIsFloatingWidget(target) {
+      return (
+        target instanceof Element &&
+        Boolean(target.closest(".flatpickr-calendar, .ts-dropdown"))
+      );
+    }
+
+    document.addEventListener("pointerdown", (event) => {
+      for (const offcanvas of visibleOffcanvases().reverse()) {
+        if (
+          offcanvas.contains(event.target) ||
+          targetOpensOffcanvas(event.target, offcanvas) ||
+          targetIsFloatingWidget(event.target)
+        ) {
+          continue;
+        }
+        hideOffcanvas(offcanvas);
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") {
+        return;
+      }
+      const offcanvas = visibleOffcanvases().pop();
+      if (offcanvas) {
+        hideOffcanvas(offcanvas);
+      }
+    });
+  }
+
   initializeDatePickers();
   initializeBasicTomSelects();
+  initializeOffcanvasDismiss();
 
   for (const form of document.querySelectorAll("[data-list-filter-form]")) {
     initializeFilterTomSelects(form);

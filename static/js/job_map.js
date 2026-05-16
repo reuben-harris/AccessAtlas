@@ -145,6 +145,10 @@
   }
 
   function buildPopup(site, jobs) {
+    const listClass =
+      jobs.length > 15
+        ? "job-map-popup-list job-map-popup-list--scroll"
+        : "job-map-popup-list";
     const jobList = jobs
       .map((job) => {
         const statusLayer = statusByValue.get(job.statusValue);
@@ -162,7 +166,7 @@
       <div class="job-map-popup-title">
         <a href="${escapeHtml(site.url)}">${siteCodeHtml(site.code)} - ${escapeHtml(site.name)}</a>
       </div>
-      <ul class="job-map-popup-list">${jobList}</ul>
+      <ul class="${listClass}">${jobList}</ul>
     `;
   }
 
