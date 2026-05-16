@@ -33,6 +33,7 @@ from access_atlas.core.maps import map_basemap_config, map_basemap_preference
 from access_atlas.core.mixins import (
     FilteredListMixin,
     ObjectFormMixin,
+    ObjectHistoryDetailMixin,
     PaginatedObjectHistoryMixin,
     SearchablePaginatedListMixin,
     SortableListMixin,
@@ -1072,3 +1073,24 @@ class RequirementDeleteView(LoginRequiredMixin, DeleteView):
 
     def get_cancel_url(self):
         return self.object.job.get_requirements_url()
+
+
+class JobTemplateHistoryDetailView(
+    ObjectHistoryDetailMixin,
+    JobTemplateHistoryView,
+):
+    pass
+
+
+class WorkProgrammeHistoryDetailView(
+    ObjectHistoryDetailMixin,
+    WorkProgrammeHistoryView,
+):
+    pass
+
+
+class JobHistoryDetailView(
+    ObjectHistoryDetailMixin,
+    JobHistoryView,
+):
+    pass

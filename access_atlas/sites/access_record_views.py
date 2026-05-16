@@ -8,6 +8,7 @@ from django.views.generic import DetailView, FormView, ListView, UpdateView
 from access_atlas.core.maps import map_basemap_config, map_basemap_preference
 from access_atlas.core.mixins import (
     FilteredListMixin,
+    ObjectHistoryDetailMixin,
     PaginatedObjectHistoryMixin,
     SearchablePaginatedListMixin,
     SortableListMixin,
@@ -328,6 +329,13 @@ class AccessRecordUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         return self.object.get_absolute_url()
+
+
+class AccessRecordHistoryDetailView(
+    ObjectHistoryDetailMixin,
+    AccessRecordHistoryView,
+):
+    pass
 
     def get_cancel_url(self):
         return self.object.get_absolute_url()

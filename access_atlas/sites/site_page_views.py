@@ -15,6 +15,7 @@ from access_atlas.accounts.preferences import (
 from access_atlas.core.maps import map_basemap_config, map_basemap_preference
 from access_atlas.core.mixins import (
     FilteredListMixin,
+    ObjectHistoryDetailMixin,
     PaginatedObjectHistoryMixin,
     SearchablePaginatedListMixin,
     SortableListMixin,
@@ -205,6 +206,10 @@ class SiteHistoryView(
         context.update(self._site_detail_data())
         context.update(self.get_history_context())
         return context
+
+
+class SiteHistoryDetailView(ObjectHistoryDetailMixin, SiteHistoryView):
+    pass
 
 
 class SitePhotoBulkHideView(LoginRequiredMixin, View):

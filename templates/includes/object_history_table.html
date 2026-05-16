@@ -4,8 +4,15 @@
 <div class="card{% if card_class %} {{ card_class }}{% endif %}">
   <div class="card-header">
     <h3 class="card-title">{{ history_title|default:"History" }}</h3>
-    {% if page_size_options %}
+    {% if object_global_history_url or page_size_options %}
       <div class="card-actions">
+        {% if object_global_history_url %}
+          <a class="btn btn-sm btn-outline-primary" href="{{ object_global_history_url }}">
+            <i class="ti ti-history" aria-hidden="true"></i>
+            View in global history
+          </a>
+        {% endif %}
+        {% if page_size_options %}
         <form method="get" class="d-flex align-items-center gap-2">
           {% for key, value in per_page_preserved_query_items %}
             <input type="hidden" name="{{ key }}" value="{{ value }}">
@@ -20,6 +27,7 @@
             <i class="ti ti-check" aria-hidden="true"></i>Apply
           </button>
         </form>
+        {% endif %}
       </div>
     {% endif %}
   </div>
@@ -36,7 +44,13 @@
       <tbody>
         {% for record in history_records %}
           <tr>
-            <td>{{ record.history_date }}</td>
+            <td>
+              {% if record.history_detail_url %}
+                <a href="{{ record.history_detail_url }}">{{ record.history_date }}</a>
+              {% else %}
+                {{ record.history_date }}
+              {% endif %}
+            </td>
             <td>{{ record.get_history_type_display }}</td>
             <td>{{ record|change_reason }}</td>
             <td>{{ record.history_user|default:"System" }}</td>

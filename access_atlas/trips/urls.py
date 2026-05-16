@@ -33,6 +33,11 @@ urlpatterns = [
         name="trip_requirement_toggle",
     ),
     path("<int:pk>/history/", views.TripHistoryView.as_view(), name="trip_history"),
+    path(
+        "<int:pk>/history/<int:history_id>/",
+        views.TripHistoryDetailView.as_view(),
+        name="trip_history_detail",
+    ),
     path("<int:pk>/", views.TripDetailView.as_view(), name="trip_detail"),
     path("<int:pk>/edit/", views.TripUpdateView.as_view(), name="trip_update"),
     path("<int:pk>/submit/", views.submit_trip_view, name="trip_submit"),
@@ -63,6 +68,11 @@ urlpatterns = [
         "site-visits/<int:pk>/history/",
         views.SiteVisitHistoryView.as_view(),
         name="site_visit_history",
+    ),
+    path(
+        "site-visits/<int:pk>/history/<int:history_id>/",
+        views.SiteVisitHistoryDetailView.as_view(),
+        name="site_visit_history_detail",
     ),
     path(
         "site-visits/<int:pk>/edit/",

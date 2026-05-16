@@ -8,8 +8,8 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import DatabaseError, connection
 from django.db.models import Count
-from django.http import JsonResponse
-from django.shortcuts import render
+from django.http import Http404, JsonResponse
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import TemplateView
@@ -17,12 +17,17 @@ from django.views.generic import TemplateView
 from access_atlas.accounts.models import User
 from access_atlas.core.global_history import (
     HISTORY_ACTION_CHOICES,
+    adjacent_history_records,
+    append_query_string,
     build_global_history_entries,
     filter_global_history_entries,
+    history_detail_url,
+    history_model_for_slug,
     history_object_type_choices,
     history_user_choices,
     sort_global_history_entries,
 )
+from access_atlas.core.history_diff import build_history_diff
 from access_atlas.core.history_filters import GlobalHistoryFilterSet
 from access_atlas.core.list_filters import (
     FILTER_STATE_PARAM,
@@ -265,6 +270,8 @@ class GlobalHistoryView(
         data = filterset.data
         object_types = cleaned_values(data.getlist("object_type")) or None
         excluded_object_types = cleaned_values(data.getlist("object_type__not"))
+        object_ids = cleaned_values(data.getlist("object_id")) or None
+        excluded_object_ids = cleaned_values(data.getlist("object_id__not")) or None
         actions = cleaned_values(data.getlist("action")) or None
         excluded_actions = cleaned_values(data.getlist("action__not"))
         users = cleaned_values(data.getlist("user")) or None
@@ -284,6 +291,8 @@ class GlobalHistoryView(
 
         return {
             "object_types": object_types,
+            "object_ids": object_ids,
+            "excluded_object_ids": excluded_object_ids,
             "actions": actions,
             "users": users,
         }
@@ -310,6 +319,7 @@ class GlobalHistoryView(
         context.update(
             {
                 "entries": page_obj.object_list,
+                "history_detail_query_string": query_string_without_page(self.request),
                 "filterset": filterset,
                 "filter_controls": filterset.filter_controls(),
                 "active_filter_chips": filterset.active_chips(self.request),
@@ -332,3 +342,38 @@ class GlobalHistoryView(
 
 
 global_history = login_required(GlobalHistoryView.as_view())
+
+
+@login_required
+def global_history_detail(request, object_type: str, history_id: int):
+    history_model = history_model_for_slug(object_type)
+    if history_model is None:
+        raise Http404("History object type not found.")
+
+    history_record = get_object_or_404(
+        history_model.history.select_related("history_user"),
+        history_id=history_id,
+    )
+    previous_record, next_record = adjacent_history_records(
+        history_model,
+        history_record,
+    )
+    return render(
+        request,
+        "object_history_detail.html",
+        {
+            "object": history_record.instance,
+            "history_object_type": history_record.instance._meta.verbose_name.title(),
+            "history_record": history_record,
+            "history_diff": build_history_diff(history_record, previous_record),
+            "previous_history_url": append_query_string(
+                history_detail_url(previous_record) if previous_record else "",
+                request.GET.urlencode(),
+            ),
+            "next_history_url": append_query_string(
+                history_detail_url(next_record) if next_record else "",
+                request.GET.urlencode(),
+            ),
+            "object_history_url": reverse("global_history"),
+        },
+    )
