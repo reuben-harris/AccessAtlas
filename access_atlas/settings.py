@@ -6,6 +6,8 @@ from pathlib import Path
 import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Authentication mode choices.
 AUTH_MODE_LOCAL = "local"
 AUTH_MODE_OIDC = "oidc"
 AUTH_MODE_LOCAL_OIDC = "local-oidc"
@@ -13,6 +15,7 @@ AUTH_MODE_CHOICES = {AUTH_MODE_LOCAL, AUTH_MODE_OIDC, AUTH_MODE_LOCAL_OIDC}
 
 
 def load_env_file(path: Path) -> None:
+    """Load simple KEY=VALUE pairs from a local env file."""
     if not path.exists():
         return
     for line in path.read_text().splitlines():
@@ -25,6 +28,7 @@ def load_env_file(path: Path) -> None:
 
 load_env_file(BASE_DIR / ".env")
 
+# Core runtime settings.
 SECRET_KEY = os.getenv("SECRET_KEY", "insecure-dev-secret-key")
 DEBUG = os.getenv("DEBUG", "true").lower() in {"1", "true", "yes", "on"}
 ALLOWED_HOSTS = [
@@ -44,6 +48,8 @@ if AUTH_MODE not in AUTH_MODE_CHOICES:
         f"{', '.join(sorted(AUTH_MODE_CHOICES))}; got {AUTH_MODE!r}."
     )
     raise ValueError(msg)
+
+# Login and OIDC settings.
 LOCAL_LOGIN_ENABLED = AUTH_MODE in {AUTH_MODE_LOCAL, AUTH_MODE_LOCAL_OIDC}
 OIDC_LOGIN_ENABLED = AUTH_MODE in {AUTH_MODE_OIDC, AUTH_MODE_LOCAL_OIDC}
 OIDC_PROVIDER_ID = os.getenv("OIDC_PROVIDER_ID", "access-atlas")
@@ -73,6 +79,7 @@ if OIDC_LOGIN_ENABLED and not all(
     )
     raise ValueError(msg)
 
+# Django applications.
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -99,6 +106,7 @@ INSTALLED_APPS = [
     "access_atlas.trips.apps.TripsConfig",
 ]
 
+# Middleware stack.
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -114,6 +122,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "access_atlas.urls"
 
+# Template settings.
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -135,6 +144,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "access_atlas.wsgi.application"
 
+# Database settings.
 DATABASES = {
     "default": dj_database_url.config(
         default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
@@ -143,6 +153,8 @@ DATABASES = {
 }
 
 AUTH_USER_MODEL = "accounts.User"
+
+# Authentication backends.
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
@@ -187,6 +199,7 @@ TIME_ZONE = os.getenv("TIME_ZONE", "Pacific/Auckland")
 USE_I18N = True
 USE_TZ = True
 
+# Static and media settings.
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
@@ -220,6 +233,7 @@ elif MEDIA_STORAGE_BACKEND != "local":
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# REST API settings.
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
@@ -239,6 +253,7 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 50,
 }
 
+# OpenAPI schema settings.
 SPECTACULAR_SETTINGS = {
     "TITLE": "Access Atlas API",
     "DESCRIPTION": "REST API for Access Atlas field work planning data.",
@@ -260,10 +275,12 @@ SPECTACULAR_SETTINGS = {
     },
 }
 
+# External site feed settings.
 SITE_FEED_URL = os.getenv("SITE_FEED_URL", "")
 SITE_FEED_TOKEN = os.getenv("SITE_FEED_TOKEN", "")
 DEFAULT_BUG_REPORT_URL = "https://github.com/reuben-harris/AccessAtlas/issues/new"
 BUG_REPORT_URL = os.getenv("BUG_REPORT_URL", DEFAULT_BUG_REPORT_URL).strip()
 
+# Map provider settings.
 MAP_ARCGIS_API_KEY = os.getenv("MAP_ARCGIS_API_KEY", "").strip()
 MAP_TRACESTRACK_API_KEY = os.getenv("MAP_TRACESTRACK_API_KEY", "").strip()

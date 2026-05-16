@@ -1,3 +1,4 @@
+// Handles the Trip Gantt view.
 (() => {
   const ganttElement = document.getElementById("trip-gantt");
   const dataElement = document.getElementById("trip-gantt-data");

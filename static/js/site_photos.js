@@ -1,3 +1,4 @@
+// Handles Site photo gallery interactions.
 import PhotoSwipeLightbox from "../vendor/photoswipe/photoswipe-lightbox.esm.min.js";
 
 (() => {

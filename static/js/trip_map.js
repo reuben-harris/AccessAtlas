@@ -1,3 +1,4 @@
+// Renders the Trip map.
 (() => {
   const mapElement = document.getElementById("trip-map");
   const dataElement = document.getElementById("trip-map-data");

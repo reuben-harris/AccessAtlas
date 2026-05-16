@@ -1,3 +1,4 @@
+// Provides shared Leaflet map helpers.
 (() => {
   window.AccessAtlas = window.AccessAtlas || {};
   const accessAtlas = window.AccessAtlas;

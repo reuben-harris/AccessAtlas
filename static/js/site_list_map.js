@@ -1,3 +1,4 @@
+// Renders the Sites map.
 (() => {
   const mapElement = document.getElementById("site-list-map");
   const dataElement = document.getElementById("site-list-map-data");
