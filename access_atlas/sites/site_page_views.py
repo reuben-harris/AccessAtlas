@@ -128,14 +128,68 @@ class SiteDetailView(SiteDetailContextMixin, LoginRequiredMixin, DetailView):
 
 class SiteAccessRecordsView(SiteDetailContextMixin, LoginRequiredMixin, DetailView):
     template_name = "sites/site_access_records.html"
+    default_access_record_sort = "name"
+    access_record_sort_keys = {
+        "name",
+        "arrival-method",
+        "status",
+        "latest-version",
+    }
 
     def get_detail_sections(self) -> list[dict[str, str | bool]]:
         return site_detail_sections(self.object, "access-records")
 
+    def normalize_access_record_sort(self, value: str | None) -> str:
+        if not value:
+            return self.default_access_record_sort
+        direction = "-" if value.startswith("-") else ""
+        sort_key = value.removeprefix("-")
+        if sort_key not in self.access_record_sort_keys:
+            return self.default_access_record_sort
+        return f"{direction}{sort_key}"
+
+    def access_record_sort_value(self) -> str:
+        if hasattr(self, "_cached_access_record_sort_value"):
+            return self._cached_access_record_sort_value
+        self._cached_access_record_sort_value = self.normalize_access_record_sort(
+            self.request.GET.get("sort"),
+        )
+        return self._cached_access_record_sort_value
+
+    def sorted_access_records(self, access_records):
+        sort_value = self.access_record_sort_value()
+        descending = sort_value.startswith("-")
+        sort_key = sort_value.removeprefix("-")
+
+        def latest_version_number(access_record):
+            latest_version = getattr(access_record, "latest_version", None)
+            return latest_version.version_number if latest_version is not None else -1
+
+        sort_values = {
+            "name": lambda access_record: (access_record.name or "").casefold(),
+            "arrival-method": lambda access_record: (
+                access_record.get_arrival_method_display()
+            ),
+            "status": lambda access_record: access_record.get_status_display(),
+            "latest-version": latest_version_number,
+        }
+        return sorted(
+            access_records,
+            key=sort_values[sort_key],
+            reverse=descending,
+        )
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(self._site_detail_data())
-        context.update(self._site_access_records_context())
+        sort_value = self.access_record_sort_value()
+        context["site_access_records"] = self.sorted_access_records(
+            context["site_access_records"],
+        )
+        context["current_sort"] = sort_value
+        context["current_sort_field"] = sort_value.removeprefix("-")
+        context["current_sort_descending"] = sort_value.startswith("-")
+        context["sort_param"] = "sort"
         return context
 
 

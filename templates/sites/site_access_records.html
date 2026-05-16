@@ -1,12 +1,7 @@
 {% extends "base/base.html" %}
-{% load static status_badges %}
+{% load status_badges %}
 
 {% block title %}{{ object.code }} - Access Atlas{% endblock %}
-
-{% block head %}
-  <link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
-  <link rel="stylesheet" href="{% static 'vendor/leaflet.fullscreen/Control.FullScreen.css' %}">
-{% endblock %}
 
 {% block content %}
 <div class="page-header d-print-none">
@@ -38,13 +33,26 @@
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">
     <h3 class="card-title">Access Records</h3>
-    <a class="btn btn-sm btn-success" href="{% url 'access_record_create' object.pk %}">
-      <i class="ti ti-plus" aria-hidden="true"></i>Add access record
-    </a>
+    <div class="btn-list">
+      <a class="btn btn-sm btn-secondary" href="{% url 'access_record_global_map' %}?site={{ object.pk }}">
+        <i class="ti ti-map" aria-hidden="true"></i>View on map
+      </a>
+      <a class="btn btn-sm btn-success" href="{% url 'access_record_create' object.pk %}">
+        <i class="ti ti-plus" aria-hidden="true"></i>Add access record
+      </a>
+    </div>
   </div>
   <div class="table-responsive">
     <table class="table table-vcenter">
-      <thead><tr><th>Name</th><th>Arrival Method</th><th>Status</th><th>Latest Version</th><th class="text-end">Actions</th></tr></thead>
+      <thead>
+        <tr>
+          {% include "includes/sortable_th.html" with label="Name" sort_key="name" %}
+          {% include "includes/sortable_th.html" with label="Arrival Method" sort_key="arrival-method" %}
+          {% include "includes/sortable_th.html" with label="Status" sort_key="status" %}
+          {% include "includes/sortable_th.html" with label="Latest Version" sort_key="latest-version" %}
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
       <tbody>
         {% for access_record in site_access_records %}
           <tr>
@@ -64,16 +72,6 @@
             </td>
             <td class="text-end row-actions">
               <div class="access-record-actions">
-                <button
-                  class="btn btn-icon btn-secondary"
-                  type="button"
-                  data-map-toggle="access-record"
-                  data-record-id="{{ access_record.pk }}"
-                  aria-label="Hide {{ access_record.name }} on map"
-                  title="Hide on map"
-                >
-                  <i class="ti ti-eye" aria-hidden="true"></i>
-                </button>
                 <a class="btn btn-icon btn-warning row-edit-button" href="{% url 'access_record_update' access_record.pk %}" aria-label="Edit {{ access_record.name }}" title="Edit {{ access_record.name }}">
                   <i class="ti ti-pencil" aria-hidden="true"></i>
                 </a>
@@ -111,25 +109,4 @@
     </table>
   </div>
 </div>
-<div class="card site-access-map-card mt-3">
-  <div class="card-body p-0">
-    <div
-      id="site-access-map"
-      class="site-access-map"
-      data-preference-url="{% url 'account_preference' %}"
-      data-basemap-preference-url="{% url 'account_preference' %}"
-      aria-label="Map of access record features for this site"
-    ></div>
-  </div>
-</div>
-{{ site_access_map_data|json_script:"site-access-map-data" }}
-{{ site_access_map_preference|json_script:"site-access-map-preference" }}
-{{ map_basemap_config|json_script:"map-basemap-config" }}
-{{ map_basemap_preference|json_script:"map-basemap-preference" }}
-{{ object.latitude|json_script:"site-access-map-site-latitude" }}
-{{ object.longitude|json_script:"site-access-map-site-longitude" }}
-<script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
-<script src="{% static 'vendor/leaflet.fullscreen/Control.FullScreen.umd.js' %}"></script>
-<script src="{% static 'vendor/leaflet-ant-path/leaflet-ant-path.js' %}"></script>
-<script src="{% static 'js/site_access_map.js' %}"></script>
 {% endblock %}

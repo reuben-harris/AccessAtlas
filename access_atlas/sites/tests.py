@@ -16,7 +16,6 @@ from access_atlas.accounts.preferences import (
     list_filter_preference_key,
     list_sort_preference_key,
     set_user_preference,
-    site_access_map_preference_key,
 )
 from access_atlas.core.list_filters import FILTER_STATE_PARAM, FILTER_STATE_UPDATE
 from access_atlas.core.test_utils import parse_json_script
@@ -1146,7 +1145,7 @@ def test_access_record_history_accepts_custom_per_page(client):
 
 
 @pytest.mark.django_db
-def test_site_detail_includes_access_map_feature_data(client):
+def test_site_access_records_links_to_filtered_global_map(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
     site = Site.objects.create(
@@ -1183,22 +1182,15 @@ def test_site_detail_includes_access_map_feature_data(client):
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert 'id="site-access-map"' in content
-    assert 'data-map-toggle="access-record"' in content
-    assert f'data-record-id="{access_record.pk}"' in content
-    payload = parse_json_script(content, "site-access-map-data")
-    assert payload["tracks"] == []
-    assert len(payload["points"]) == 1
-    point = payload["points"][0]
-    assert point["recordName"] == "Road access"
-    assert point["typeLabel"] == "Gate"
-    assert point["label"] == "North gate"
-    assert point["arrivalMethod"] == "road"
-    assert point["details"] == "Code: #1234"
+    assert "Road access" in content
+    assert f"{reverse('access_record_global_map')}?site={site.pk}" in content
+    assert 'id="site-access-map"' not in content
+    assert 'data-map-toggle="access-record"' not in content
+    assert "site-access-map-data" not in content
 
 
 @pytest.mark.django_db
-def test_site_detail_skips_invalid_access_map_feature_data(client):
+def test_site_access_records_table_sorts_records(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
     site = Site.objects.create(
@@ -1209,105 +1201,21 @@ def test_site_detail_skips_invalid_access_map_feature_data(client):
         latitude=-41.1,
         longitude=174.1,
     )
-    access_record = AccessRecord.objects.create(site=site, name="Road access")
-    AccessRecordVersion.objects.create(
-        access_record=access_record,
-        version_number=1,
-        geojson={"type": "Feature", "features": []},
-        change_note="Broken upload",
-        uploaded_by=user,
+    AccessRecord.objects.create(site=site, name="Alpha access")
+    AccessRecord.objects.create(site=site, name="Zulu access")
+
+    response = client.get(
+        f"{reverse('site_access_records', kwargs={'pk': site.pk})}?sort=-name",
     )
 
-    response = client.get(reverse("site_access_records", kwargs={"pk": site.pk}))
-
     assert response.status_code == 200
+    assert [record.name for record in response.context["site_access_records"]] == [
+        "Zulu access",
+        "Alpha access",
+    ]
     content = response.content.decode()
-    assert parse_json_script(content, "site-access-map-data") == {
-        "points": [],
-        "tracks": [],
-    }
-
-
-@pytest.mark.django_db
-def test_site_detail_uses_saved_access_map_visibility_preference(client):
-    user = User.objects.create_user(email="user@example.com")
-    client.force_login(user)
-    site = Site.objects.create(
-        source_name="dummy",
-        external_id="001",
-        code="AA-001",
-        name="Site",
-        latitude=-41.1,
-        longitude=174.1,
-    )
-    AccessRecord.objects.create(site=site, name="Road access")
-    second_record = AccessRecord.objects.create(site=site, name="Boat access")
-    set_user_preference(
-        user,
-        site_access_map_preference_key(site.pk),
-        {"visible_record_ids": [second_record.pk], "animate_tracks": False},
-    )
-
-    response = client.get(reverse("site_access_records", kwargs={"pk": site.pk}))
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    preference_payload = parse_json_script(content, "site-access-map-preference")
-    assert preference_payload["value"]["visible_record_ids"] == [second_record.pk]
-    assert preference_payload["value"]["animate_tracks"] is False
-    assert get_user_preference(
-        user,
-        site_access_map_preference_key(site.pk),
-        {"visible_record_ids": []},
-    ) == {"visible_record_ids": [second_record.pk], "animate_tracks": False}
-
-
-@pytest.mark.django_db
-def test_site_detail_defaults_access_map_track_animation_to_enabled(client):
-    user = User.objects.create_user(email="user@example.com")
-    client.force_login(user)
-    site = Site.objects.create(
-        source_name="dummy",
-        external_id="001",
-        code="AA-001",
-        name="Site",
-        latitude=-41.1,
-        longitude=174.1,
-    )
-
-    response = client.get(reverse("site_access_records", kwargs={"pk": site.pk}))
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    preference_payload = parse_json_script(content, "site-access-map-preference")
-    assert preference_payload["value"]["animate_tracks"] is True
-
-
-@pytest.mark.django_db
-def test_site_detail_defaults_animation_for_visibility_only_preference(client):
-    user = User.objects.create_user(email="user@example.com")
-    client.force_login(user)
-    site = Site.objects.create(
-        source_name="dummy",
-        external_id="001",
-        code="AA-001",
-        name="Site",
-        latitude=-41.1,
-        longitude=174.1,
-    )
-    record = AccessRecord.objects.create(site=site, name="Road access")
-    set_user_preference(
-        user,
-        site_access_map_preference_key(site.pk),
-        {"visible_record_ids": [record.pk]},
-    )
-
-    response = client.get(reverse("site_access_records", kwargs={"pk": site.pk}))
-
-    assert response.status_code == 200
-    payload = parse_json_script(response.content.decode(), "site-access-map-preference")
-    assert payload["value"]["visible_record_ids"] == [record.pk]
-    assert payload["value"]["animate_tracks"] is True
+    assert "?sort=name" in content
+    assert "?sort=arrival-method" in content
 
 
 @pytest.mark.django_db

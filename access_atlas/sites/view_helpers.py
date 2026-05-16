@@ -2,12 +2,6 @@ from urllib.parse import urlencode
 
 from django.urls import reverse
 
-from access_atlas.accounts.preferences import (
-    get_user_preference,
-    site_access_map_preference_key,
-)
-from access_atlas.core.maps import map_basemap_config, map_basemap_preference
-
 from .access_record_snapshots import build_access_record_snapshots
 from .access_warnings import build_site_warnings
 from .models import AccessRecord, Site
@@ -276,33 +270,6 @@ class SiteDetailContextMixin:
             "snapshots_by_record_id": snapshots_by_record_id,
         }
         return self._cached_site_detail_data
-
-    def _site_access_records_context(self) -> dict:
-        data = self._site_detail_data()
-        access_records = data["site_access_records"]
-        preference_key = site_access_map_preference_key(self.object.pk)
-        default_record_ids = [record.pk for record in access_records]
-        # Keep a permissive default here so newly added records appear on the
-        # map unless the user has explicitly hidden them before.
-        map_preference = get_user_preference(
-            self.request.user,
-            preference_key,
-            {"visible_record_ids": default_record_ids, "animate_tracks": True},
-        )
-        if "animate_tracks" not in map_preference:
-            map_preference["animate_tracks"] = True
-        return {
-            "site_access_map_data": build_site_access_map_data(
-                access_records,
-                data["snapshots_by_record_id"],
-            ),
-            "site_access_map_preference": {
-                "key": preference_key,
-                "value": map_preference,
-            },
-            "map_basemap_config": map_basemap_config(),
-            "map_basemap_preference": map_basemap_preference(self.request.user),
-        }
 
     def get_detail_sections(self) -> list[dict[str, str | bool]]:
         raise NotImplementedError
