@@ -316,6 +316,11 @@
   border-color: var(--tblr-bg-surface);
 }
 
+.access-record-map-layer-badge.is-warning {
+  background: var(--tblr-warning);
+  color: #fff;
+}
+
 [data-bs-theme="dark"] .access-atlas-map-home-control button:hover,
 [data-bs-theme="dark"] .access-atlas-map-home-control button:focus-visible,
 [data-bs-theme="dark"] .access-atlas-map-filter-control button:hover,
