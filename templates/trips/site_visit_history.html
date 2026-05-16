@@ -1,14 +1,14 @@
 {% extends "base/base.html" %}
 {% load status_badges %}
 
-{% block title %}{{ object.site.code }} Visit - Access Atlas{% endblock %}
+{% block title %}{{ object.site.display_code }} Visit - Access Atlas{% endblock %}
 
 {% block content %}
 <div class="page-header d-print-none">
   <div class="row align-items-center">
     <div class="col">
       <h2 class="page-title d-flex align-items-center flex-wrap gap-2">
-        <span>{{ object.site }}</span>
+        <span>{% include "includes/site_label.html" with site=object.site %}</span>
         <span class="text-secondary d-inline-flex align-items-center">
           <i class="ti ti-chevron-right" aria-hidden="true"></i>
         </span>

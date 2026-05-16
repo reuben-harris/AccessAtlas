@@ -5,6 +5,21 @@ from django.db import models
 from django.urls import reverse
 from simple_history.models import HistoricalRecords
 
+SITE_CODE_PLACEHOLDER = "code not set"
+SITE_CODE_COMPACT_PLACEHOLDER = "null"
+
+
+def display_site_code(code: str | None, *, compact: bool = False) -> str:
+    if code:
+        return code
+    if compact:
+        return SITE_CODE_COMPACT_PLACEHOLDER
+    return SITE_CODE_PLACEHOLDER
+
+
+def display_site_label(code: str | None, name: str) -> str:
+    return f"{display_site_code(code)} - {name}"
+
 
 class SiteSyncStatus(models.TextChoices):
     ACTIVE = "active", "Active"
@@ -40,7 +55,7 @@ class Site(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"{self.code} - {self.name}"
+        return self.display_label
 
     def get_absolute_url(self) -> str:
         return reverse("site_detail", kwargs={"pk": self.pk})
@@ -53,6 +68,18 @@ class Site(models.Model):
 
     def get_history_url(self) -> str:
         return reverse("site_history", kwargs={"pk": self.pk})
+
+    @property
+    def display_code(self) -> str:
+        return display_site_code(self.code)
+
+    @property
+    def compact_display_code(self) -> str:
+        return display_site_code(self.code, compact=True)
+
+    @property
+    def display_label(self) -> str:
+        return display_site_label(self.code, self.name)
 
 
 class ArrivalMethod(models.TextChoices):

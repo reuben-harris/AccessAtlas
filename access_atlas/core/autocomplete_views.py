@@ -4,7 +4,11 @@ from django_tomselect.autocompletes import AutocompleteModelView
 
 from access_atlas.accounts.models import User
 from access_atlas.jobs.models import Job, JobStatus, JobTemplate, WorkProgramme
-from access_atlas.sites.models import Site
+from access_atlas.sites.models import Site, display_site_label
+
+
+def site_label(site: Site) -> str:
+    return site.display_label
 
 
 class AccessAtlasAutocompleteView(AutocompleteModelView):
@@ -40,7 +44,10 @@ class SiteAutocompleteView(AccessAtlasAutocompleteView):
         results: list[dict[str, object]],
     ) -> list[dict[str, object]]:
         for item in results:
-            item["label"] = f"{item['code']} - {item['name']}"
+            item["label"] = display_site_label(
+                str(item.get("code") or ""),
+                str(item["name"]),
+            )
         return results
 
 
@@ -158,7 +165,7 @@ class UnprogrammedJobAutocompleteView(AccessAtlasAutocompleteView):
     ) -> list[dict[str, object]]:
         job_ids = [item["id"] for item in results]
         site_labels = {
-            job.pk: str(job.site)
+            job.pk: site_label(job.site)
             for job in Job.objects.select_related("site").filter(pk__in=job_ids)
         }
         for item in results:

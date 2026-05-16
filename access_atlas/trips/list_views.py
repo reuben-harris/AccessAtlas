@@ -81,7 +81,7 @@ class TripGanttView(FilteredListMixin, LoginRequiredMixin, ListView):
                             "tripId": trip.pk,
                             "tripName": trip.name,
                             "siteVisitId": site_visit.pk,
-                            "siteCode": site_visit.site.code,
+                            "siteCode": site_visit.site.display_code,
                             "siteName": site_visit.site.name,
                             "status": site_visit.status,
                             "statusLabel": site_visit.get_status_display(),
@@ -94,7 +94,7 @@ class TripGanttView(FilteredListMixin, LoginRequiredMixin, ListView):
                     unscheduled_visits.append(
                         {
                             "tripName": trip.name,
-                            "siteCode": site_visit.site.code,
+                            "siteCode": site_visit.site.display_code,
                             "siteName": site_visit.site.name,
                             "url": site_visit.get_absolute_url(),
                         }

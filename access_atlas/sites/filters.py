@@ -17,12 +17,19 @@ from access_atlas.core.list_filters import (
 )
 from access_atlas.core.status_display import status_filter_choice_attributes
 
+from .access_record_snapshots import build_access_record_snapshots
+from .access_warnings import build_site_warnings
 from .models import (
     AccessRecord,
     AccessRecordStatus,
     ArrivalMethod,
     Site,
     SiteSyncStatus,
+)
+
+ACCESS_WARNING_CHOICES = (
+    ("true", "With access warnings"),
+    ("false", "Without access warnings"),
 )
 
 
@@ -60,6 +67,17 @@ def site_ids_matching_any_tag(labels: list[str], *, negate: bool = False) -> lis
         if has_match != negate:
             matching_ids.append(site_id)
     return matching_ids
+
+
+def site_ids_with_access_warnings() -> list[int]:
+    site_ids = []
+    sites = Site.objects.prefetch_related("access_records__versions")
+    for site in sites:
+        access_records = list(site.access_records.all())
+        snapshots_by_record_id = build_access_record_snapshots(access_records)
+        if build_site_warnings(site, snapshots_by_record_id=snapshots_by_record_id):
+            site_ids.append(site.pk)
+    return site_ids
 
 
 class SiteFilterSet(AccessAtlasFilterSet):
@@ -138,6 +156,14 @@ class SiteFilterSet(AccessAtlasFilterSet):
         method="filter_tags_not",
         choices=site_tag_choices,
     )
+    access_warnings = django_filters.MultipleChoiceFilter(
+        method="filter_access_warnings",
+        choices=ACCESS_WARNING_CHOICES,
+    )
+    access_warnings__not = django_filters.MultipleChoiceFilter(
+        method="filter_access_warnings_not",
+        choices=ACCESS_WARNING_CHOICES,
+    )
     last_seen_at = django_filters.DateFilter(
         field_name="last_seen_at",
         lookup_expr="date",
@@ -191,6 +217,15 @@ class SiteFilterSet(AccessAtlasFilterSet):
             site_source_choices,
         ),
         FilterFieldSpec("tags", "Tags", "multiselect", TAG_OPERATORS, site_tag_choices),
+        FilterFieldSpec(
+            "access_warnings",
+            "Access warnings",
+            "multiselect",
+            CHOICE_OPERATORS,
+            choices=ACCESS_WARNING_CHOICES,
+            collapse_chip_when_all_choices=True,
+            all_choices_chip_label="warning states",
+        ),
         FilterFieldSpec(
             "code",
             "Code",
@@ -265,6 +300,34 @@ class SiteFilterSet(AccessAtlasFilterSet):
         return queryset.filter(
             pk__in=site_ids_matching_any_tag(list(values), negate=True)
         )
+
+    def filter_access_warnings(
+        self,
+        queryset: QuerySet,
+        _name: str,
+        values: list[str],
+    ) -> QuerySet:
+        values = set(values)
+        if not values or values == {"true", "false"}:
+            return queryset
+        warning_site_ids = site_ids_with_access_warnings()
+        if "true" in values:
+            return queryset.filter(pk__in=warning_site_ids)
+        return queryset.exclude(pk__in=warning_site_ids)
+
+    def filter_access_warnings_not(
+        self,
+        queryset: QuerySet,
+        _name: str,
+        values: list[str],
+    ) -> QuerySet:
+        values = set(values)
+        if not values or values == {"true", "false"}:
+            return queryset
+        warning_site_ids = site_ids_with_access_warnings()
+        if "true" in values:
+            return queryset.exclude(pk__in=warning_site_ids)
+        return queryset.filter(pk__in=warning_site_ids)
 
 
 class AccessRecordFilterSet(AccessAtlasFilterSet):

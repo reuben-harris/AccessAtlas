@@ -1350,6 +1350,29 @@ def test_job_template_list_filters_by_active_state_and_priority(client):
 
 
 @pytest.mark.django_db
+def test_job_template_active_filter_uses_yes_no_labels_and_matching_colors(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    JobTemplate.objects.create(title="Inactive template", is_active=False)
+
+    response = client.get(reverse("job_template_list"), {"is_active": "false"})
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert re.search(
+        r'<option\s+value="true"[^>]*'
+        r'data-filter-item-color="var\(--tblr-blue\)"[^>]*>\s*Yes\s*</option>',
+        content,
+    )
+    assert re.search(
+        r'<option\s+value="false"[^>]*'
+        r'data-filter-item-color="var\(--tblr-yellow\)"[^>]*>\s*No\s*</option>',
+        content,
+    )
+    assert '<span class="badge bg-yellow-lt">No</span>' in content
+
+
+@pytest.mark.django_db
 def test_job_template_list_links_to_import(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -1358,6 +1381,27 @@ def test_job_template_list_links_to_import(client):
 
     assert response.status_code == 200
     assert reverse("job_template_import") in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_job_map_payload_uses_missing_site_code_label(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="blank",
+        code="",
+        name="Blank Code Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    Job.objects.create(site=site, title="Inspect blank code site")
+
+    response = client.get(reverse("job_map"))
+
+    assert response.status_code == 200
+    payload = parse_json_script(response.content.decode(), "job-map-data")
+    assert payload[0]["site"]["code"] == "code not set"
 
 
 @pytest.mark.django_db

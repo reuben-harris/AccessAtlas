@@ -242,7 +242,9 @@ def build_site_visit_rows(
             SearchResultRow(
                 object_type=f"Site Visit > {field_label}",
                 value=value,
-                object_label=f"{site_visit.trip.name} - {site_visit.site.code}",
+                object_label=(
+                    f"{site_visit.trip.name} - {site_visit.site.display_label}"
+                ),
                 object_url=site_visit.get_absolute_url(),
             )
         )

@@ -15,6 +15,7 @@ from access_atlas.core.list_filters import (
     AccessAtlasFilterSet,
     EmptyValueFilter,
     FilterFieldSpec,
+    ensure_querydict,
 )
 from access_atlas.core.status_display import status_filter_choice_attributes
 from access_atlas.sites.filters import site_ids_matching_any_tag, site_tag_choices
@@ -23,9 +24,20 @@ from access_atlas.sites.models import Site
 from .models import Job, JobStatus, JobTemplate, Priority, WorkProgramme
 
 ACTIVE_STATE_CHOICES = (
-    ("true", "Active"),
-    ("false", "Inactive"),
+    ("true", "Yes"),
+    ("false", "No"),
 )
+ACTIVE_STATE_STATUS_VALUES = {
+    "true": "active",
+    "false": "retired",
+}
+
+
+def active_state_filter_choice_attributes(value: str) -> dict[str, str]:
+    status_value = ACTIVE_STATE_STATUS_VALUES.get(value)
+    if status_value is None:
+        return {}
+    return status_filter_choice_attributes(status_value)
 
 
 def site_choices() -> list[tuple[str, str]]:
@@ -145,6 +157,7 @@ class JobTemplateFilterSet(AccessAtlasFilterSet):
             choices=ACTIVE_STATE_CHOICES,
             collapse_chip_when_all_choices=True,
             all_choices_chip_label="all active states",
+            choice_attributes=active_state_filter_choice_attributes,
         ),
         FilterFieldSpec(
             "priority",
@@ -168,6 +181,24 @@ class JobTemplateFilterSet(AccessAtlasFilterSet):
     class Meta:
         model = JobTemplate
         fields: list[str] = []
+
+    def __init__(self, *args, **kwargs):
+        data = kwargs.get("data")
+        data = ensure_querydict(data)
+        kwargs["data"] = data
+        defaulted_filter_params: set[str] = set()
+        if (
+            data is not None
+            and "is_active" not in data
+            and "is_active__not" not in data
+        ):
+            data = data.copy()
+            data.setlist("is_active", ["true"])
+            kwargs["data"] = data
+            defaulted_filter_params.add("is_active")
+
+        super().__init__(*args, **kwargs)
+        self.defaulted_filter_params = defaulted_filter_params
 
     def filter_q(self, queryset: QuerySet, _name: str, value: str) -> QuerySet:
         if not value:

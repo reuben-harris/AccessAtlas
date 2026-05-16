@@ -5,20 +5,25 @@
   const viewModeButtons = Array.from(
     document.querySelectorAll(".trip-gantt-view-mode"),
   );
+  const escapeHtml = window.AccessAtlas?.escapeHtml;
+  const siteCodeLabel = window.AccessAtlas?.siteCodeLabel;
+  const siteCodeHtml = window.AccessAtlas?.siteCodeHtml;
 
-  if (!ganttElement || !dataElement || typeof Gantt === "undefined") {
+  if (
+    !ganttElement ||
+    !dataElement ||
+    typeof escapeHtml !== "function" ||
+    typeof siteCodeLabel !== "function" ||
+    typeof siteCodeHtml !== "function" ||
+    typeof Gantt === "undefined"
+  ) {
     return;
   }
 
   const rows = JSON.parse(dataElement.textContent);
-  function escapeHtml(value) {
-    const span = document.createElement("span");
-    span.textContent = value == null ? "" : String(value);
-    return span.innerHTML;
-  }
 
   function taskLabel(siteVisit) {
-    return `${siteVisit.siteCode} - ${siteVisit.siteName}`;
+    return `${siteCodeLabel(siteVisit.siteCode)} - ${siteVisit.siteName}`;
   }
 
   function typeBadge(task) {
@@ -65,7 +70,7 @@
           url: siteVisit.url,
           record_type: "site_visit",
           trip_name: row.tripName,
-          site_code: siteVisit.siteCode,
+          site_code: siteCodeLabel(siteVisit.siteCode),
           site_name: siteVisit.siteName,
           status: siteVisit.status,
           status_label: siteVisit.statusLabel,
@@ -91,7 +96,7 @@
 
     return `
       <div class="trip-gantt-popup">
-        <div class="trip-gantt-popup-code"><a href="${escapeHtml(task.url)}">${escapeHtml(task.site_code)}</a></div>
+        <div class="trip-gantt-popup-code"><a href="${escapeHtml(task.url)}">${siteCodeHtml(task.site_code)}</a></div>
         <div class="trip-gantt-popup-name">${escapeHtml(task.site_name)}</div>
         <div class="trip-gantt-popup-trip">${escapeHtml(task.trip_name)}</div>
         <div class="trip-gantt-popup-meta">

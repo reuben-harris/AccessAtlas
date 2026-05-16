@@ -47,6 +47,94 @@ from access_atlas.sites.models import (
 from access_atlas.sites.photo_services import extract_taken_date
 
 
+def test_site_display_helpers_use_missing_code_labels():
+    site = Site(code="", name="NIC House Test Facility")
+
+    assert site.display_code == "code not set"
+    assert site.compact_display_code == "null"
+    assert site.display_label == "code not set - NIC House Test Facility"
+    assert str(site) == "code not set - NIC House Test Facility"
+
+
+@pytest.mark.django_db
+def test_site_list_renders_missing_code_as_clickable_compact_null(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="blank",
+        code="",
+        name="Blank Code Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+
+    response = client.get(reverse("site_list"))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert site.get_absolute_url() in content
+    assert '<span class="fst-italic">null</span>' in content
+    assert 'text-secondary fst-italic">null' not in content
+
+
+@pytest.mark.django_db
+def test_site_map_payload_uses_missing_code_label(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    Site.objects.create(
+        source_name="dummy",
+        external_id="blank",
+        code="",
+        name="Blank Code Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+
+    response = client.get(reverse("site_map"))
+
+    assert response.status_code == 200
+    payload = parse_json_script(response.content.decode(), "site-list-map-data")
+    assert payload[0]["code"] == "code not set"
+
+
+@pytest.mark.django_db
+def test_access_map_payload_uses_missing_site_code_label(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="blank",
+        code="",
+        name="Blank Code Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    access_record = AccessRecord.objects.create(site=site, name="Road access")
+    AccessRecordVersion.objects.create(
+        access_record=access_record,
+        version_number=1,
+        geojson={
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [174.25, -41.25]},
+                    "properties": {"access_atlas:type": "access_start"},
+                }
+            ],
+        },
+        change_note="Initial upload",
+        uploaded_by=user,
+    )
+
+    response = client.get(reverse("access_record_global_map"))
+
+    assert response.status_code == 200
+    payload = parse_json_script(response.content.decode(), "site-access-map-data")
+    assert payload["points"][0]["siteCode"] == "code not set"
+
+
 @pytest.mark.django_db
 def test_sync_sites_from_payload_creates_and_updates_sites():
     payload = {

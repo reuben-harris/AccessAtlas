@@ -94,7 +94,7 @@ def build_trip_map_data(site_visits: list[SiteVisit]) -> dict[str, list[dict]]:
                 "id": site_visit.pk,
                 "url": site_visit.get_absolute_url(),
                 "siteId": site_visit.site_id,
-                "siteCode": site_visit.site.code,
+                "siteCode": site_visit.site.display_code,
                 "siteName": site_visit.site.name,
                 "siteUrl": site_visit.site.get_absolute_url(),
                 "latitude": float(site_visit.site.latitude),

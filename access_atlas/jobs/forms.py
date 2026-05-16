@@ -141,7 +141,7 @@ class RequirementForm(forms.ModelForm):
 
         self.fields["job"].queryset = job_queryset
         self.fields["job"].label_from_instance = lambda job: (
-            f"{job.site.code} - {job.title}"
+            f"{job.site.display_code} - {job.title}"
         )
 
     class Meta:

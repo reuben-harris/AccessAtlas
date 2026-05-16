@@ -6,6 +6,7 @@
   const basemapConfigElement = document.getElementById("map-basemap-config");
   const basemapPreferenceElement = document.getElementById("map-basemap-preference");
   const escapeHtml = window.AccessAtlas?.escapeHtml;
+  const siteCodeHtml = window.AccessAtlas?.siteCodeHtml;
   const createBasemapController = window.AccessAtlas?.createBasemapController;
   const fitLayersOrDefault = window.AccessAtlas?.fitLayersOrDefault;
   const addHomeControl = window.AccessAtlas?.addHomeControl;
@@ -28,6 +29,7 @@
     !basemapConfigElement ||
     !basemapPreferenceElement ||
     typeof escapeHtml !== "function" ||
+    typeof siteCodeHtml !== "function" ||
     typeof createBasemapController !== "function" ||
     typeof fitLayersOrDefault !== "function" ||
     typeof addHomeControl !== "function" ||
@@ -151,7 +153,7 @@
 
     return `
       <div class="site-list-map-popup-code">
-        <a href="${escapeHtml(site.url)}">${escapeHtml(site.code)}</a>
+        <a href="${escapeHtml(site.url)}">${siteCodeHtml(site.code)}</a>
       </div>
       <div class="site-list-map-popup-name">${escapeHtml(site.name)}</div>
       <div class="site-list-map-popup-meta">

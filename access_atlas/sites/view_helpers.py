@@ -52,7 +52,7 @@ def build_site_access_map_data(
             points.append(
                 {
                     "recordId": access_record.pk,
-                    "siteCode": access_record.site.code,
+                    "siteCode": access_record.site.display_code,
                     "siteName": access_record.site.name,
                     "siteUrl": access_record.site.get_absolute_url(),
                     "latitude": point.latitude,
@@ -94,7 +94,7 @@ def build_site_list_map_data(
     for site in sites:
         payload.append(
             {
-                "code": site.code,
+                "code": site.display_code,
                 "name": site.name,
                 "url": site.get_absolute_url(),
                 "latitude": float(site.latitude),
