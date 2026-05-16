@@ -37,7 +37,15 @@
       <tbody>
         {% for site in object_list %}
           <tr>
-            <td><a href="{% url 'site_detail' site.pk %}">{{ site.code }}</a></td>
+            <td>
+              <a href="{% url 'site_detail' site.pk %}">
+                {% if site.code %}
+                  {{ site.display_code }}
+                {% else %}
+                  <span class="fst-italic">{{ site.compact_display_code }}</span>
+                {% endif %}
+              </a>
+            </td>
             <td>
               <div class="d-inline-flex align-items-center gap-2">
                 <span>{{ site.name }}</span>

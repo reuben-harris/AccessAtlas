@@ -28,7 +28,6 @@ from access_atlas.sites.models import (
     AccessRecord,
     AccessRecordVersion,
     Site,
-    SiteSyncStatus,
 )
 from access_atlas.trips.models import SiteVisit, Trip, TripStatus
 
@@ -581,15 +580,6 @@ def test_dashboard_shows_actionable_sections(logged_in_client, user):
         latitude=-41.1,
         longitude=174.1,
     )
-    stale_site = Site.objects.create(
-        source_name="dummy",
-        external_id="002",
-        code="AA-002",
-        name="Stale Site",
-        latitude=-41.2,
-        longitude=174.2,
-        sync_status=SiteSyncStatus.STALE,
-    )
     warning_record = AccessRecord.objects.create(site=warning_site, name="Road access")
     AccessRecordVersion.objects.create(
         access_record=warning_record,
@@ -641,12 +631,10 @@ def test_dashboard_shows_actionable_sections(logged_in_client, user):
     assert active_trip.name in content
     assert "Cancelled Trip" not in content
     assert warning_site.code in content
-    assert stale_site.code in content
     assert 'href="/jobs/?status=unassigned"' in content
     assert 'href="/jobs/?status=assigned"' in content
     assert f'href="{active_trip.get_absolute_url()}"' in content
     assert f'href="{warning_site.get_access_records_url()}"' in content
-    assert f'href="{stale_site.get_absolute_url()}"' in content
 
 
 @pytest.mark.django_db
@@ -991,6 +979,38 @@ def test_site_autocomplete_returns_code_and_name(logged_in_client):
     assert response.status_code == 200
     payload = response.json()
     assert payload["results"][0]["label"] == "AA-001 - Example Ridge Station"
+
+
+@pytest.mark.django_db
+def test_site_autocomplete_returns_missing_code_label(logged_in_client):
+    _site(
+        external_id="blank",
+        code="",
+        name="NIC House Test Facility",
+    )
+
+    response = logged_in_client.get(reverse("autocomplete_sites"), {"q": "NIC"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["results"][0]["label"] == ("code not set - NIC House Test Facility")
+
+
+@pytest.mark.django_db
+def test_global_search_uses_missing_site_code_label(logged_in_client):
+    _site(
+        external_id="blank",
+        code="",
+        name="NIC House Test Facility",
+    )
+
+    response = logged_in_client.get(reverse("search"), {"q": "NIC"})
+
+    assert response.status_code == 200
+    site_row = next(
+        row for row in _global_search_rows(response) if row.object_type == "Site > Name"
+    )
+    assert site_row.object_label == "code not set - NIC House Test Facility"
 
 
 @pytest.mark.django_db

@@ -108,6 +108,17 @@ def _dashboard_job_filter_url(status: str) -> str:
     return f"{reverse('job_list')}?{query}"
 
 
+def _dashboard_site_warning_filter_url() -> str:
+    query = urlencode(
+        [
+            ("access_warnings", "true"),
+            ("sync_status", SiteSyncStatus.ACTIVE),
+            ("sync_status", SiteSyncStatus.STALE),
+        ]
+    )
+    return f"{reverse('site_list')}?{query}"
+
+
 def build_dashboard_job_status_chart() -> dict[str, object]:
     counts = {
         row["status"]: row["count"]
@@ -157,14 +168,11 @@ def build_dashboard_job_status_chart() -> dict[str, object]:
 
 
 def build_dashboard_attention_groups() -> dict[str, object]:
-    stale_sites: list[Site] = []
     warning_sites: list[Site] = []
     sites = list(
         Site.objects.prefetch_related("access_records__versions").order_by("code")
     )
     for site in sites:
-        if site.sync_status == SiteSyncStatus.STALE:
-            stale_sites.append(site)
         access_records = list(site.access_records.all())
         snapshots_by_record_id = build_access_record_snapshots(access_records)
         if build_site_warnings(site, snapshots_by_record_id=snapshots_by_record_id):
@@ -174,9 +182,7 @@ def build_dashboard_attention_groups() -> dict[str, object]:
         "warning_sites": warning_sites[:6],
         "warning_sites_count": len(warning_sites),
         "warning_sites_has_more": len(warning_sites) > 6,
-        "stale_sites": stale_sites[:6],
-        "stale_sites_count": len(stale_sites),
-        "stale_sites_has_more": len(stale_sites) > 6,
+        "warning_sites_url": _dashboard_site_warning_filter_url(),
     }
 
 

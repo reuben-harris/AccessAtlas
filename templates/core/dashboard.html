@@ -104,7 +104,7 @@
       <div class="card-header">
         <div>
           <h3 class="card-title">Data Attention</h3>
-          <p class="text-secondary mb-0">Source sync and access data that needs review.</p>
+          <p class="text-secondary mb-0">Access data that needs review.</p>
         </div>
       </div>
       <div class="card-body dashboard-attention-groups">
@@ -114,15 +114,14 @@
               <h4 class="dashboard-attention-group-title">Sites with access warnings</h4>
               <div class="text-secondary">{{ warning_sites_count }} site{{ warning_sites_count|pluralize }}</div>
             </div>
-            <a class="btn btn-secondary btn-sm" href="{% url 'site_list' %}">
+            <a class="btn btn-secondary btn-sm" href="{{ warning_sites_url }}">
               <i class="ti ti-eye" aria-hidden="true"></i>View sites
             </a>
           </div>
           <div class="list-group list-group-flush">
             {% for site in warning_sites %}
               <a class="list-group-item list-group-item-action" href="{{ site.get_access_records_url }}">
-                <div class="fw-semibold">{{ site.code }}</div>
-                <div class="text-secondary">{{ site.name }}</div>
+                <div class="fw-semibold">{% include "includes/site_label.html" with site=site %}</div>
               </a>
             {% empty %}
               <div class="list-group-item text-secondary">No access warnings right now.</div>
@@ -133,30 +132,6 @@
           </div>
         </div>
 
-        <div class="dashboard-attention-group">
-          <div class="dashboard-attention-group-header">
-            <div>
-              <h4 class="dashboard-attention-group-title">Stale synced sites</h4>
-              <div class="text-secondary">{{ stale_sites_count }} site{{ stale_sites_count|pluralize }}</div>
-            </div>
-            <a class="btn btn-secondary btn-sm" href="{% url 'site_list' %}">
-              <i class="ti ti-eye" aria-hidden="true"></i>View sites
-            </a>
-          </div>
-          <div class="list-group list-group-flush">
-            {% for site in stale_sites %}
-              <a class="list-group-item list-group-item-action" href="{{ site.get_absolute_url }}">
-                <div class="fw-semibold">{{ site.code }}</div>
-                <div class="text-secondary">{{ site.name }}</div>
-              </a>
-            {% empty %}
-              <div class="list-group-item text-secondary">No stale synced sites right now.</div>
-            {% endfor %}
-            {% if stale_sites_has_more %}
-              <div class="list-group-item text-secondary">More stale sites are available in the sites list.</div>
-            {% endif %}
-          </div>
-        </div>
       </div>
     </section>
   </div>

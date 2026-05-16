@@ -7,6 +7,7 @@
   const basemapConfigElement = document.getElementById("map-basemap-config");
   const basemapPreferenceElement = document.getElementById("map-basemap-preference");
   const escapeHtml = window.AccessAtlas?.escapeHtml;
+  const siteCodeHtml = window.AccessAtlas?.siteCodeHtml;
   const createBasemapController = window.AccessAtlas?.createBasemapController;
   const fitLayersOrDefault = window.AccessAtlas?.fitLayersOrDefault;
   const sharedAddHomeControl = window.AccessAtlas?.addHomeControl;
@@ -29,6 +30,7 @@
     !basemapConfigElement ||
     !basemapPreferenceElement ||
     typeof escapeHtml !== "function" ||
+    typeof siteCodeHtml !== "function" ||
     typeof createBasemapController !== "function" ||
     typeof fitLayersOrDefault !== "function" ||
     typeof sharedAddHomeControl !== "function" ||
@@ -158,7 +160,7 @@
 
     return `
       <div class="job-map-popup-title">
-        <a href="${escapeHtml(site.url)}">${escapeHtml(site.code)} - ${escapeHtml(site.name)}</a>
+        <a href="${escapeHtml(site.url)}">${siteCodeHtml(site.code)} - ${escapeHtml(site.name)}</a>
       </div>
       <ul class="job-map-popup-list">${jobList}</ul>
     `;

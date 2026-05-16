@@ -48,7 +48,7 @@
       <tbody>
         {% for visit in site_visits %}
           <tr>
-            <td><a href="{{ visit.get_absolute_url }}">{{ visit.site }}</a></td>
+            <td><a href="{{ visit.get_absolute_url }}">{% include "includes/site_label.html" with site=visit.site %}</a></td>
             <td>
               {{ visit.planned_day|date:"j M Y"|default:"-" }}
             </td>
@@ -85,7 +85,7 @@
         {% for assignment in job_assignments %}
           <tr>
             <td><a href="{{ assignment.job.get_absolute_url }}">{{ assignment.job.title }}</a></td>
-            <td><a href="{{ assignment.site_visit.get_absolute_url }}">{{ assignment.site_visit.site }}</a></td>
+            <td><a href="{{ assignment.site_visit.get_absolute_url }}">{% include "includes/site_label.html" with site=assignment.site_visit.site %}</a></td>
             <td>
               {{ assignment.site_visit.planned_day|date:"j M Y"|default:"-" }}
             </td>

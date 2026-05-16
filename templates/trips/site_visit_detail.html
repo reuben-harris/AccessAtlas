@@ -1,7 +1,7 @@
 {% extends "base/base.html" %}
 {% load form_extras status_badges %}
 
-{% block title %}{{ object.site.code }} Visit - Access Atlas{% endblock %}
+{% block title %}{{ object.site.display_code }} Visit - Access Atlas{% endblock %}
 {% block head %}
   {{ block.super }}
   {% if assign_form %}
@@ -14,7 +14,7 @@
   <div class="row align-items-center">
     <div class="col">
       <h2 class="page-title d-flex align-items-center flex-wrap gap-2">
-        <span>{{ object.site }}</span>
+        <span>{% include "includes/site_label.html" with site=object.site %}</span>
         <span class="text-secondary d-inline-flex align-items-center">
           <i class="ti ti-chevron-right" aria-hidden="true"></i>
         </span>
@@ -33,7 +33,7 @@
   <div class="card-body">
     <dl class="row">
       <dt class="col-sm-3">Trip</dt><dd class="col-sm-9"><a href="{{ object.trip.get_absolute_url }}">{{ object.trip }}</a></dd>
-      <dt class="col-sm-3">Site</dt><dd class="col-sm-9"><a href="{{ object.site.get_absolute_url }}">{{ object.site }}</a></dd>
+      <dt class="col-sm-3">Site</dt><dd class="col-sm-9"><a href="{{ object.site.get_absolute_url }}">{% include "includes/site_label.html" with site=object.site %}</a></dd>
       <dt class="col-sm-3">Visit Day</dt><dd class="col-sm-9">{{ object.planned_day|date:"j M Y"|default:"-" }}</dd>
       <dt class="col-sm-3">Start Time</dt><dd class="col-sm-9">{{ object.planned_start|date:"H:i"|default:"-" }}</dd>
       <dt class="col-sm-3">End Time</dt><dd class="col-sm-9">{{ object.planned_end|date:"H:i"|default:"-" }}</dd>

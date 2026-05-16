@@ -2,11 +2,24 @@
 (() => {
   window.AccessAtlas = window.AccessAtlas || {};
   const accessAtlas = window.AccessAtlas;
+  const MISSING_SITE_CODE_LABEL = "code not set";
 
   function escapeHtml(value) {
     const span = document.createElement("span");
     span.textContent = value == null ? "" : String(value);
     return span.innerHTML;
+  }
+
+  function siteCodeLabel(value) {
+    return value || MISSING_SITE_CODE_LABEL;
+  }
+
+  function siteCodeHtml(value) {
+    const code = siteCodeLabel(value);
+    const content = escapeHtml(code);
+    return code === MISSING_SITE_CODE_LABEL
+      ? `<span class="fst-italic">${content}</span>`
+      : content;
   }
 
   function resolvedTheme() {
@@ -904,6 +917,8 @@
   }
 
   accessAtlas.escapeHtml = escapeHtml;
+  accessAtlas.siteCodeLabel = siteCodeLabel;
+  accessAtlas.siteCodeHtml = siteCodeHtml;
   accessAtlas.createBasemapController = createBasemapController;
   accessAtlas.createThemeTileController = createThemeTileController;
   accessAtlas.fitLayersOrDefault = fitLayersOrDefault;

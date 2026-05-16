@@ -75,6 +75,42 @@ def assert_trip_approval_is_unchanged(trip):
 
 
 @pytest.mark.django_db
+def test_trip_detail_renders_missing_site_code_with_shared_label(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = create_trip(user)
+    site = create_requirement_site(code="", name="NIC House Test Facility")
+    SiteVisit.objects.create(trip=trip, site=site)
+    client.force_login(user)
+
+    response = client.get(reverse("trip_detail", kwargs={"pk": trip.pk}))
+
+    assert response.status_code == 200
+    assert (
+        '<span class="fst-italic">code not set</span> - NIC House Test Facility'
+        in response.content.decode()
+    )
+
+
+@pytest.mark.django_db
+def test_trip_map_payload_uses_missing_site_code_label(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = create_trip(user)
+    site = create_requirement_site(code="", name="NIC House Test Facility")
+    SiteVisit.objects.create(
+        trip=trip,
+        site=site,
+        planned_day=date(2026, 5, 1),
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("trip_map", kwargs={"pk": trip.pk}))
+
+    assert response.status_code == 200
+    payload = parse_json_script(response.content.decode(), "trip-map-data")
+    assert payload["visits"][0]["siteCode"] == "code not set"
+
+
+@pytest.mark.django_db
 def test_trip_list_requires_login(client):
     response = client.get(reverse("trip_list"))
 
