@@ -1,3 +1,4 @@
+// Initializes shared form and list-filter widgets.
 (() => {
   function initializeDatePickers() {
     const flatpickr = window.flatpickr;

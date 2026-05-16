@@ -1,3 +1,4 @@
+// Renders Jobs charts.
 (() => {
   const chartElement = document.getElementById("job-status-chart");
   const dataElement = document.getElementById("job-status-chart-data");

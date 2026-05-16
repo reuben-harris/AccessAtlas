@@ -1,3 +1,4 @@
+// Provides CSRF-aware JSON helpers.
 (() => {
   // Shared frontend helper for authenticated JSON POST requests.
   // Centralizing CSRF handling here keeps map/theme scripts consistent

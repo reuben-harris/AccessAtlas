@@ -1,3 +1,4 @@
+// Renders access record maps.
 (() => {
   const mapElement = document.getElementById("site-access-map");
   const dataElement = document.getElementById("site-access-map-data");

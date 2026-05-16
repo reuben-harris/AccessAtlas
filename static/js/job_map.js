@@ -1,3 +1,4 @@
+// Renders the Jobs map.
 (() => {
   const mapElement = document.getElementById("job-map");
   const dataElement = document.getElementById("job-map-data");

@@ -1,3 +1,4 @@
+// Renders the animated login-page globe.
 const globeContainer = document.getElementById("login-globe");
 const themeQuery = window.matchMedia("(prefers-color-scheme: dark)");
 const countryDataUrl = globeContainer?.dataset.countryDataUrl || "";

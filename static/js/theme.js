@@ -1,3 +1,4 @@
+// Handles light/dark/system theme preferences.
 (() => {
   const storageKey = "access-atlas-theme-mode";
   const modes = ["system", "light", "dark"];
