@@ -4,6 +4,7 @@ from django_tomselect.forms import (
     TomSelectModelMultipleChoiceField,
 )
 
+from access_atlas.core.bulk_edit import NullableBulkEditFormMixin
 from access_atlas.core.tomselect import (
     job_template_tomselect_config,
     site_tomselect_config,
@@ -16,6 +17,7 @@ from .models import (
     Job,
     JobStatus,
     JobTemplate,
+    Priority,
     Requirement,
     TemplateRequirement,
     WorkProgramme,
@@ -146,6 +148,100 @@ class JobForm(forms.ModelForm):
         widgets = {
             "completed_date": DatePicker(),
         }
+
+
+class JobBulkEditForm(NullableBulkEditFormMixin, forms.Form):
+    nullable_fields = ("work_programme", "completed_date")
+    nullable_field_labels = {
+        "work_programme": "Set work programme to null",
+        "completed_date": "Set completed date to null",
+    }
+
+    priority = forms.ChoiceField(
+        choices=[("", "No change"), *Priority.choices],
+        required=False,
+    )
+    work_programme = forms.ModelChoiceField(
+        queryset=WorkProgramme.objects.order_by("start_date", "name"),
+        required=False,
+        empty_label="No change",
+    )
+    status = forms.ChoiceField(
+        choices=[
+            ("", "No change"),
+            (JobStatus.UNASSIGNED, JobStatus.UNASSIGNED.label),
+            (JobStatus.COMPLETED, JobStatus.COMPLETED.label),
+            (JobStatus.CANCELLED, JobStatus.CANCELLED.label),
+        ],
+        required=False,
+        help_text=(
+            "Assigned jobs cannot have status changed because trip closeout "
+            "manages them."
+        ),
+    )
+    completed_date = forms.DateField(
+        required=False,
+        widget=DatePicker(),
+        label="Completed date",
+        help_text="Required when bulk setting jobs to completed.",
+    )
+    closeout_note = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 3}),
+        help_text="Required when bulk setting jobs to cancelled.",
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        work_programme = cleaned_data.get("work_programme")
+        status = cleaned_data.get("status")
+        completed_date = cleaned_data.get("completed_date")
+        closeout_note = (cleaned_data.get("closeout_note") or "").strip()
+        nullified_fields = self.nullified_fields()
+        clear_work_programme = "work_programme" in nullified_fields
+        clear_completed_date = "completed_date" in nullified_fields
+
+        has_change = any(
+            [
+                cleaned_data.get("priority"),
+                work_programme is not None,
+                clear_work_programme,
+                status,
+                completed_date,
+                clear_completed_date,
+            ]
+        )
+        if not has_change:
+            raise forms.ValidationError("Choose at least one field to bulk edit.")
+        if clear_work_programme and work_programme is not None:
+            self.add_error(
+                "work_programme",
+                "Choose a work programme or set it to null, not both.",
+            )
+        if clear_completed_date and completed_date is not None:
+            self.add_error(
+                "completed_date",
+                "Choose a completed date or set it to null, not both.",
+            )
+        if status == JobStatus.CANCELLED and not closeout_note:
+            self.add_error("closeout_note", "Enter a closeout note for cancelled jobs.")
+        if status == JobStatus.COMPLETED:
+            if clear_completed_date:
+                self.add_error(
+                    "completed_date",
+                    "Completed date cannot be set to null when status is completed.",
+                )
+            elif completed_date is None:
+                self.add_error(
+                    "completed_date",
+                    "Enter a completed date for completed jobs.",
+                )
+        elif completed_date is not None:
+            self.add_error(
+                "completed_date",
+                "Completed date can only be set when status is completed.",
+            )
+        return cleaned_data
 
 
 class JobFromTemplateForm(forms.Form):

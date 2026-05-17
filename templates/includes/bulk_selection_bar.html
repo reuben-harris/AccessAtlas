@@ -1,0 +1,29 @@
+<div class="bulk-selection-bar" data-bulk-selection-bar hidden>
+  <div class="bulk-selection-summary">
+    <label class="bulk-selection-all mb-0">
+      <span class="bulk-selection-check">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          name="_all"
+          value="1"
+          data-bulk-select-all
+        >
+      </span>
+      <span class="form-check-label">
+        <strong><span data-bulk-selected-count>0</span> selected</strong>
+        <span class="text-secondary mx-1" aria-hidden="true">·</span>
+        Select all {{ bulk_total_count }} {{ bulk_item_label_plural }} matching current filters
+        {% if bulk_excluded_count %}
+          <span class="text-secondary ms-1">({{ bulk_excluded_count }} frozen job{{ bulk_excluded_count|pluralize }} not included)</span>
+        {% endif %}
+      </span>
+    </label>
+  </div>
+  <div class="bulk-selection-actions">
+    <span data-bulk-hidden-pks></span>
+    <button class="btn btn-warning" type="submit">
+      <i class="ti ti-edit" aria-hidden="true"></i>{{ bulk_action_label|default:"Bulk edit" }}
+    </button>
+  </div>
+</div>

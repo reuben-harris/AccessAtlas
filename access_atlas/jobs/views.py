@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
 from django.db.models import Count
-from django.http import HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
@@ -21,6 +21,7 @@ from access_atlas.accounts.preferences import (
     default_jobs_map_preference,
     get_user_preference,
 )
+from access_atlas.core import bulk_edit as bulk_edit_utils
 from access_atlas.core.history import HistoryReasonMixin
 from access_atlas.core.imports import (
     clear_import_review,
@@ -43,6 +44,7 @@ from access_atlas.sites.models import Site
 from .filters import JobFilterSet, JobTemplateFilterSet, WorkProgrammeFilterSet
 from .forms import (
     AssignWorkProgrammeJobForm,
+    JobBulkEditForm,
     JobForm,
     JobFromTemplateForm,
     JobImportUploadForm,
@@ -73,7 +75,14 @@ from .models import (
     TemplateRequirement,
     WorkProgramme,
 )
-from .services import assign_jobs_to_work_programme, create_job_from_template
+from .services import (
+    assign_jobs_to_work_programme,
+    bulk_edit_jobs,
+    bulk_editable_jobs_queryset,
+    create_job_from_template,
+    job_edit_frozen_reason,
+    validate_bulk_edit_jobs,
+)
 from .status_display import JOB_STATUS_COLORS
 from .template_imports import (
     CSV_SESSION_KEY as JOB_TEMPLATE_IMPORT_CSV_SESSION_KEY,
@@ -599,9 +608,272 @@ class JobListView(
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        has_selectable_jobs_on_page = False
         for job in context["object_list"]:
             job.edit_frozen_reason = job_edit_frozen_reason(job)
+            if not job.edit_frozen_reason:
+                has_selectable_jobs_on_page = True
+        bulk_selectable_count = bulk_editable_jobs_queryset(self.get_queryset()).count()
+        context["has_selectable_jobs_on_page"] = has_selectable_jobs_on_page
+        context["bulk_selectable_count"] = bulk_selectable_count
+        context["bulk_excluded_count"] = max(
+            0,
+            context.get("search_result_count", 0) - bulk_selectable_count,
+        )
+        context["bulk_edit_filter_query_string"] = _job_bulk_edit_filter_query_string(
+            self.request
+        )
         return context
+
+
+def _job_bulk_base_queryset():
+    return Job.objects.select_related(
+        "site",
+        "template",
+        "work_programme",
+        "site_visit_assignment__site_visit__trip",
+    )
+
+
+def _integer_values_from_request(request, field_name: str) -> set[int]:
+    return bulk_edit_utils.integer_values_from_request(request, field_name)
+
+
+def _selected_job_ids_from_request(request) -> set[int]:
+    return bulk_edit_utils.selected_object_ids_from_request(request)
+
+
+def _excluded_job_ids_from_request(request) -> set[int]:
+    return bulk_edit_utils.excluded_object_ids_from_request(request)
+
+
+def _job_bulk_queryset_from_request(request):
+    return bulk_edit_utils.bulk_queryset_from_request(
+        request,
+        base_queryset=_job_bulk_base_queryset(),
+        filterset_class=JobFilterSet,
+        select_all_queryset=bulk_editable_jobs_queryset,
+    ).order_by(
+        "site__code",
+        "title",
+    )
+
+
+def _job_list_redirect_url(request) -> str:
+    query_string = request.GET.urlencode()
+    url = reverse("job_list")
+    return f"{url}?{query_string}" if query_string else url
+
+
+def _job_bulk_edit_filter_query_string(request) -> str:
+    query = request.GET.copy()
+    for parameter_name in ("pk", "_all", "_exclude", "errors_only", "page"):
+        query.pop(parameter_name, None)
+    return query.urlencode()
+
+
+def _job_bulk_preview_url(request) -> str:
+    return bulk_edit_utils.bulk_preview_url(request, route_name="job_bulk_edit")
+
+
+def _job_bulk_selection_signature(queryset) -> list[int]:
+    return bulk_edit_utils.bulk_selection_signature(queryset)
+
+
+def _job_bulk_edit_session_data(post_data) -> dict[str, list[str]]:
+    editable_fields = (
+        "priority",
+        "work_programme",
+        "status",
+        "completed_date",
+        "closeout_note",
+        "_nullify",
+    )
+    return bulk_edit_utils.bulk_edit_session_data(post_data, editable_fields)
+
+
+def _bulk_edit_querydict_from_session(data: dict[str, list[str]]):
+    return bulk_edit_utils.querydict_from_session(data)
+
+
+def _store_bulk_edit_validation_attempt(request, queryset, post_data) -> None:
+    bulk_edit_utils.store_bulk_edit_validation_attempt(
+        request,
+        session_key=JOB_BULK_EDIT_VALIDATION_SESSION_KEY,
+        queryset=queryset,
+        post_data=post_data,
+        editable_fields=(
+            "priority",
+            "work_programme",
+            "status",
+            "completed_date",
+            "closeout_note",
+            "_nullify",
+        ),
+    )
+
+
+def _clear_bulk_edit_validation_attempt(request) -> None:
+    bulk_edit_utils.clear_bulk_edit_validation_attempt(
+        request,
+        session_key=JOB_BULK_EDIT_VALIDATION_SESSION_KEY,
+    )
+
+
+def _bulk_edit_validation_attempt(request, queryset) -> dict | None:
+    return bulk_edit_utils.bulk_edit_validation_attempt(
+        request,
+        session_key=JOB_BULK_EDIT_VALIDATION_SESSION_KEY,
+        queryset=queryset,
+    )
+
+
+def _bulk_edit_kwargs_from_form(form: JobBulkEditForm) -> dict:
+    return {
+        "priority": form.cleaned_data["priority"],
+        "work_programme": form.cleaned_data["work_programme"],
+        "clear_work_programme": "work_programme" in form.nullified_fields(),
+        "status": form.cleaned_data["status"],
+        "completed_date": form.cleaned_data["completed_date"],
+        "clear_completed_date": "completed_date" in form.nullified_fields(),
+        "closeout_note": form.cleaned_data["closeout_note"],
+    }
+
+
+BULK_PREVIEW_SORT_FIELD_MAP = {
+    "title": "title",
+    "site": "site__code",
+    "work-programme": "work_programme__name",
+    "due-date": "work_programme__end_date",
+    "completed-date": "completed_date",
+    "status": "status",
+    "priority": "priority",
+    "estimate": "estimated_duration_minutes",
+}
+
+
+def _normalize_bulk_preview_sort(value: str | None) -> str:
+    return bulk_edit_utils.normalize_bulk_preview_sort(
+        value,
+        BULK_PREVIEW_SORT_FIELD_MAP,
+    )
+
+
+def _bulk_preview_context(request, selected_jobs, *, bulk_edit_issues: dict[int, str]):
+    return bulk_edit_utils.bulk_preview_context(
+        request,
+        selected_jobs,
+        bulk_edit_issues=bulk_edit_issues,
+        sort_field_map=BULK_PREVIEW_SORT_FIELD_MAP,
+        object_context_name="selected_jobs",
+    )
+
+
+@login_required
+def bulk_edit_jobs_view(request):
+    is_htmx = request.headers.get("HX-Request") == "true"
+    if request.method == "POST" and "apply_bulk_edit" not in request.POST:
+        _clear_bulk_edit_validation_attempt(request)
+        return redirect(_job_bulk_preview_url(request))
+
+    selected_jobs_queryset = _job_bulk_queryset_from_request(request)
+    selected_count = selected_jobs_queryset.count()
+    if not selected_count:
+        messages.error(request, "Select one or more editable jobs to bulk edit.")
+        if is_htmx:
+            response = HttpResponse()
+            response["HX-Redirect"] = _job_list_redirect_url(request)
+            return response
+        return redirect(_job_list_redirect_url(request))
+
+    select_all = "_all" in request.POST or "_all" in request.GET
+    excluded_count = len(_excluded_job_ids_from_request(request))
+    validation_attempt = _bulk_edit_validation_attempt(request, selected_jobs_queryset)
+    bulk_edit_issues: dict[int, str] = {}
+    if "apply_bulk_edit" in request.POST:
+        form = JobBulkEditForm(request.POST)
+        if form.is_valid():
+            bulk_edit_kwargs = _bulk_edit_kwargs_from_form(form)
+            validation = validate_bulk_edit_jobs(
+                selected_jobs_queryset,
+                **bulk_edit_kwargs,
+            )
+            if validation.is_valid:
+                result = bulk_edit_jobs(selected_jobs_queryset, **bulk_edit_kwargs)
+                _clear_bulk_edit_validation_attempt(request)
+                if result.updated:
+                    messages.success(
+                        request,
+                        (
+                            f"Bulk edit checked {selected_count} job(s). "
+                            f"Updated {result.updated}."
+                        ),
+                    )
+                else:
+                    messages.info(
+                        request,
+                        (
+                            f"Bulk edit checked {selected_count} job(s). "
+                            "No changes were needed."
+                        ),
+                    )
+                return redirect(_job_list_redirect_url(request))
+            _store_bulk_edit_validation_attempt(
+                request,
+                selected_jobs_queryset,
+                request.POST,
+            )
+            bulk_edit_issues = validation.by_object_id()
+            form.add_error(
+                None,
+                (
+                    "Resolve the blocking jobs in the selection preview before "
+                    "applying this bulk edit."
+                ),
+            )
+        else:
+            _clear_bulk_edit_validation_attempt(request)
+    elif validation_attempt:
+        form = JobBulkEditForm(
+            _bulk_edit_querydict_from_session(validation_attempt.get("data") or {})
+        )
+        if form.is_valid():
+            validation = validate_bulk_edit_jobs(
+                selected_jobs_queryset,
+                **_bulk_edit_kwargs_from_form(form),
+            )
+            bulk_edit_issues = validation.by_object_id()
+    else:
+        form = JobBulkEditForm()
+
+    preview_context = _bulk_preview_context(
+        request,
+        selected_jobs_queryset,
+        bulk_edit_issues=bulk_edit_issues,
+    )
+    for job in preview_context["selected_jobs"]:
+        job.bulk_edit_blocker_reason = bulk_edit_issues.get(job.pk, "")
+
+    return render(
+        request,
+        "jobs/_job_bulk_edit_preview.html" if is_htmx else "jobs/job_bulk_edit.html",
+        {
+            "form": form,
+            "selected_count": selected_count,
+            "selected_ids": []
+            if select_all
+            else list(selected_jobs_queryset.values_list("pk", flat=True)),
+            **preview_context,
+            "select_all": select_all,
+            "excluded_count": excluded_count,
+            "has_bulk_edit_issues": bool(bulk_edit_issues),
+            "bulk_edit_issue_count": len(bulk_edit_issues),
+            "nullified_fields": form.nullified_fields() if form.is_bound else set(),
+            "nullable_field_labels": form.nullable_field_label_map(),
+            "cancel_url": _job_list_redirect_url(request),
+            "is_htmx": is_htmx,
+        },
+    )
 
 
 class JobMapView(FilteredListMixin, LoginRequiredMixin, ListView):
@@ -612,8 +884,12 @@ class JobMapView(FilteredListMixin, LoginRequiredMixin, ListView):
     filter_preference_page_key = "jobs"
 
     def get_queryset(self):
-        queryset = Job.objects.select_related("site", "work_programme").filter(
-            status__in=JobStatus.values
+        queryset = Job.objects.select_related(
+            "site",
+            "work_programme",
+            "site_visit_assignment__site_visit__trip",
+        ).filter(
+            status__in=JobStatus.values,
         )
         return self.apply_filters(queryset).order_by("site__code", "title")
 
@@ -627,10 +903,12 @@ class JobMapView(FilteredListMixin, LoginRequiredMixin, ListView):
         sites = {}
         for job in context["object_list"]:
             site = job.site
+            frozen_reason = job_edit_frozen_reason(job)
             site_data = sites.setdefault(
                 site.pk,
                 {
                     "site": {
+                        "id": site.pk,
                         "code": site.display_code,
                         "name": site.name,
                         "url": site.get_absolute_url(),
@@ -642,6 +920,7 @@ class JobMapView(FilteredListMixin, LoginRequiredMixin, ListView):
             )
             site_data["jobs"].append(
                 {
+                    "id": job.pk,
                     "title": job.title,
                     "url": job.get_absolute_url(),
                     "statusValue": job.status,
@@ -651,6 +930,8 @@ class JobMapView(FilteredListMixin, LoginRequiredMixin, ListView):
                     if job.work_programme
                     else "",
                     "dueDate": job.due_date.isoformat() if job.due_date else "",
+                    "bulkEditable": not bool(frozen_reason),
+                    "bulkDisabledReason": frozen_reason,
                 }
             )
         context["map_sites"] = list(sites.values())
@@ -686,6 +967,9 @@ class JobMapView(FilteredListMixin, LoginRequiredMixin, ListView):
         }
         context["map_basemap_config"] = map_basemap_config()
         context["map_basemap_preference"] = map_basemap_preference(self.request.user)
+        context["bulk_edit_filter_query_string"] = _job_bulk_edit_filter_query_string(
+            self.request
+        )
         return context
 
 
@@ -940,17 +1224,6 @@ def job_requirements_frozen_reason(job: Job) -> str:
     )
 
 
-def job_edit_frozen_reason(job: Job) -> str:
-    assignment = getattr(job, "site_visit_assignment", None)
-    if assignment is None or not assignment.site_visit.trip.is_terminal:
-        return ""
-    trip = assignment.site_visit.trip
-    return (
-        f"This job is assigned to {trip.get_status_display().lower()} trip "
-        f'"{trip.name}", so normal job editing is frozen.'
-    )
-
-
 def requirement_is_readonly(requirement: Requirement) -> bool:
     return requirement.is_frozen
 
@@ -1096,3 +1369,6 @@ class JobHistoryDetailView(
     JobHistoryView,
 ):
     pass
+
+
+JOB_BULK_EDIT_VALIDATION_SESSION_KEY = "jobs.bulk_edit.validation_attempt"

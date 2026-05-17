@@ -1,0 +1,155 @@
+{% load status_badges %}
+
+{% if is_htmx %}
+  <div id="job-bulk-edit-summary" class="text-secondary" hx-swap-oob="true">
+    {% include "jobs/_job_bulk_edit_summary.html" %}
+  </div>
+{% endif %}
+
+<div
+  id="job-bulk-edit-preview"
+  hx-boost="true"
+  hx-target="#job-bulk-edit-preview"
+  hx-swap="outerHTML show:none"
+  hx-push-url="true"
+>
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Selection preview</h3>
+      <div class="card-actions">
+        <form method="get" class="d-flex align-items-center gap-3">
+          {% for key, value in preview_control_query_items %}
+            <input type="hidden" name="{{ key }}" value="{{ value }}">
+          {% endfor %}
+          {% if has_bulk_edit_issues %}
+            <label class="form-check mb-0 text-secondary text-nowrap">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                name="errors_only"
+                value="1"
+                {% if errors_only %}checked{% endif %}
+              >
+              <span class="form-check-label">Errors only</span>
+            </label>
+          {% else %}
+            <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content="There are no bulk edit errors to filter.">
+              <label class="form-check mb-0 text-secondary text-nowrap">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  name="errors_only"
+                  value="1"
+                  disabled
+                >
+                <span class="form-check-label">Errors only</span>
+              </label>
+            </span>
+          {% endif %}
+          {% if page_size_options %}
+            <label class="form-label mb-0 text-secondary text-nowrap" for="bulk-edit-preview-per-page">Per page</label>
+            <select id="bulk-edit-preview-per-page" class="form-select form-select-sm" name="{{ page_size_param }}">
+              {% for option in page_size_options %}
+                <option value="{{ option }}"{% if option == per_page %} selected{% endif %}>{{ option }}</option>
+              {% endfor %}
+            </select>
+          {% endif %}
+          <button class="btn btn-sm btn-primary" type="submit">
+            <i class="ti ti-check" aria-hidden="true"></i>Apply
+          </button>
+        </form>
+      </div>
+    </div>
+    {% if has_bulk_edit_issues %}
+      <div class="card-body border-bottom">
+        <div class="alert alert-danger mb-0" role="alert">
+          {{ bulk_edit_issue_count }} selected job{{ bulk_edit_issue_count|pluralize }} cannot accept the last attempted bulk edit. Drop the blocking rows or change the fields to update.
+        </div>
+      </div>
+    {% endif %}
+    <div class="table-responsive">
+      <table class="table table-vcenter">
+        <thead>
+          <tr>
+            {% include "includes/sortable_th.html" with label="Title" sort_key="title" %}
+            {% include "includes/sortable_th.html" with label="Site" sort_key="site" %}
+            {% include "includes/sortable_th.html" with label="Work Programme" sort_key="work-programme" %}
+            {% include "includes/sortable_th.html" with label="Due Date" sort_key="due-date" %}
+            {% include "includes/sortable_th.html" with label="Completed" sort_key="completed-date" %}
+            {% include "includes/sortable_th.html" with label="Status" sort_key="status" %}
+            {% include "includes/sortable_th.html" with label="Priority" sort_key="priority" %}
+            {% include "includes/sortable_th.html" with label="Estimate" sort_key="estimate" %}
+            <th class="row-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for job in selected_jobs %}
+            <tr{% if job.bulk_edit_blocker_reason %} class="table-danger"{% endif %}>
+              <td>
+                <a href="{{ job.get_absolute_url }}">{{ job.title }}</a>
+                {% if job.bulk_edit_blocker_reason %}
+                  <div class="text-danger small mt-1">
+                    {{ job.bulk_edit_blocker_reason }}
+                  </div>
+                {% endif %}
+              </td>
+              <td><a href="{{ job.site.get_absolute_url }}">{% include "includes/site_label.html" with site=job.site %}</a></td>
+              <td>
+                {% if job.work_programme %}
+                  <a href="{{ job.work_programme.get_absolute_url }}">{{ job.work_programme.name }}</a>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td>{{ job.due_date|date:"Y-m-d"|default:"-" }}</td>
+              <td>{{ job.completed_date|date:"Y-m-d"|default:"-" }}</td>
+              <td><span class="badge {{ job.status|status_badge_class }}">{{ job.get_status_display }}</span></td>
+              <td>{{ job.get_priority_display }}</td>
+              <td>{{ job.estimated_duration_minutes|default:"-" }} min</td>
+              <td class="row-actions">
+                <form method="get" action="{% url 'job_bulk_edit' %}" class="m-0">
+                  {% if select_all %}
+                    {% for key, value in preview_query_items %}
+                      {% if key != "page" %}
+                        <input type="hidden" name="{{ key }}" value="{{ value }}">
+                      {% endif %}
+                    {% endfor %}
+                    <input type="hidden" name="_exclude" value="{{ job.pk }}">
+                  {% else %}
+                    {% for selected_id in selected_ids %}
+                      {% if selected_id != job.pk %}
+                        <input type="hidden" name="pk" value="{{ selected_id }}">
+                      {% endif %}
+                    {% endfor %}
+                    {% for key, value in preview_query_items %}
+                      {% if key != "pk" and key != "_all" and key != "_exclude" and key != "page" %}
+                        <input type="hidden" name="{{ key }}" value="{{ value }}">
+                      {% endif %}
+                    {% endfor %}
+                  {% endif %}
+                  {% if selected_count <= 1 %}
+                    <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="This is the last selected job, so it cannot be dropped from the bulk edit selection.">
+                      <button class="btn btn-sm btn-outline-secondary disabled" type="button" disabled>
+                        <i class="ti ti-x" aria-hidden="true"></i>Drop
+                      </button>
+                    </span>
+                  {% else %}
+                    <button class="btn btn-sm btn-outline-secondary" type="submit">
+                      <i class="ti ti-x" aria-hidden="true"></i>Drop
+                    </button>
+                  {% endif %}
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if preview_total_count > selected_jobs|length %}
+      <div class="card-footer text-secondary">
+        Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ preview_total_count }} job{{ preview_total_count|pluralize }}.
+      </div>
+    {% endif %}
+  </div>
+  {% include "includes/pagination_footer.html" %}
+</div>

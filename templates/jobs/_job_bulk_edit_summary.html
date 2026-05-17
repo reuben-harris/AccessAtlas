@@ -1,0 +1,9 @@
+{% if select_all %}
+  {% if excluded_count %}
+    Editing {{ selected_count }} jobs matching the current filters after {{ excluded_count }} dropped job{{ excluded_count|pluralize }}.
+  {% else %}
+    Editing all {{ selected_count }} jobs matching the current filters.
+  {% endif %}
+{% else %}
+  Editing {{ selected_count }} selected job{{ selected_count|pluralize }}.
+{% endif %}
