@@ -267,6 +267,39 @@
   color: var(--tblr-primary);
 }
 
+.leaflet-container a.leaflet-popup-close-button {
+  top: 0.5rem;
+  right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  color: var(--tblr-secondary);
+  background: var(--tblr-bg-surface-secondary);
+  border-radius: var(--tblr-border-radius);
+  font-size: 0;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.leaflet-container a.leaflet-popup-close-button::before {
+  font-size: 1.25rem;
+  line-height: 1;
+  content: "\00d7";
+}
+
+.leaflet-container a.leaflet-popup-close-button:hover,
+.leaflet-container a.leaflet-popup-close-button:focus {
+  color: var(--tblr-body-color);
+  background: var(--tblr-secondary-bg-subtle);
+}
+
+.leaflet-popup-content {
+  margin-right: 3rem;
+}
+
 [data-bs-theme="dark"] .leaflet-bar,
 [data-bs-theme="dark"] .leaflet-control-attribution {
   background: var(--tblr-bg-surface);
@@ -366,12 +399,14 @@
 }
 
 [data-bs-theme="dark"] .leaflet-container a.leaflet-popup-close-button {
-  color: var(--tblr-muted);
+  color: var(--tblr-body-color);
+  background: var(--tblr-bg-surface-secondary);
 }
 
 [data-bs-theme="dark"] .leaflet-container a.leaflet-popup-close-button:hover,
 [data-bs-theme="dark"] .leaflet-container a.leaflet-popup-close-button:focus {
   color: var(--tblr-body-color);
+  background: var(--tblr-secondary);
 }
 
 @media (max-width: 767.98px) {
