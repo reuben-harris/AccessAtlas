@@ -20,7 +20,7 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: `uv run python manage.py runserver ${serverAddress}`,
+    command: `uv run python manage.py runserver --noreload ${serverAddress}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     url: baseURL,
