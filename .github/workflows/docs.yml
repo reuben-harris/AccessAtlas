@@ -1,0 +1,153 @@
+name: Docs
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Detect docs changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Detect docs-related paths
+        id: filter
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            docs:
+              - ".github/workflows/docs.yml"
+              - ".markdownlint-cli2.jsonc"
+              - "Dockerfile"
+              - "README.md"
+              - "access_atlas/core/markdown_extensions/**"
+              - "docs/**"
+              - "package.json"
+              - "pnpm-lock.yaml"
+              - "pyproject.toml"
+              - "uv.lock"
+              - "zensical.toml"
+
+  lint-docs:
+    name: Lint Markdown
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Configure pnpm cache
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint docs
+        run: pnpm lint:docs
+
+  build-docs:
+    name: Build Zensical
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen --dev
+
+      - name: Build docs
+        run: uv run zensical build --strict
+        env:
+          PYTHONPATH: .
+
+      - name: Configure GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/configure-pages@v5
+
+      - name: Upload GitHub Pages artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: static/docs
+
+  docs-complete:
+    name: Docs complete
+    needs:
+      - changes
+      - lint-docs
+      - build-docs
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check docs result
+        run: |
+          if [ "${{ needs.changes.result }}" != "success" ]; then
+            exit 1
+          fi
+          if [ "${{ needs.changes.outputs.docs }}" != "true" ]; then
+            echo "No docs-related changes."
+            exit 0
+          fi
+          if [ "${{ needs.lint-docs.result }}" != "success" ]; then
+            exit 1
+          fi
+          if [ "${{ needs.build-docs.result }}" != "success" ]; then
+            exit 1
+          fi
+
+  deploy-pages:
+    name: Deploy GitHub Pages
+    needs:
+      - changes
+      - build-docs
+      - docs-complete
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

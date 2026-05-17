@@ -1,0 +1,15 @@
+{
+  "config": {
+    "default": true,
+    "MD013": false,
+    "MD009": false,
+    "MD033": false
+  },
+  "ignores": [
+    ".venv/**",
+    "node_modules/**",
+    "static/docs/**",
+    "static/vendor/**",
+    "staticfiles/**"
+  ]
+}

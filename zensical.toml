@@ -1,0 +1,76 @@
+[project]
+site_name = "Access Atlas Documentation"
+site_description = "Documentation for Access Atlas field work planning."
+site_author = "Access Atlas"
+site_url = "https://reuben-harris.github.io/AccessAtlas/"
+docs_dir = "docs"
+site_dir = "static/docs"
+use_directory_urls = false
+
+nav = [
+  { "Home" = "index.md" },
+  { "Getting Started" = [
+    { "Overview" = "getting-started/overview.md" },
+    { "Development" = "getting-started/development.md" }
+  ] },
+  { "User Guide" = [
+    { "Planning Workflow" = "user-guide/planning-workflow.md" },
+    { "Jobs and Requirements" = "user-guide/jobs-and-requirements.md" },
+    { "Imports" = "user-guide/imports.md" }
+  ] },
+  { "Administration" = [
+    { "Configuration" = "administration/configuration.md" },
+    { "Map Layers" = "administration/map-layers.md" },
+    { "Authentication" = "administration/authentication.md" }
+  ] },
+  { "Integrations" = [
+    { "Site Feed" = "integrations/site-feed.md" },
+    { "REST API" = "integrations/rest-api.md" }
+  ] },
+  { "Object Reference" = [
+    { "Sites" = "reference/sites.md" },
+    { "Access Records" = "reference/access-records.md" },
+    { "Trips" = "reference/trips.md" },
+    { "Site Visits" = "reference/site-visits.md" },
+    { "Jobs" = "reference/jobs.md" },
+    { "Work Programmes" = "reference/work-programmes.md" },
+    { "Job Templates" = "reference/job-templates.md" },
+    { "Requirements" = "reference/requirements.md" },
+    { "API Tokens" = "reference/api-tokens.md" },
+    { "User Preferences" = "reference/user-preferences.md" },
+    { "Object History" = "reference/object-history.md" }
+  ] },
+  { "Workflow Policy" = "workflows/workflow-policy.md" }
+]
+
+[project.validation]
+# GitHub alerts use `[!NOTE]` blockquote markers that Zensical's source-link
+# validator currently sees as unresolved reference links before Markdown
+# extensions run. Keep page and anchor validation strict while allowing alerts.
+unresolved_references = false
+
+[project.markdown_extensions.abbr]
+[project.markdown_extensions.admonition]
+[project.markdown_extensions.attr_list]
+[project.markdown_extensions.def_list]
+[project.markdown_extensions.footnotes]
+[project.markdown_extensions.md_in_html]
+[project.markdown_extensions.tables]
+
+[project.markdown_extensions.toc]
+permalink = true
+
+[project.markdown_extensions."access_atlas.core.markdown_extensions.github_alerts"]
+
+[project.markdown_extensions.pymdownx.details]
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+line_spans = "__span"
+pygments_lang_class = true
+[project.markdown_extensions.pymdownx.inlinehilite]
+[project.markdown_extensions.pymdownx.superfences]
+custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" }
+]
+[project.markdown_extensions.pymdownx.tasklist]
+custom_checkbox = true

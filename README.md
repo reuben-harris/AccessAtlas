@@ -130,6 +130,13 @@ The compiled stylesheet `static/css/app.css` is also generated and not tracked
 in git. During normal frontend work, run `pnpm watch:css` in a second terminal
 so changes under `static/css/src/` rebuild automatically while Django runs.
 
+## Documentation
+
+Public documentation source files live under `docs/` and are built with
+Zensical. The generated static site is written to ignored `static/docs/` output
+and is included in the application container so signed-in users can open the
+docs from the app header.
+
 Useful commands:
 
 ```bash
@@ -139,9 +146,11 @@ uv run pytest
 uv run ruff check .
 uv run ruff format --check .
 uv run python manage.py spectacular --validate --file /tmp/access-atlas-schema.yml
+PYTHONPATH=. uv run zensical build --strict
 pnpm install
 pnpm build:frontend
 pnpm watch:css
+pnpm lint:docs
 pnpm lint:frontend
 ```
 
