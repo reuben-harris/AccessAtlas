@@ -33,6 +33,17 @@
 <div class="access-atlas-map-page access-atlas-map-page--expanded">
   {% include "jobs/_job_view_toolbar.html" with active_job_view="map" %}
   {% include "includes/list_controls.html" with filter_layout="map_offcanvas" %}
+  <form
+    id="job-map-bulk-form"
+    method="post"
+    action="{% url 'job_bulk_edit' %}{% if bulk_edit_filter_query_string %}?{{ bulk_edit_filter_query_string }}{% endif %}"
+    class="d-none"
+    data-bulk-selection
+    data-bulk-total-count="0"
+  >
+    {% csrf_token %}
+    <span data-bulk-hidden-pks></span>
+  </form>
 
   <div class="card job-map-card access-atlas-map-card--fill">
     <div class="card-body p-0">
@@ -48,6 +59,34 @@
   </div>
 </div>
 
+<div
+  class="offcanvas offcanvas-end list-filter-offcanvas job-map-selection-offcanvas"
+  tabindex="-1"
+  id="job-map-selection-offcanvas"
+  aria-labelledby="job-map-selection-offcanvas-title"
+  data-bs-backdrop="false"
+>
+  <div class="offcanvas-header">
+    <div>
+      <h2 class="offcanvas-title" id="job-map-selection-offcanvas-title">Selected jobs</h2>
+      <div class="text-secondary" data-job-map-selection-summary>No jobs selected.</div>
+    </div>
+    <button type="button" class="btn btn-icon btn-secondary offcanvas-close-button" data-bs-dismiss="offcanvas" aria-label="Close">
+      <i class="ti ti-x" aria-hidden="true"></i>
+    </button>
+  </div>
+  <div class="offcanvas-body">
+    <div class="job-map-selection-list" data-job-map-selection-list>
+      <div class="empty">Select jobs on the map to review them here.</div>
+    </div>
+  </div>
+  <div class="list-filter-offcanvas-footer">
+    <button class="btn btn-warning" type="submit" form="job-map-bulk-form" data-job-map-selection-submit disabled>
+      <i class="ti ti-edit" aria-hidden="true"></i>Bulk edit jobs
+    </button>
+  </div>
+</div>
+
 {{ map_sites|json_script:"job-map-data" }}
 {{ map_status_layers|json_script:"job-map-status-layers" }}
 {{ map_preference|json_script:"job-map-preference" }}
@@ -55,5 +94,5 @@
 {{ map_basemap_preference|json_script:"map-basemap-preference" }}
 <script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
 <script src="{% static 'vendor/leaflet.fullscreen/Control.FullScreen.umd.js' %}"></script>
-<script src="{% static 'js/job_map.js' %}"></script>
+<script src="{% static 'js/job_map.js' %}?v=job-map-selection-panel"></script>
 {% endblock %}
