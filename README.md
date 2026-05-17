@@ -6,6 +6,12 @@ Access Atlas is a field work planning application for teams that organise trips,
 
 The application owns planning data such as trips, site visits, jobs, work programmes, job templates, requirements, access records, notes, and history. Site identity, descriptions, tags, and coordinates stay read-only and are synced from a configured external feed. Access Atlas extends that synced site data with site-specific access records and revisions stored locally.
 
+## Screenshots
+
+![Access Atlas dashboard showing job status and upcoming field work](docs/assets/screenshots/dashboard-light.png)
+
+![Access Atlas dark theme Trip detail page showing approval, Site Visits, and Jobs](docs/assets/screenshots/trip-detail-dark.png)
+
 ## Domain Model
 
 Core objects:
@@ -130,6 +136,13 @@ The compiled stylesheet `static/css/app.css` is also generated and not tracked
 in git. During normal frontend work, run `pnpm watch:css` in a second terminal
 so changes under `static/css/src/` rebuild automatically while Django runs.
 
+## Documentation
+
+Public documentation source files live under `docs/` and are built with
+Zensical. The generated static site is written to ignored `static/docs/` output
+and is included in the application container so signed-in users can open the
+docs from the app header.
+
 Useful commands:
 
 ```bash
@@ -139,9 +152,11 @@ uv run pytest
 uv run ruff check .
 uv run ruff format --check .
 uv run python manage.py spectacular --validate --file /tmp/access-atlas-schema.yml
+PYTHONPATH=. uv run zensical build --strict
 pnpm install
 pnpm build:frontend
 pnpm watch:css
+pnpm lint:docs
 pnpm lint:frontend
 ```
 

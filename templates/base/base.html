@@ -173,6 +173,16 @@
             {% if request.user.is_authenticated %}
               <a
                 class="btn btn-icon btn-outline-secondary header-square-button me-2"
+                href="{% static 'docs/index.html' %}"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Documentation"
+                title="Documentation"
+              >
+                <i class="ti ti-book" aria-hidden="true"></i>
+              </a>
+              <a
+                class="btn btn-icon btn-outline-secondary header-square-button me-2"
                 href="{% url 'api_schema_swagger_ui' %}"
                 target="_blank"
                 rel="noopener noreferrer"

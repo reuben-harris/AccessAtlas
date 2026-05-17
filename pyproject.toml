@@ -27,6 +27,7 @@ dev = [
     "pytest>=9.0.2",
     "pytest-django>=4.11.1",
     "ruff>=0.15.12",
+    "zensical>=0.0.42",
 ]
 
 [tool.pytest.ini_options]

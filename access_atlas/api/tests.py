@@ -3,6 +3,7 @@ from io import BytesIO
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.templatetags.static import static
 from django.urls import reverse
 from django.utils import timezone
 from PIL import Image
@@ -58,6 +59,9 @@ def test_header_links_to_swagger_docs_and_api_tokens(client):
 
     assert response.status_code == 200
     content = response.content.decode()
+    assert static("docs/index.html") in content
+    assert 'aria-label="Documentation"' in content
+    assert 'title="Documentation"' in content
     assert reverse("api_schema_swagger_ui") in content
     assert 'aria-label="Swagger docs"' in content
     assert 'title="Swagger docs"' in content

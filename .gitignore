@@ -15,4 +15,5 @@ test-results/
 node_modules/
 static/vendor/
 static/css/app.css
+static/docs/
 /notes
