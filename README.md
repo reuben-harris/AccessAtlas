@@ -6,6 +6,12 @@ Access Atlas is a field work planning application for teams that organise trips,
 
 The application owns planning data such as trips, site visits, jobs, work programmes, job templates, requirements, access records, notes, and history. Site identity, descriptions, tags, and coordinates stay read-only and are synced from a configured external feed. Access Atlas extends that synced site data with site-specific access records and revisions stored locally.
 
+## Screenshots
+
+![Access Atlas dashboard showing job status and upcoming field work](docs/assets/screenshots/dashboard-light.png)
+
+![Access Atlas dark theme Trip detail page showing approval, Site Visits, and Jobs](docs/assets/screenshots/trip-detail-dark.png)
+
 ## Domain Model
 
 Core objects:

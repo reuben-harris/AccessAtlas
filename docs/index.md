@@ -46,3 +46,9 @@ Field planners should start with the
 [planning workflow](user-guide/planning-workflow.md), then read the reference
 pages for [Trips](reference/trips.md), [Site Visits](reference/site-visits.md),
 and [Jobs](reference/jobs.md).
+
+## Screenshots
+
+![Dashboard showing job status and upcoming field work](assets/screenshots/dashboard-light.png)
+
+![Dark theme Trip detail page showing approval, Site Visits, and Jobs](assets/screenshots/trip-detail-dark.png)
