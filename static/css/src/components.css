@@ -83,7 +83,8 @@
   }
 }
 
-.site-warning-indicator {
+/* Compact warning marker shared by object tables. */
+.warning-indicator {
   display: inline-flex;
   align-items: center;
   justify-content: center;

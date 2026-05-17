@@ -29,7 +29,7 @@ from access_atlas.sites.models import (
     AccessRecordVersion,
     Site,
 )
-from access_atlas.trips.models import SiteVisit, Trip, TripStatus
+from access_atlas.trips.models import SiteVisit, SiteVisitJob, Trip, TripStatus
 
 
 @pytest.fixture
@@ -763,6 +763,27 @@ def test_global_history_filter_update_marker_saves_filter_preference(client, use
 
 
 @pytest.mark.django_db
+def test_global_history_filter_update_marker_clears_filter_preference(client, user):
+    set_user_preference(
+        user,
+        list_filter_preference_key("history"),
+        {"params": {"object_type": ["site"], "object_id": ["1"]}},
+    )
+    client.force_login(user)
+
+    response = client.get(
+        reverse("global_history"),
+        {FILTER_STATE_PARAM: FILTER_STATE_UPDATE},
+    )
+
+    assert response.status_code == 302
+    assert response.url == reverse("global_history")
+    assert get_user_preference(user, list_filter_preference_key("history")) == {
+        "params": {}
+    }
+
+
+@pytest.mark.django_db
 def test_global_history_filters_by_specific_object(logged_in_client):
     selected_site = Site.objects.create(
         source_name="dummy",
@@ -797,6 +818,128 @@ def test_global_history_filters_by_specific_object(logged_in_client):
     assert {entry.object_type_slug for entry in entries} == {"site"}
     assert {entry.object_id for entry in entries} == {str(selected_site.pk)}
     assert all("Selected Site" in entry.object_display for entry in entries)
+
+
+def _create_orphaned_site_visit_job_history(user):
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="orphaned-assignment",
+        code="AA-ORPHAN",
+        name="Orphaned Assignment Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Orphaned Assignment Trip",
+        start_date=timezone.localdate(),
+        end_date=timezone.localdate(),
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Orphaned assignment job")
+    assignment = SiteVisitJob.objects.create(site_visit=site_visit, job=job)
+
+    site_visit.delete()
+
+    return assignment
+
+
+@pytest.mark.django_db
+def test_global_history_warns_for_deleted_related_object_history(client, user):
+    client.force_login(user)
+    assignment = _create_orphaned_site_visit_job_history(user)
+
+    response = client.get(reverse("global_history"))
+
+    assert response.status_code == 200
+    entries = list(response.context["entries"])
+    warning_entry = next(
+        entry
+        for entry in entries
+        if entry.object_type_slug == "site-visit-job"
+        and entry.object_id == str(assignment.pk)
+    )
+    assert warning_entry.object_display == f"Site Visit Job {assignment.pk}"
+    assert warning_entry.object_display_warning is True
+    assert warning_entry.object_url == ""
+    expected_warning = (
+        "This history row references an object or relationship that has since "
+        "been deleted."
+    )
+    assert warning_entry.object_display_warning_message == expected_warning
+    deleted_site_visit_entry = next(
+        entry
+        for entry in entries
+        if entry.object_type_slug == "site-visit"
+        and entry.object_id == str(assignment.site_visit_id)
+        and entry.action == "Created"
+    )
+    assert deleted_site_visit_entry.object_display_warning is True
+    assert deleted_site_visit_entry.object_url == ""
+
+    content = response.content.decode()
+    assert "warning-indicator" in content
+    assert "ti-alert-triangle-filled" in content
+    assert expected_warning in content
+
+
+@pytest.mark.django_db
+def test_global_history_reported_filter_url_tolerates_deleted_related_history(
+    client,
+    user,
+):
+    client.force_login(user)
+    _create_orphaned_site_visit_job_history(user)
+
+    response = client.get(
+        reverse("global_history"),
+        {
+            "object_id": "1",
+            "object_type": ["site", "site-photo"],
+        },
+    )
+
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_global_history_detail_tolerates_deleted_related_object_history(client, user):
+    client.force_login(user)
+    assignment = _create_orphaned_site_visit_job_history(user)
+    history_record = (
+        SiteVisitJob.history.filter(id=assignment.pk)
+        .order_by("-history_date", "-history_id")
+        .first()
+    )
+
+    response = client.get(
+        reverse(
+            "global_history_detail",
+            kwargs={
+                "object_type": "site-visit-job",
+                "history_id": history_record.history_id,
+            },
+        )
+    )
+
+    assert response.status_code == 200
+    expected_warning = (
+        "This history row references an object or relationship that has since "
+        "been deleted."
+    )
+    assert response.context["history_object_display"] == (
+        f"Site Visit Job {assignment.pk}"
+    )
+    assert response.context["history_object_display_warning"] is True
+    assert (
+        response.context["history_object_display_warning_message"] == expected_warning
+    )
+    site_visit_row = next(
+        row
+        for row in response.context["history_diff"].rows
+        if row.label == "Site Visit"
+    )
+    assert site_visit_row.before_display == str(assignment.site_visit_id)
 
 
 @pytest.mark.django_db
