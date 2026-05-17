@@ -201,6 +201,14 @@ When a change touches Python behavior in a way that could affect tests, run
 pytest cannot run because the database or sandbox environment is blocking it,
 note that explicitly instead of implying the test pass is covered.
 
+When investigating browser behavior that depends on real rendering or
+client-side JavaScript, use Playwright to verify and debug the behavior rather
+than relying on static inspection alone. This is especially relevant for
+Leaflet maps, TomSelect controls, HTMX partial updates, offcanvas/fullscreen
+interactions, tooltips/popovers, and CSS rendering-order issues. Keep temporary
+Playwright checks focused on the affected workflow, and promote them to durable
+tests when the behavior is important enough to guard in CI.
+
 When modifying existing commented logic, update the comments at the same time.
 Stale comments are worse than no comments. Prefer short orienting comments that
 explain policy or flow over narration of obvious line-by-line behavior.
