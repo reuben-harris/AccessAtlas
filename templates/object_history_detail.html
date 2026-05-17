@@ -1,13 +1,18 @@
 {% extends "base/base.html" %}
 {% load history_extras %}
 
-{% block title %}{{ object }} History - Access Atlas{% endblock %}
+{% block title %}{{ history_object_display }} History - Access Atlas{% endblock %}
 
 {% block content %}
 <div class="page-header d-print-none">
   <div class="row align-items-center">
     <div class="col">
-      <h2 class="page-title">{{ object }}</h2>
+      <h2 class="page-title d-inline-flex align-items-center gap-2">
+        <span>{{ history_object_display }}</span>
+        {% if history_object_display_warning %}
+          {% include "includes/warning_indicator.html" with title=history_object_display_warning_message %}
+        {% endif %}
+      </h2>
       <div class="text-secondary">
         Object: {{ history_object_type|default:"Object" }} · {{ history_record.history_date }}
       </div>

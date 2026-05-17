@@ -36,11 +36,16 @@
               {% endif %}
             </td>
             <td>
-              {% if entry.object_url %}
-                <a href="{{ entry.object_url }}">{{ entry.object_display }}</a>
-              {% else %}
-                {{ entry.object_display }}
-              {% endif %}
+              <div class="d-inline-flex align-items-center gap-2">
+                {% if entry.object_url %}
+                  <a href="{{ entry.object_url }}">{{ entry.object_display }}</a>
+                {% else %}
+                  <span>{{ entry.object_display }}</span>
+                {% endif %}
+                {% if entry.object_display_warning %}
+                  {% include "includes/warning_indicator.html" with title=entry.object_display_warning_message %}
+                {% endif %}
+              </div>
             </td>
             <td>{{ entry.object_type }}</td>
             <td>{{ entry.action }}</td>

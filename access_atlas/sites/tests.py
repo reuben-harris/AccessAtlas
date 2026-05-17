@@ -441,7 +441,7 @@ def test_site_list_shows_warning_indicator_for_sites_with_access_warnings(client
     assert response.status_code == 200
     content = response.content.decode()
     assert 'title="There are warnings for this site."' in content
-    assert "site-warning-indicator" in content
+    assert "warning-indicator" in content
 
 
 @pytest.mark.django_db

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from itertools import chain
 from urllib.parse import urlencode
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.urls import NoReverseMatch, reverse
 
 from access_atlas.accounts.models import User
@@ -22,6 +22,8 @@ class HistoryEntry:
     object_type_slug: str
     object_id: str
     object_display: str
+    object_display_warning: bool
+    object_display_warning_message: str
     object_url: str
     history_detail_url: str
     user: object
@@ -58,6 +60,9 @@ HISTORY_MODEL_SLUGS = {
     SiteVisitJob: "site-visit-job",
 }
 HISTORY_MODELS_BY_SLUG = {slug: model for model, slug in HISTORY_MODEL_SLUGS.items()}
+DELETED_RELATED_OBJECT_WARNING = (
+    "This history row references an object or relationship that has since been deleted."
+)
 
 
 def history_object_type_choices() -> list[tuple[str, str]]:
@@ -77,11 +82,41 @@ def history_user_choices() -> list[tuple[str, str]]:
     return choices
 
 
-def build_history_entry(record) -> HistoryEntry:
+def live_object_exists(instance, live_object_ids: set[object] | None = None) -> bool:
+    """Check whether a historical instance still has a live object row."""
+
+    if instance.pk is None:
+        return False
+    if live_object_ids is not None:
+        return instance.pk in live_object_ids
+    return type(instance)._default_manager.filter(pk=instance.pk).exists()
+
+
+def history_object_display(instance) -> tuple[str, bool, str]:
+    """Return a stable label for history rows even after related rows are gone."""
+
+    try:
+        return str(instance), False, ""
+    except ObjectDoesNotExist:
+        object_type = instance._meta.verbose_name.title()
+        object_id = str(instance.pk) if instance.pk is not None else ""
+        display = f"{object_type} {object_id}".strip()
+        return display, True, DELETED_RELATED_OBJECT_WARNING
+
+
+def build_history_entry(
+    record,
+    live_object_ids: set[object] | None = None,
+) -> HistoryEntry:
     instance = record.instance
     object_type_slug = HISTORY_MODEL_SLUGS.get(type(instance), "")
+    object_display, warning, warning_message = history_object_display(instance)
+    object_live = live_object_exists(instance, live_object_ids)
+    if record.history_type != "-" and not object_live and not warning:
+        warning = True
+        warning_message = DELETED_RELATED_OBJECT_WARNING
     object_url = ""
-    if record.history_type != "-" and hasattr(instance, "get_absolute_url"):
+    if object_live and hasattr(instance, "get_absolute_url"):
         object_url = instance.get_absolute_url()
     return HistoryEntry(
         date=record.history_date,
@@ -90,7 +125,9 @@ def build_history_entry(record) -> HistoryEntry:
         object_type=instance._meta.verbose_name.title(),
         object_type_slug=object_type_slug,
         object_id=str(instance.pk),
-        object_display=str(instance),
+        object_display=object_display,
+        object_display_warning=warning,
+        object_display_warning_message=warning_message,
         object_url=object_url,
         history_detail_url=history_detail_url(record),
         user=record.history_user,
@@ -153,10 +190,14 @@ def adjacent_history_records(model, history_record):
 def build_global_history_entries() -> list[HistoryEntry]:
     """Collect model history records into the row shape used by global history."""
 
-    records = chain.from_iterable(
-        model.history.select_related("history_user").all() for model in HISTORY_MODELS
-    )
-    return [build_history_entry(record) for record in records]
+    entries = []
+    for model in HISTORY_MODELS:
+        live_object_ids = set(model._default_manager.values_list("pk", flat=True))
+        records = model.history.select_related("history_user").all()
+        entries.extend(
+            build_history_entry(record, live_object_ids) for record in records
+        )
+    return entries
 
 
 def filter_global_history_entries(

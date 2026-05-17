@@ -16,6 +16,7 @@ from django.views.generic import TemplateView
 
 from access_atlas.accounts.models import User
 from access_atlas.core.global_history import (
+    DELETED_RELATED_OBJECT_WARNING,
     HISTORY_ACTION_CHOICES,
     adjacent_history_records,
     append_query_string,
@@ -23,8 +24,10 @@ from access_atlas.core.global_history import (
     filter_global_history_entries,
     history_detail_url,
     history_model_for_slug,
+    history_object_display,
     history_object_type_choices,
     history_user_choices,
+    live_object_exists,
     sort_global_history_entries,
 )
 from access_atlas.core.history_diff import build_history_diff
@@ -364,11 +367,24 @@ def global_history_detail(request, object_type: str, history_id: int):
         history_model,
         history_record,
     )
+    object_display, display_warning, display_warning_message = history_object_display(
+        history_record.instance
+    )
+    if (
+        history_record.history_type != "-"
+        and not live_object_exists(history_record.instance)
+        and not display_warning
+    ):
+        display_warning = True
+        display_warning_message = DELETED_RELATED_OBJECT_WARNING
     return render(
         request,
         "object_history_detail.html",
         {
             "object": history_record.instance,
+            "history_object_display": object_display,
+            "history_object_display_warning": display_warning,
+            "history_object_display_warning_message": display_warning_message,
             "history_object_type": history_record.instance._meta.verbose_name.title(),
             "history_record": history_record,
             "history_diff": build_history_diff(history_record, previous_record),

@@ -6,6 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils import timezone
 
@@ -49,7 +50,12 @@ def _normalise_value(value: Any) -> Any:
     if hasattr(value, "isoformat"):
         return value.isoformat()
     if isinstance(value, models.Model):
-        return str(value)
+        try:
+            return str(value)
+        except ObjectDoesNotExist:
+            object_type = value._meta.verbose_name.title()
+            object_id = str(value.pk) if value.pk is not None else ""
+            return f"{object_type} {object_id}".strip()
     if isinstance(value, tuple):
         return [_normalise_value(item) for item in value]
     if isinstance(value, list):
@@ -107,7 +113,13 @@ def history_record_data(record) -> dict[str, Any]:
     for field in record._meta.fields:
         if field.name in HISTORY_FIELD_NAMES or field.name == "id":
             continue
-        value = getattr(record, field.name)
+        # Historical FK rows may outlive their related live rows. Use the raw
+        # stored key so diffs remain renderable and historically stable.
+        value = (
+            getattr(record, field.attname)
+            if isinstance(field, models.ForeignKey)
+            else getattr(record, field.name)
+        )
         if isinstance(value, datetime):
             value = timezone.localtime(value) if timezone.is_aware(value) else value
         data[field.name] = value

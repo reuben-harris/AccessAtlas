@@ -1,0 +1,11 @@
+{% with warning_title=title|default:"Warning" %}
+  <span
+    class="warning-indicator"
+    title="{{ warning_title }}"
+    tabindex="0"
+    role="img"
+    aria-label="{{ aria_label|default:warning_title }}"
+  >
+    <i class="ti ti-alert-triangle-filled" aria-hidden="true"></i>
+  </span>
+{% endwith %}
