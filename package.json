@@ -10,6 +10,7 @@
     "build:frontend": "pnpm build:vendor && pnpm build:css",
     "watch:css": "postcss static/css/src/app.css -o static/css/app.css --watch",
     "lint:frontend": "biome check --error-on-warnings static/js static/css/src",
+    "test:e2e": "playwright test",
     "format:frontend": "biome format --write static/js static/css/src",
     "format:frontend:check": "biome format --check static/js static/css/src"
   },
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.15",
+    "@playwright/test": "^1.60.0",
     "postcss": "^8.5.14",
     "postcss-cli": "^11.0.1",
     "postcss-import": "^16.1.1"

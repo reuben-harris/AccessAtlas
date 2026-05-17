@@ -10,6 +10,8 @@ staticfiles/
 media/
 .coverage
 htmlcov/
+playwright-report/
+test-results/
 node_modules/
 static/vendor/
 static/css/app.css
