@@ -285,9 +285,225 @@
     });
   }
 
+  function initializeBulkSelection() {
+    const forms = Array.from(document.querySelectorAll("[data-bulk-selection]"));
+    if (forms.length === 0) {
+      return;
+    }
+
+    function checkboxesForForm(form) {
+      const associatedSelector = form.id
+        ? `input[type="checkbox"][name="pk"][form="${form.id}"]`
+        : "";
+      const checkboxes = [
+        ...form.querySelectorAll('input[type="checkbox"][name="pk"]'),
+        ...(associatedSelector ? document.querySelectorAll(associatedSelector) : []),
+      ];
+      return Array.from(new Set(checkboxes)).filter(
+        (checkbox) => checkbox instanceof HTMLInputElement,
+      );
+    }
+
+    function stateForForm(form) {
+      if (!form.bulkSelectionState) {
+        form.bulkSelectionState = { selectedIds: new Set() };
+      }
+      return form.bulkSelectionState;
+    }
+
+    function formFromIdentifier(formOrId) {
+      if (formOrId instanceof HTMLFormElement) {
+        return formOrId;
+      }
+      if (typeof formOrId !== "string") {
+        return null;
+      }
+      const form = document.getElementById(formOrId);
+      return form instanceof HTMLFormElement ? form : null;
+    }
+
+    function syncHiddenInputs(form, selectedIds) {
+      const container = form.querySelector("[data-bulk-hidden-pks]");
+      if (!container) {
+        return;
+      }
+      container.replaceChildren(
+        ...Array.from(selectedIds).map((selectedId) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = "pk";
+          input.value = selectedId;
+          return input;
+        }),
+      );
+    }
+
+    function selectedCountForForm(form, selectedIds) {
+      const selectAllToggle = form.querySelector("[data-bulk-select-all]");
+      if (selectAllToggle instanceof HTMLInputElement && selectAllToggle.checked) {
+        return Number(form.dataset.bulkTotalCount || 0);
+      }
+      return selectedIds.size;
+    }
+
+    function syncForm(form) {
+      const state = stateForForm(form);
+      const selectedCount = selectedCountForForm(form, state.selectedIds);
+      const selectedCountElement = form.querySelector("[data-bulk-selected-count]");
+      const bar = form.querySelector("[data-bulk-selection-bar]");
+      const pageToggle = form.querySelector("[data-bulk-page-toggle]");
+      const checkboxes = checkboxesForForm(form);
+
+      for (const checkbox of checkboxes) {
+        checkbox.checked = state.selectedIds.has(checkbox.value);
+      }
+      syncHiddenInputs(form, state.selectedIds);
+      if (selectedCountElement) {
+        selectedCountElement.textContent = String(selectedCount);
+      }
+      if (bar) {
+        bar.hidden = selectedCount === 0;
+      }
+      if (pageToggle instanceof HTMLInputElement) {
+        const enabledCheckboxes = checkboxes.filter((checkbox) => !checkbox.disabled);
+        const pageToggleDisabled = enabledCheckboxes.length === 0;
+        pageToggle.disabled = pageToggleDisabled;
+        pageToggle.checked =
+          enabledCheckboxes.length > 0 &&
+          enabledCheckboxes.every((checkbox) => checkbox.checked);
+        pageToggle.indeterminate =
+          !pageToggle.checked && enabledCheckboxes.some((checkbox) => checkbox.checked);
+      }
+      form.dispatchEvent(
+        new CustomEvent("access-atlas:bulk-selection-change", {
+          bubbles: true,
+          detail: {
+            selectedCount,
+            selectedIds: Array.from(state.selectedIds),
+          },
+        }),
+      );
+    }
+
+    function syncAllForms() {
+      for (const form of forms) {
+        syncForm(form);
+      }
+    }
+
+    document.addEventListener("change", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement)) {
+        return;
+      }
+
+      if (target.matches("[data-bulk-page-toggle]")) {
+        const form = target.closest("[data-bulk-selection]");
+        if (!form) {
+          return;
+        }
+        const state = stateForForm(form);
+        for (const checkbox of checkboxesForForm(form)) {
+          if (checkbox.disabled) {
+            continue;
+          }
+          if (target.checked) {
+            state.selectedIds.add(checkbox.value);
+          } else {
+            state.selectedIds.delete(checkbox.value);
+          }
+        }
+        const selectAllToggle = form.querySelector("[data-bulk-select-all]");
+        if (selectAllToggle instanceof HTMLInputElement && !target.checked) {
+          selectAllToggle.checked = false;
+        }
+        syncForm(form);
+        return;
+      }
+
+      if (target.matches('input[type="checkbox"][name="pk"]')) {
+        const form = target.form;
+        if (!form?.matches("[data-bulk-selection]")) {
+          return;
+        }
+        const state = stateForForm(form);
+        if (target.checked) {
+          state.selectedIds.add(target.value);
+        } else {
+          state.selectedIds.delete(target.value);
+          const selectAllToggle = form.querySelector("[data-bulk-select-all]");
+          if (selectAllToggle instanceof HTMLInputElement) {
+            selectAllToggle.checked = false;
+          }
+        }
+        syncForm(form);
+        return;
+      }
+
+      if (target.matches("[data-bulk-select-all]")) {
+        const form = target.closest("[data-bulk-selection]");
+        if (!form) {
+          return;
+        }
+        if (target.checked) {
+          const state = stateForForm(form);
+          for (const checkbox of checkboxesForForm(form)) {
+            if (!checkbox.disabled) {
+              state.selectedIds.add(checkbox.value);
+            }
+          }
+        }
+        syncForm(form);
+      }
+    });
+
+    window.AccessAtlas = window.AccessAtlas || {};
+    window.AccessAtlas.syncBulkSelection = syncAllForms;
+    window.AccessAtlas.bulkSelection = {
+      add(formOrId, selectedIds) {
+        const form = formFromIdentifier(formOrId);
+        if (!form) {
+          return;
+        }
+        const state = stateForForm(form);
+        for (const selectedId of selectedIds) {
+          state.selectedIds.add(String(selectedId));
+        }
+        syncForm(form);
+      },
+      remove(formOrId, selectedIds) {
+        const form = formFromIdentifier(formOrId);
+        if (!form) {
+          return;
+        }
+        const state = stateForForm(form);
+        for (const selectedId of selectedIds) {
+          state.selectedIds.delete(String(selectedId));
+        }
+        const selectAllToggle = form.querySelector("[data-bulk-select-all]");
+        if (selectAllToggle instanceof HTMLInputElement) {
+          selectAllToggle.checked = false;
+        }
+        syncForm(form);
+      },
+      selectedIds(formOrId) {
+        const form = formFromIdentifier(formOrId);
+        return form ? Array.from(stateForForm(form).selectedIds) : [];
+      },
+      sync(formOrId) {
+        const form = formFromIdentifier(formOrId);
+        if (form) {
+          syncForm(form);
+        }
+      },
+    };
+    syncAllForms();
+  }
+
   initializeDatePickers();
   initializeBasicTomSelects();
   initializeOffcanvasDismiss();
+  initializeBulkSelection();
 
   for (const form of document.querySelectorAll("[data-list-filter-form]")) {
     initializeFilterTomSelects(form);

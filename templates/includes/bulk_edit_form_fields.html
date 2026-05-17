@@ -1,0 +1,32 @@
+{% load form_extras %}
+
+{% if form.non_field_errors %}
+  <div class="alert alert-danger" role="alert">
+    {% for error in form.non_field_errors %}
+      <div>{{ error }}</div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% for field in form.visible_fields %}
+  <div class="mb-3">
+    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% required_marker field %}</label>
+    {{ field|render_form_field }}
+    {% with nullify_label=nullable_field_labels|dict_get:field.name %}
+      {% if nullify_label %}
+        <label class="form-check mt-2">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            name="_nullify"
+            value="{{ field.name }}"
+            {% if field.name in nullified_fields %}checked{% endif %}
+          >
+          <span class="form-check-label">{{ nullify_label }}</span>
+        </label>
+      {% endif %}
+    {% endwith %}
+    {% if field.help_text %}<div class="form-hint">{{ field.help_text }}</div>{% endif %}
+    {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  </div>
+{% endfor %}

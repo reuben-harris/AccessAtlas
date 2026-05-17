@@ -26,6 +26,13 @@ def render_form_field(field):
     return field.as_widget(attrs={"class": css_class})
 
 
+@register.filter
+def dict_get(value, key):
+    if hasattr(value, "get"):
+        return value.get(key, "")
+    return ""
+
+
 @register.simple_tag
 def required_marker(field):
     """Render the shared required-field marker beside visible field labels."""

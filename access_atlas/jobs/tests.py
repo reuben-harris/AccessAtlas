@@ -1,4 +1,5 @@
 import re
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 from django.core.exceptions import ValidationError
@@ -21,6 +22,7 @@ from access_atlas.jobs.forms import (
     ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON,
     ASSIGNED_JOB_SITE_DISABLED_REASON,
     AssignWorkProgrammeJobForm,
+    JobBulkEditForm,
     JobForm,
     JobFromTemplateForm,
 )
@@ -37,6 +39,7 @@ from access_atlas.jobs.models import (
 from access_atlas.jobs.services import (
     assign_job_to_work_programme,
     assign_jobs_to_work_programme,
+    bulk_edit_jobs,
     create_job_from_template,
 )
 from access_atlas.jobs.template_imports import parse_job_template_import_csv
@@ -1353,6 +1356,634 @@ def test_job_list_accepts_manual_per_page_value(client):
     assert response.status_code == 200
     assert len(response.context["object_list"]) == 30
     assert response.context["per_page"] == 1000000
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_form_requires_completed_date_for_completed_status():
+    form = JobBulkEditForm(data={"status": JobStatus.COMPLETED})
+
+    assert not form.is_valid()
+    assert "completed_date" in form.errors
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_form_allows_clearing_completed_date_when_status_changes():
+    form = JobBulkEditForm(
+        data={
+            "status": JobStatus.UNASSIGNED,
+            "_nullify": "completed_date",
+        }
+    )
+
+    assert form.is_valid()
+    assert form.nullified_fields() == {"completed_date"}
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_form_rejects_clearing_completed_date_for_completed_status():
+    form = JobBulkEditForm(
+        data={
+            "status": JobStatus.COMPLETED,
+            "_nullify": "completed_date",
+        }
+    )
+
+    assert not form.is_valid()
+    assert "completed_date" in form.errors
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_completed_status_sets_completed_date(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    job = Job.objects.create(site=site, title="Complete me")
+
+    response = client.post(
+        reverse("job_bulk_edit"),
+        {
+            "pk": [str(job.pk)],
+            "status": JobStatus.COMPLETED,
+            "completed_date": "2026-05-17",
+            "apply_bulk_edit": "1",
+        },
+    )
+
+    job.refresh_from_db()
+    assert response.status_code == 302
+    assert job.status == JobStatus.COMPLETED
+    assert job.completed_date == parse_date("2026-05-17")
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_success_message_reports_noop(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    job = Job.objects.create(
+        site=site,
+        title="Already urgent",
+        priority=Priority.URGENT,
+    )
+
+    response = client.post(
+        reverse("job_bulk_edit"),
+        {
+            "pk": [str(job.pk)],
+            "priority": Priority.URGENT,
+            "apply_bulk_edit": "1",
+        },
+        follow=True,
+    )
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Bulk edit checked 1 job(s). No changes were needed." in content
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_can_clear_completed_date_when_status_changes(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    job = Job.objects.create(
+        site=site,
+        title="Reopen me",
+        status=JobStatus.COMPLETED,
+        completed_date=parse_date("2026-05-01"),
+    )
+
+    response = client.post(
+        reverse("job_bulk_edit"),
+        {
+            "pk": [str(job.pk)],
+            "status": JobStatus.UNASSIGNED,
+            "_nullify": "completed_date",
+            "apply_bulk_edit": "1",
+        },
+    )
+
+    job.refresh_from_db()
+    assert response.status_code == 302
+    assert job.status == JobStatus.UNASSIGNED
+    assert job.completed_date is None
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_renders_nullable_field_controls(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    job = Job.objects.create(site=site, title="Nullable fields")
+
+    response = client.get(reverse("job_bulk_edit"), {"pk": str(job.pk)})
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert 'name="_nullify"' in content
+    assert 'value="work_programme"' in content
+    assert 'value="completed_date"' in content
+    assert "Set work programme to null" in content
+    assert "Set completed date to null" in content
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_blocks_assigned_status_changes_before_saving(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    assigned_job = Job.objects.create(site=site, title="Assigned job")
+    editable_job = Job.objects.create(site=site, title="Editable job")
+    assign_job_to_site_visit(site_visit, assigned_job)
+
+    response = client.post(
+        reverse("job_bulk_edit"),
+        {
+            "pk": [str(assigned_job.pk), str(editable_job.pk)],
+            "status": JobStatus.COMPLETED,
+            "completed_date": "2026-05-17",
+            "apply_bulk_edit": "1",
+        },
+    )
+
+    assigned_job.refresh_from_db()
+    editable_job.refresh_from_db()
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Assigned jobs cannot have status changed by bulk edit" in content
+    assert "Resolve the blocking jobs" in content
+    assert assigned_job.status == JobStatus.ASSIGNED
+    assert editable_job.status == JobStatus.UNASSIGNED
+    assert editable_job.completed_date is None
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_blocks_terminal_trip_jobs_before_saving(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    frozen_job = Job.objects.create(site=site, title="Frozen job")
+    editable_job = Job.objects.create(site=site, title="Editable job")
+    assign_job_to_site_visit(site_visit, frozen_job)
+    trip.status = TripStatus.COMPLETED
+    trip.save(update_fields=["status", "updated_at"])
+
+    response = client.post(
+        reverse("job_bulk_edit"),
+        {
+            "pk": [str(frozen_job.pk), str(editable_job.pk)],
+            "priority": Priority.URGENT,
+            "apply_bulk_edit": "1",
+        },
+    )
+
+    frozen_job.refresh_from_db()
+    editable_job.refresh_from_db()
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "normal job editing is frozen" in content
+    assert "Resolve the blocking jobs" in content
+    assert frozen_job.priority == Priority.NORMAL
+    assert editable_job.priority == Priority.NORMAL
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_service_is_all_or_nothing_for_invalid_selection():
+    user = User.objects.create_user(email="user@example.com")
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    frozen_job = Job.objects.create(site=site, title="Frozen job")
+    editable_job = Job.objects.create(site=site, title="Editable job")
+    assign_job_to_site_visit(site_visit, frozen_job)
+    trip.status = TripStatus.COMPLETED
+    trip.save(update_fields=["status", "updated_at"])
+
+    with pytest.raises(ValidationError):
+        bulk_edit_jobs([frozen_job, editable_job], priority=Priority.URGENT)
+
+    frozen_job.refresh_from_db()
+    editable_job.refresh_from_db()
+    assert frozen_job.priority == Priority.NORMAL
+    assert editable_job.priority == Priority.NORMAL
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_exclude_param_drops_job_from_select_all_preview(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    dropped_job = Job.objects.create(site=site, title="Dropped job")
+    kept_job = Job.objects.create(site=site, title="Kept job")
+
+    response = client.get(
+        reverse("job_bulk_edit"),
+        {
+            "_all": "1",
+            "_exclude": str(dropped_job.pk),
+        },
+    )
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert response.context["selected_count"] == 1
+    assert kept_job.title in content
+    assert dropped_job.title not in content
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_selection_post_ignores_stale_query_selection(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    stale_job = Job.objects.create(site=site, title="Stale selection")
+    selected_job = Job.objects.create(site=site, title="Current selection")
+
+    response = client.post(
+        f"{reverse('job_bulk_edit')}?pk={stale_job.pk}",
+        {"pk": [str(selected_job.pk)]},
+    )
+
+    query_params = parse_qs(urlparse(response["Location"]).query)
+    assert response.status_code == 302
+    assert query_params["pk"] == [str(selected_job.pk)]
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_select_all_excludes_frozen_jobs(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    frozen_job = Job.objects.create(site=site, title="Frozen job")
+    editable_job = Job.objects.create(site=site, title="Editable job")
+    assign_job_to_site_visit(site_visit, frozen_job)
+    trip.status = TripStatus.COMPLETED
+    trip.save(update_fields=["status", "updated_at"])
+
+    response = client.get(reverse("job_bulk_edit"), {"_all": "1"})
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert response.context["selected_count"] == 1
+    assert editable_job.title in content
+    assert frozen_job.title not in content
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_select_all_respects_current_filters(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    unassigned_job = Job.objects.create(site=site, title="Unassigned job")
+    Job.objects.create(
+        site=site,
+        title="Cancelled job",
+        status=JobStatus.CANCELLED,
+        closeout_note="No longer required.",
+    )
+
+    response = client.get(
+        reverse("job_bulk_edit"),
+        {
+            "_all": "1",
+            "status": JobStatus.UNASSIGNED,
+        },
+    )
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert response.context["selected_count"] == 1
+    assert unassigned_job.title in content
+    assert "Cancelled job" not in content
+
+
+@pytest.mark.django_db
+def test_job_list_select_all_count_excludes_frozen_jobs(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    frozen_job = Job.objects.create(site=site, title="Frozen job")
+    Job.objects.create(site=site, title="Editable job")
+    assign_job_to_site_visit(site_visit, frozen_job)
+    trip.status = TripStatus.COMPLETED
+    trip.save(update_fields=["status", "updated_at"])
+
+    response = client.get(reverse("job_list"))
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert response.context["bulk_selectable_count"] == 1
+    assert response.context["bulk_excluded_count"] == 1
+    assert "Select all 1 selectable jobs matching current filters" in content
+    assert "1 frozen job not included" in content
+
+
+@pytest.mark.django_db
+def test_job_map_payload_includes_bulk_selection_contract(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    frozen_job = Job.objects.create(site=site, title="Frozen job")
+    assign_job_to_site_visit(site_visit, frozen_job)
+    trip.status = TripStatus.COMPLETED
+    trip.save(update_fields=["status", "updated_at"])
+
+    response = client.get(reverse("job_map"))
+
+    map_sites = parse_json_script(response.content.decode(), "job-map-data")
+    site_payload = map_sites[0]["site"]
+    job_payload = map_sites[0]["jobs"][0]
+    assert response.status_code == 200
+    assert site_payload["id"] == site.pk
+    assert job_payload["bulkEditable"] is False
+    assert "normal job editing is frozen" in job_payload["bulkDisabledReason"]
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_blockers_persist_across_preview_pages(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    first_job = Job.objects.create(site=site, title="Assigned A")
+    second_job = Job.objects.create(site=site, title="Assigned B")
+    assign_job_to_site_visit(site_visit, first_job)
+    assign_job_to_site_visit(site_visit, second_job)
+
+    client.post(
+        reverse("job_bulk_edit"),
+        {
+            "pk": [str(first_job.pk), str(second_job.pk)],
+            "status": JobStatus.COMPLETED,
+            "completed_date": "2026-05-17",
+            "apply_bulk_edit": "1",
+        },
+    )
+    response = client.get(
+        reverse("job_bulk_edit"),
+        {
+            "pk": [str(first_job.pk), str(second_job.pk)],
+            "per_page": "1",
+            "page": "2",
+        },
+    )
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "2 to 2 of 2 jobs" in content
+    assert "Assigned B" in content
+    assert "Assigned jobs cannot have status changed by bulk edit" in content
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_new_selection_clears_stale_blockers(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    assigned_job = Job.objects.create(site=site, title="Assigned blocker")
+    editable_job = Job.objects.create(site=site, title="Editable job")
+    assign_job_to_site_visit(site_visit, assigned_job)
+    client.post(
+        reverse("job_bulk_edit"),
+        {
+            "pk": [str(assigned_job.pk), str(editable_job.pk)],
+            "status": JobStatus.COMPLETED,
+            "completed_date": "2026-05-17",
+            "apply_bulk_edit": "1",
+        },
+    )
+
+    response = client.post(
+        reverse("job_bulk_edit"),
+        {"pk": [str(editable_job.pk)]},
+        follow=True,
+    )
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "last attempted bulk edit" not in content
+    assert "Assigned jobs cannot have status changed by bulk edit" not in content
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_errors_only_shows_only_blocking_rows(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    assigned_job = Job.objects.create(site=site, title="Assigned blocker")
+    editable_job = Job.objects.create(site=site, title="Editable job")
+    assign_job_to_site_visit(site_visit, assigned_job)
+
+    client.post(
+        reverse("job_bulk_edit"),
+        {
+            "pk": [str(assigned_job.pk), str(editable_job.pk)],
+            "status": JobStatus.COMPLETED,
+            "completed_date": "2026-05-17",
+            "apply_bulk_edit": "1",
+        },
+    )
+    response = client.get(
+        reverse("job_bulk_edit"),
+        {
+            "pk": [str(assigned_job.pk), str(editable_job.pk)],
+            "errors_only": "1",
+        },
+    )
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert response.context["errors_only"] is True
+    assert "Assigned blocker" in content
+    assert "Editable job" not in content
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_dropping_blocker_keeps_remaining_blockers(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    dropped_job = Job.objects.create(site=site, title="Dropped blocker")
+    remaining_job = Job.objects.create(site=site, title="Remaining blocker")
+    editable_job = Job.objects.create(site=site, title="Editable job")
+    assign_job_to_site_visit(site_visit, dropped_job)
+    assign_job_to_site_visit(site_visit, remaining_job)
+
+    client.post(
+        reverse("job_bulk_edit"),
+        {
+            "pk": [str(dropped_job.pk), str(remaining_job.pk), str(editable_job.pk)],
+            "status": JobStatus.COMPLETED,
+            "completed_date": "2026-05-17",
+            "apply_bulk_edit": "1",
+        },
+    )
+    response = client.get(
+        reverse("job_bulk_edit"),
+        {
+            "pk": [str(remaining_job.pk), str(editable_job.pk)],
+            "errors_only": "1",
+        },
+    )
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert response.context["bulk_edit_issue_count"] == 1
+    assert "Remaining blocker" in content
+    assert "Dropped blocker" not in content
+    assert "Editable job" not in content
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_ignores_blockers_when_selection_adds_new_jobs(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    assigned_job = Job.objects.create(site=site, title="Assigned blocker")
+    added_job = Job.objects.create(site=site, title="New selection")
+    assign_job_to_site_visit(site_visit, assigned_job)
+
+    client.post(
+        reverse("job_bulk_edit"),
+        {
+            "pk": [str(assigned_job.pk)],
+            "status": JobStatus.COMPLETED,
+            "completed_date": "2026-05-17",
+            "apply_bulk_edit": "1",
+        },
+    )
+    response = client.get(
+        reverse("job_bulk_edit"),
+        {
+            "pk": [str(assigned_job.pk), str(added_job.pk)],
+            "errors_only": "1",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.context["has_bulk_edit_issues"] is False
+    assert response.context["errors_only"] is False
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_success_clears_stored_blockers(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    assigned_job = Job.objects.create(site=site, title="Assigned blocker")
+    editable_job = Job.objects.create(site=site, title="Editable job")
+    assign_job_to_site_visit(site_visit, assigned_job)
+
+    client.post(
+        reverse("job_bulk_edit"),
+        {
+            "pk": [str(assigned_job.pk), str(editable_job.pk)],
+            "status": JobStatus.COMPLETED,
+            "completed_date": "2026-05-17",
+            "apply_bulk_edit": "1",
+        },
+    )
+    client.post(
+        reverse("job_bulk_edit"),
+        {
+            "pk": [str(editable_job.pk)],
+            "status": JobStatus.COMPLETED,
+            "completed_date": "2026-05-17",
+            "apply_bulk_edit": "1",
+        },
+    )
+    response = client.get(
+        reverse("job_bulk_edit"),
+        {
+            "pk": [str(assigned_job.pk), str(editable_job.pk)],
+            "errors_only": "1",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.context["has_bulk_edit_issues"] is False
+    assert response.context["errors_only"] is False
 
 
 @pytest.mark.django_db

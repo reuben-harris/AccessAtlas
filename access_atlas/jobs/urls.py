@@ -6,6 +6,7 @@ urlpatterns = [
     path("", views.JobListView.as_view(), name="job_list"),
     path("map/", views.JobMapView.as_view(), name="job_map"),
     path("charts/", views.JobChartsView.as_view(), name="job_charts"),
+    path("bulk-edit/", views.bulk_edit_jobs_view, name="job_bulk_edit"),
     path("import/", views.import_jobs_view, name="job_import"),
     path("import/confirm/", views.confirm_jobs_import_view, name="job_import_confirm"),
     path(

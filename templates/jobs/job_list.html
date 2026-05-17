@@ -28,52 +28,105 @@
 {% include "jobs/_job_view_toolbar.html" with active_job_view="table" %}
 {% include "includes/list_controls.html" %}
 
-<div class="card">
-  <div class="table-responsive">
-    <table class="table table-vcenter">
-      <thead>
-        <tr>
-          {% include "includes/sortable_th.html" with label="Title" sort_key="title" %}
-          {% include "includes/sortable_th.html" with label="Site" sort_key="site" %}
-          {% include "includes/sortable_th.html" with label="Work Programme" sort_key="work-programme" %}
-          {% include "includes/sortable_th.html" with label="Due Date" sort_key="due-date" %}
-          {% include "includes/sortable_th.html" with label="Completed" sort_key="completed-date" %}
-          {% include "includes/sortable_th.html" with label="Status" sort_key="status" %}
-          {% include "includes/sortable_th.html" with label="Priority" sort_key="priority" %}
-          {% include "includes/sortable_th.html" with label="Estimate" sort_key="estimate" %}
-          <th class="text-end">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for job in object_list %}
+<form
+  method="post"
+  action="{% url 'job_bulk_edit' %}{% if bulk_edit_filter_query_string %}?{{ bulk_edit_filter_query_string }}{% endif %}"
+  data-bulk-selection
+  data-bulk-total-count="{{ bulk_selectable_count }}"
+>
+  {% csrf_token %}
+  {% include "includes/bulk_selection_bar.html" with bulk_total_count=bulk_selectable_count bulk_item_label_plural="selectable jobs" bulk_action_label="Bulk edit jobs" bulk_excluded_count=bulk_excluded_count %}
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-vcenter">
+        <thead>
           <tr>
-            <td><a href="{{ job.get_absolute_url }}">{{ job.title }}</a></td>
-            <td><a href="{{ job.site.get_absolute_url }}">{% include "includes/site_label.html" with site=job.site %}</a></td>
-            <td>
-              {% if job.work_programme %}
-                <a href="{{ job.work_programme.get_absolute_url }}">{{ job.work_programme.name }}</a>
+            <th class="w-1 bulk-selection-cell">
+              {% if has_selectable_jobs_on_page %}
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  data-bulk-page-toggle
+                  aria-label="Select all jobs on this page"
+                >
               {% else %}
-                -
+                <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="There are no jobs on this page that can be selected.">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    data-bulk-page-toggle
+                    aria-label="Select all jobs on this page"
+                    disabled
+                  >
+                </span>
               {% endif %}
-            </td>
-            <td>{{ job.due_date|date:"Y-m-d"|default:"-" }}</td>
-            <td>{{ job.completed_date|date:"Y-m-d"|default:"-" }}</td>
-            <td><span class="badge {{ job.status|status_badge_class }}">{{ job.get_status_display }}</span></td>
-            <td>{{ job.get_priority_display }}</td>
-            <td>{{ job.estimated_duration_minutes|default:"-" }} min</td>
-            {% if job.edit_frozen_reason %}
-              {% include "includes/disabled_row_actions.html" with label=job.title disabled_reason=job.edit_frozen_reason %}
-            {% else %}
-              {% url 'job_update' job.pk as edit_url %}
-              {% include "includes/row_actions.html" with edit_url=edit_url label=job.title %}
-            {% endif %}
+            </th>
+            {% include "includes/sortable_th.html" with label="Title" sort_key="title" %}
+            {% include "includes/sortable_th.html" with label="Site" sort_key="site" %}
+            {% include "includes/sortable_th.html" with label="Work Programme" sort_key="work-programme" %}
+            {% include "includes/sortable_th.html" with label="Due Date" sort_key="due-date" %}
+            {% include "includes/sortable_th.html" with label="Completed" sort_key="completed-date" %}
+            {% include "includes/sortable_th.html" with label="Status" sort_key="status" %}
+            {% include "includes/sortable_th.html" with label="Priority" sort_key="priority" %}
+            {% include "includes/sortable_th.html" with label="Estimate" sort_key="estimate" %}
+            <th class="text-end">Actions</th>
           </tr>
-        {% empty %}
-          <tr><td colspan="9" class="text-secondary">No jobs found.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {% for job in object_list %}
+            <tr>
+              <td class="bulk-selection-cell">
+                {% if job.edit_frozen_reason %}
+                  <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="{{ job.edit_frozen_reason }}">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="pk"
+                      value="{{ job.pk }}"
+                      data-bulk-selection-checkbox
+                      aria-label="Select {{ job.title }}"
+                      disabled
+                    >
+                  </span>
+                {% else %}
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    name="pk"
+                    value="{{ job.pk }}"
+                    data-bulk-selection-checkbox
+                    aria-label="Select {{ job.title }}"
+                  >
+                {% endif %}
+              </td>
+              <td><a href="{{ job.get_absolute_url }}">{{ job.title }}</a></td>
+              <td><a href="{{ job.site.get_absolute_url }}">{% include "includes/site_label.html" with site=job.site %}</a></td>
+              <td>
+                {% if job.work_programme %}
+                  <a href="{{ job.work_programme.get_absolute_url }}">{{ job.work_programme.name }}</a>
+                {% else %}
+                  -
+                {% endif %}
+               </td>
+               <td>{{ job.due_date|date:"Y-m-d"|default:"-" }}</td>
+               <td>{{ job.completed_date|date:"Y-m-d"|default:"-" }}</td>
+               <td><span class="badge {{ job.status|status_badge_class }}">{{ job.get_status_display }}</span></td>
+               <td>{{ job.get_priority_display }}</td>
+               <td>{{ job.estimated_duration_minutes|default:"-" }} min</td>
+              {% if job.edit_frozen_reason %}
+                {% include "includes/disabled_row_actions.html" with label=job.title disabled_reason=job.edit_frozen_reason %}
+              {% else %}
+                {% url 'job_update' job.pk as edit_url %}
+                {% include "includes/row_actions.html" with edit_url=edit_url label=job.title %}
+              {% endif %}
+             </tr>
+           {% empty %}
+             <tr><td colspan="10" class="text-secondary">No jobs found.</td></tr>
+           {% endfor %}
+         </tbody>
+       </table>
+     </div>
   </div>
-</div>
+</form>
 {% include "includes/pagination_footer.html" %}
 {% endblock %}

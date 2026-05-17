@@ -1,0 +1,42 @@
+{% extends "base/base.html" %}
+{% load status_badges %}
+
+{% block title %}Bulk Edit Jobs - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">Bulk edit jobs</h2>
+      <div id="job-bulk-edit-summary" class="text-secondary">
+        {% include "jobs/_job_bulk_edit_summary.html" %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-cards">
+  <div class="col-12">
+    <form method="post">
+      <div class="card">
+        {% csrf_token %}
+        <div class="card-header">
+          <h3 class="card-title">Fields to update</h3>
+        </div>
+        <div class="card-body">
+          {% include "includes/bulk_edit_form_fields.html" %}
+        </div>
+        <div class="card-footer d-flex justify-content-between">
+          <a class="btn btn-secondary" href="{{ cancel_url }}">Cancel</a>
+          <button class="btn btn-primary" type="submit" name="apply_bulk_edit" value="1">
+            <i class="ti ti-device-floppy" aria-hidden="true"></i>Apply bulk edit
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+  <div class="col-12">
+    {% include "jobs/_job_bulk_edit_preview.html" %}
+  </div>
+</div>
+{% endblock %}
