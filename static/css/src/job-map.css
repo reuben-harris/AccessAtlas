@@ -135,7 +135,10 @@
 .job-map-popup-status {
   --job-map-status-color: var(--tblr-secondary);
   display: inline-flex;
+  flex: 0 0 4.75rem;
   align-items: center;
+  justify-content: center;
+  inline-size: 4.75rem;
   padding: 0.125rem 0.375rem;
   color: var(--job-map-status-color);
   border: 1px solid var(--job-map-status-color);
@@ -143,6 +146,8 @@
   font-size: 0.6875rem;
   font-weight: 600;
   line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .job-map-fallback-popover {
