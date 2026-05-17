@@ -925,6 +925,135 @@
     return { hide, show };
   }
 
+  function createMapBulkSelectionController(options = {}) {
+    const map = options.map;
+    const formId = options.formId;
+    const panelController = options.panelController;
+    const listElement = options.listElement;
+    const summaryElement = options.summaryElement;
+    const submitButton = options.submitButton;
+    const itemById = options.itemById;
+    const renderItems = options.renderItems;
+    const itemLabelSingular = options.itemLabelSingular || "item";
+    const itemLabelPlural = options.itemLabelPlural || `${itemLabelSingular}s`;
+    const emptyHtml =
+      options.emptyHtml ||
+      `<div class="empty">Select ${itemLabelPlural} on the map to review them here.</div>`;
+    const disabledTitle =
+      options.disabledTitle || `Select ${itemLabelPlural} on the map to review them.`;
+    const enabledTitle = options.enabledTitle || `Review selected ${itemLabelPlural}`;
+    const controlIcon = options.controlIcon || "ti-list-check";
+    const form = typeof formId === "string" ? document.getElementById(formId) : null;
+
+    if (
+      typeof L === "undefined" ||
+      !map ||
+      !form ||
+      !listElement ||
+      !summaryElement ||
+      !submitButton ||
+      typeof itemById !== "function" ||
+      typeof renderItems !== "function"
+    ) {
+      return null;
+    }
+
+    function bulkSelection() {
+      return accessAtlas.bulkSelection;
+    }
+
+    function selectedIds() {
+      const ids = bulkSelection()?.selectedIds?.(formId);
+      return Array.isArray(ids) ? ids.map(String) : [];
+    }
+
+    function selectedItems() {
+      return selectedIds().map(itemById).filter(Boolean);
+    }
+
+    function addSelectionControl() {
+      const SelectionControl = L.Control.extend({
+        onAdd() {
+          const container = L.DomUtil.create(
+            "div",
+            "leaflet-bar access-atlas-map-selection-control",
+          );
+          const button = L.DomUtil.create("button", "", container);
+          button.type = "button";
+          button.setAttribute("aria-label", enabledTitle);
+          button.innerHTML = `<i class="ti ${controlIcon}" aria-hidden="true"></i><span class="access-atlas-map-filter-badge">0</span>`;
+          this._button = button;
+          this._badge = button.querySelector(".access-atlas-map-filter-badge");
+
+          L.DomEvent.disableClickPropagation(container);
+          L.DomEvent.on(button, "click", (event) => {
+            L.DomEvent.stop(event);
+            if (button.getAttribute("aria-disabled") === "true") {
+              return;
+            }
+            panelController?.show();
+          });
+
+          this.setCount(0);
+          return container;
+        },
+        setCount(count) {
+          const normalizedCount = Math.max(0, Number(count) || 0);
+          if (!this._button || !this._badge) {
+            return;
+          }
+          this._badge.textContent = String(normalizedCount);
+          this._button.classList.toggle("is-disabled", normalizedCount === 0);
+          this._button.setAttribute(
+            "aria-disabled",
+            normalizedCount === 0 ? "true" : "false",
+          );
+          this._button.title = normalizedCount === 0 ? disabledTitle : enabledTitle;
+        },
+      });
+
+      const control = new SelectionControl({ position: "topright" });
+      map.addControl(control);
+      return control;
+    }
+
+    const control = addSelectionControl();
+
+    function render() {
+      const items = selectedItems();
+      const count = items.length;
+      summaryElement.textContent =
+        count === 0
+          ? `No ${itemLabelPlural} selected.`
+          : count === 1
+            ? `1 ${itemLabelSingular} selected.`
+            : `${count} ${itemLabelPlural} selected.`;
+      submitButton.disabled = count === 0;
+      control?.setCount(count);
+      listElement.innerHTML = count === 0 ? emptyHtml : renderItems(items);
+    }
+
+    form.addEventListener("access-atlas:bulk-selection-change", render);
+    listElement.addEventListener("click", (event) => {
+      const dropButton =
+        event.target instanceof Element
+          ? event.target.closest("[data-map-bulk-selection-drop]")
+          : null;
+      if (!dropButton) {
+        return;
+      }
+      bulkSelection()?.remove?.(formId, [dropButton.value]);
+    });
+    render();
+
+    return {
+      render,
+      selectedIds,
+      selectedItems,
+      control,
+    };
+  }
+
   function addFullscreenControl(map, options = {}) {
     if (typeof L === "undefined") {
       return null;
@@ -1031,6 +1160,7 @@
   accessAtlas.addBasemapControl = addBasemapControl;
   accessAtlas.createFullscreenSafeOffcanvasController =
     createFullscreenSafeOffcanvasController;
+  accessAtlas.createMapBulkSelectionController = createMapBulkSelectionController;
   accessAtlas.addFullscreenControl = addFullscreenControl;
   accessAtlas.settleMapLayout = settleMapLayout;
 })();

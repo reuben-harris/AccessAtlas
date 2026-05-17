@@ -53,6 +53,7 @@
 /* Home/reset controls should render consistently anywhere we add them. */
 .access-atlas-map-home-control button,
 .access-atlas-map-filter-control button,
+.access-atlas-map-selection-control button,
 .access-record-map-layer-control button,
 .access-atlas-map-layer-control > button,
 .site-map-animation-control button,
@@ -95,6 +96,7 @@
 
 .access-atlas-map-home-control button i,
 .access-atlas-map-filter-control button i,
+.access-atlas-map-selection-control button i,
 .access-record-map-layer-control button i,
 .access-atlas-map-layer-control > button i {
   font-size: 1rem;
@@ -252,6 +254,8 @@
 .access-atlas-map-home-control button:focus-visible,
 .access-atlas-map-filter-control button:hover,
 .access-atlas-map-filter-control button:focus-visible,
+.access-atlas-map-selection-control button:hover,
+.access-atlas-map-selection-control button:focus-visible,
 .access-record-map-layer-control button:hover,
 .access-record-map-layer-control button:focus-visible,
 .access-atlas-map-layer-control > button:hover,
@@ -324,6 +328,7 @@
 
 [data-bs-theme="dark"] .access-atlas-map-home-control button,
 [data-bs-theme="dark"] .access-atlas-map-filter-control button,
+[data-bs-theme="dark"] .access-atlas-map-selection-control button,
 [data-bs-theme="dark"] .access-record-map-layer-control button,
 [data-bs-theme="dark"] .access-atlas-map-layer-control > button,
 [data-bs-theme="dark"] .site-map-animation-control button,
@@ -363,6 +368,8 @@
 [data-bs-theme="dark"] .access-atlas-map-home-control button:focus-visible,
 [data-bs-theme="dark"] .access-atlas-map-filter-control button:hover,
 [data-bs-theme="dark"] .access-atlas-map-filter-control button:focus-visible,
+[data-bs-theme="dark"] .access-atlas-map-selection-control button:hover,
+[data-bs-theme="dark"] .access-atlas-map-selection-control button:focus-visible,
 [data-bs-theme="dark"] .access-record-map-layer-control button:hover,
 [data-bs-theme="dark"] .access-record-map-layer-control button:focus-visible,
 [data-bs-theme="dark"] .access-atlas-map-layer-control > button:hover,
