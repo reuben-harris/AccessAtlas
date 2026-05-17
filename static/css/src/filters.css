@@ -92,6 +92,13 @@
   align-items: center;
 }
 
+.list-filter-actions-row .btn-list {
+  display: flex;
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .list-filter-row-label {
   padding-top: 0.625rem;
 }
