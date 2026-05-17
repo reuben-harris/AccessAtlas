@@ -218,19 +218,26 @@
   color: #fff;
 }
 
-/* Keep Django validation state visible after Tom Select replaces a select. */
-.ts-wrapper.is-invalid .ts-control,
-.ts-wrapper.form-select.is-invalid .ts-control,
-.ts-wrapper.form-control.is-invalid .ts-control {
-  border-color: var(--tblr-danger);
-  box-shadow: 0 0 0 0.125rem rgba(var(--tblr-danger-rgb), 0.18);
+/* Keep Django validation state visible on Tom Select's generated wrapper. */
+.ts-wrapper.is-invalid,
+.ts-wrapper.form-select.is-invalid,
+.ts-wrapper.form-control.is-invalid {
+  /* biome-ignore lint/complexity/noImportantStyles: Upstream form-state selectors can otherwise win on Tom Select wrappers. */
+  border-color: var(--tblr-form-invalid-border-color) !important;
 }
 
-.ts-wrapper.is-invalid.focus .ts-control,
-.ts-wrapper.form-select.is-invalid.focus .ts-control,
-.ts-wrapper.form-control.is-invalid.focus .ts-control {
-  border-color: var(--tblr-danger);
-  box-shadow: 0 0 0 0.125rem rgba(var(--tblr-danger-rgb), 0.25);
+.ts-wrapper.is-invalid.focus,
+.ts-wrapper.form-select.is-invalid.focus,
+.ts-wrapper.form-control.is-invalid.focus {
+  /* biome-ignore lint/complexity/noImportantStyles: Upstream form-state selectors can otherwise win on Tom Select wrappers. */
+  border-color: var(--tblr-form-invalid-border-color) !important;
+  box-shadow:
+    var(--tblr-shadow-input),
+    0 0 0 0.25rem rgba(var(--tblr-danger-rgb), 0.25);
+}
+
+.ts-wrapper.is-invalid:not(.form-select):not(.form-control) .ts-control {
+  border-color: var(--tblr-form-invalid-border-color);
 }
 
 [data-bs-theme="dark"] .ts-wrapper.plugin-remove_button:not(.rtl) .item .remove {

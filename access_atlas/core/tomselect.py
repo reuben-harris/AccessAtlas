@@ -78,7 +78,6 @@ def _job_assignment_tomselect_config(
         minimum_query_length=0,
         preload="focus",
         filter_by=filter_by or (),
-        hide_selected=False,
         plugin_remove_button=PluginRemoveButton(),
     )
 
