@@ -1,4 +1,4 @@
-import { cp, mkdir, rm } from "node:fs/promises";
+import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const root = process.cwd();
@@ -9,6 +9,13 @@ async function copyIntoVendor(targetDir, entries) {
   for (const [from, to] of entries) {
     await cp(from, path.join(targetDir, to), { recursive: true });
   }
+}
+
+function scopeFilledIconCss(css) {
+  return css
+    .replaceAll(".ti{", ".ti.ti-filled{")
+    .replace(/\.ti-([a-z0-9-]+):before\{/g, ".ti.ti-filled.ti-$1:before{")
+    .replace(/\/\*# sourceMappingURL=tabler-icons-filled\.min\.css\.map \*\//, "");
 }
 
 await rm(vendorRoot, { recursive: true, force: true });
@@ -51,6 +58,26 @@ await copyIntoVendor(path.join(vendorRoot, "tabler-icons"), [
     "fonts",
   ],
 ]);
+
+/* Tabler ships outline and filled glyphs as separate webfonts that both use
+   `.ti`. Scope the filled CSS so templates can choose `.ti-outlined` or
+   `.ti-filled` explicitly without one font overriding the other. */
+await writeFile(
+  path.join(vendorRoot, "tabler-icons", "tabler-icons-filled.scoped.min.css"),
+  scopeFilledIconCss(
+    await readFile(
+      path.join(
+        root,
+        "node_modules",
+        "@tabler",
+        "icons-webfont",
+        "dist",
+        "tabler-icons-filled.min.css",
+      ),
+      "utf8",
+    ),
+  ),
+);
 
 await copyIntoVendor(path.join(vendorRoot, "htmx"), [
   [path.join(root, "node_modules", "htmx.org", "dist", "htmx.min.js"), "htmx.min.js"],
