@@ -23,6 +23,7 @@ from .approval import ApprovedTripChangeMixin
 from .forms import AssignJobForm, SiteVisitForm, TripForm
 from .models import SiteVisit, SiteVisitJob, Trip
 from .services import delete_site_visit, get_site_visit_delete_summary
+from .time_estimates import build_trip_time_breakdown
 from .view_helpers import (
     build_trip_map_data,
     site_visit_detail_sections,
@@ -169,6 +170,21 @@ class TripMapView(LoginRequiredMixin, DetailView):
         context["trip_map_data"] = build_trip_map_data(site_visits)
         context["map_basemap_config"] = map_basemap_config()
         context["map_basemap_preference"] = map_basemap_preference(self.request.user)
+        return context
+
+
+class TripTimeView(LoginRequiredMixin, DetailView):
+    model = Trip
+    template_name = "trips/trip_time.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["detail_sections"] = trip_detail_sections(self.object, "time")
+        context["detail_navigation_label"] = "Trip sections"
+        context["trip_action_controls"] = trip_action_controls(
+            self.object, self.request.user
+        )
+        context["time_days"] = build_trip_time_breakdown(self.object)
         return context
 
 

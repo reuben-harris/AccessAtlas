@@ -128,6 +128,19 @@ def test_trip_gantt_requires_login(client):
 
 
 @pytest.mark.django_db
+def test_trip_time_requires_login(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = create_trip(user)
+
+    response = client.get(reverse("trip_time", kwargs={"pk": trip.pk}))
+
+    assert response.status_code == 302
+    assert response.url == (
+        f"{reverse('login')}?next={reverse('trip_time', kwargs={'pk': trip.pk})}"
+    )
+
+
+@pytest.mark.django_db
 def test_job_assignment_requires_matching_site():
     user = User.objects.create_user(email="user@example.com")
     site_a = Site.objects.create(
@@ -2087,6 +2100,79 @@ def test_trip_detail_orders_site_visits_by_planned_start(client):
     assert "21 Apr 2026" in content
     assert "09:00" in content
     assert "11:00" in content
+
+
+@pytest.mark.django_db
+def test_trip_time_breaks_down_site_visits_by_day_and_job_estimates(client):
+    user = User.objects.create_user(email="user@example.com")
+    morning_site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Morning Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    follow_up_site = Site.objects.create(
+        source_name="dummy",
+        external_id="002",
+        code="AA-002",
+        name="Follow-up Site",
+        latitude=-42.1,
+        longitude=175.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    morning_visit = SiteVisit.objects.create(
+        trip=trip,
+        site=morning_site,
+        planned_start=timezone.make_aware(datetime(2026, 4, 21, 9, 0)),
+    )
+    follow_up_visit = SiteVisit.objects.create(
+        trip=trip,
+        site=follow_up_site,
+        planned_start=timezone.make_aware(datetime(2026, 4, 22, 10, 0)),
+    )
+    first_job = Job.objects.create(
+        site=morning_site,
+        title="Inspect cabinet",
+        estimated_duration_minutes=45,
+    )
+    second_job = Job.objects.create(
+        site=morning_site,
+        title="Replace antenna",
+        estimated_duration_minutes=30,
+    )
+    missing_estimate_job = Job.objects.create(
+        site=follow_up_site,
+        title="Check links",
+    )
+    SiteVisitJob.objects.create(site_visit=morning_visit, job=first_job)
+    SiteVisitJob.objects.create(site_visit=morning_visit, job=second_job)
+    SiteVisitJob.objects.create(site_visit=follow_up_visit, job=missing_estimate_job)
+    client.force_login(user)
+
+    response = client.get(reverse("trip_time", kwargs={"pk": trip.pk}))
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "Tuesday 21 Apr 2026" in content
+    assert "Wednesday 22 Apr 2026" in content
+    assert content.index("Morning Site") < content.index("Follow-up Site")
+    assert "09:00 - 10:15 est" in content
+    assert "End time estimated from assigned job durations." in content
+    assert "Inspect cabinet" in content
+    assert "Replace antenna" in content
+    assert "Job estimate: 1 h 15 min" in content
+    assert (
+        "End time cannot be estimated until all assigned jobs have estimates."
+        in content
+    )
+    assert "1 missing" in content
 
 
 @pytest.mark.django_db

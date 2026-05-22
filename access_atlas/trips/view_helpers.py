@@ -48,6 +48,12 @@ def trip_detail_sections(
             "is_active": active_section == "map",
         },
         {
+            "label": "Time",
+            "icon": "ti-clock",
+            "url": trip.get_time_url(),
+            "is_active": active_section == "time",
+        },
+        {
             "label": "Requirements",
             "icon": "ti-list-check",
             "url": trip.get_requirements_url(),
