@@ -76,28 +76,14 @@
           {% for job in object_list %}
             <tr>
               <td class="bulk-selection-cell">
-                {% if job.edit_frozen_reason %}
-                  <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="{{ job.edit_frozen_reason }}">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      name="pk"
-                      value="{{ job.pk }}"
-                      data-bulk-selection-checkbox
-                      aria-label="Select {{ job.title }}"
-                      disabled
-                    >
-                  </span>
-                {% else %}
-                  <input
-                    class="form-check-input"
-                    type="checkbox"
-                    name="pk"
-                    value="{{ job.pk }}"
-                    data-bulk-selection-checkbox
-                    aria-label="Select {{ job.title }}"
-                  >
-                {% endif %}
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  name="pk"
+                  value="{{ job.pk }}"
+                  data-bulk-selection-checkbox
+                  aria-label="Select {{ job.title }}"
+                >
               </td>
               <td><a href="{{ job.get_absolute_url }}">{{ job.title }}</a></td>
               <td><a href="{{ job.site.get_absolute_url }}">{% include "includes/site_label.html" with site=job.site %}</a></td>
@@ -113,12 +99,8 @@
                <td><span class="badge {{ job.status|status_badge_class }}">{{ job.get_status_display }}</span></td>
                <td>{{ job.get_priority_display }}</td>
                <td>{{ job.estimated_duration_minutes|default:"-" }} min</td>
-              {% if job.edit_frozen_reason %}
-                {% include "includes/disabled_row_actions.html" with label=job.title disabled_reason=job.edit_frozen_reason %}
-              {% else %}
-                {% url 'job_update' job.pk as edit_url %}
-                {% include "includes/row_actions.html" with edit_url=edit_url label=job.title %}
-              {% endif %}
+              {% url 'job_update' job.pk as edit_url %}
+              {% include "includes/row_actions.html" with edit_url=edit_url label=job.title %}
              </tr>
            {% empty %}
              <tr><td colspan="10" class="text-secondary">No jobs found.</td></tr>

@@ -11,9 +11,16 @@ from rest_framework.test import APIClient
 from access_atlas.accounts.models import User
 from access_atlas.api.models import ApiToken
 from access_atlas.api.token_services import create_api_token
-from access_atlas.jobs.models import Job, JobTemplate, TemplateRequirement
+from access_atlas.jobs.models import (
+    Job,
+    JobStatus,
+    JobTemplate,
+    TemplateRequirement,
+    WorkProgramme,
+)
 from access_atlas.sites.models import Site, SitePhoto
 from access_atlas.trips.models import SiteVisit, Trip, TripStatus
+from access_atlas.trips.services import assign_job_to_site_visit
 
 
 def create_user(email="user@example.com"):
@@ -159,6 +166,149 @@ def test_write_token_can_create_job_from_template():
     assert job.title == "Replace sensor"
     assert job.requirements.get().name == "Sensor cable"
     assert response.json()["id"] == job.pk
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "trip_status",
+    [
+        TripStatus.SUBMITTED,
+        TripStatus.APPROVED,
+        TripStatus.COMPLETED,
+        TripStatus.CANCELLED,
+    ],
+)
+def test_assigned_job_api_metadata_update_keeps_trip_status(trip_status):
+    user = create_user()
+    leader = create_user("leader@example.com")
+    site = create_site()
+    work_programme = WorkProgramme.objects.create(name="2026 Field Work")
+    trip = Trip.objects.create(
+        name="Ridge trip",
+        start_date=date(2026, 5, 1),
+        end_date=date(2026, 5, 5),
+        trip_leader=leader,
+        submitted_by=leader if trip_status != TripStatus.DRAFT else None,
+        submitted_at=timezone.now() if trip_status != TripStatus.DRAFT else None,
+        approved_at=timezone.now() if trip_status == TripStatus.APPROVED else None,
+        approval_round=1 if trip_status != TripStatus.DRAFT else 0,
+        status=TripStatus.DRAFT,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    assign_job_to_site_visit(site_visit, job)
+    if trip_status == TripStatus.COMPLETED:
+        job.status = JobStatus.COMPLETED
+        job.completed_date = date(2026, 5, 2)
+        job.save(update_fields=["status", "completed_date", "updated_at"])
+    elif trip_status == TripStatus.CANCELLED:
+        job.status = JobStatus.CANCELLED
+        job.closeout_note = "Cancelled during closeout."
+        job.save(update_fields=["status", "closeout_note", "updated_at"])
+    trip.status = trip_status
+    trip.save(update_fields=["status", "updated_at"])
+    api_client, _token = authenticated_api_client(user, can_write=True)
+
+    response = api_client.patch(
+        reverse("job-api-detail", kwargs={"pk": job.pk}),
+        {
+            "title": "Updated cabinet",
+            "work_programme": work_programme.pk,
+            "priority": "high",
+        },
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["completed_date"] == (
+        "2026-05-02" if trip_status == TripStatus.COMPLETED else None
+    )
+    job.refresh_from_db()
+    trip.refresh_from_db()
+    assert job.title == "Updated cabinet"
+    assert job.work_programme == work_programme
+    assert job.priority == "high"
+    assert trip.status == trip_status
+    assert trip.approval_round == (1 if trip_status != TripStatus.DRAFT else 0)
+
+
+@pytest.mark.django_db
+def test_assigned_job_api_rejects_trip_managed_field_changes():
+    user = create_user()
+    site = create_site()
+    other_site = create_site("AA-002")
+    trip = Trip.objects.create(
+        name="Ridge trip",
+        start_date=date(2026, 5, 1),
+        end_date=date(2026, 5, 5),
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    assign_job_to_site_visit(site_visit, job)
+    api_client, _token = authenticated_api_client(user, can_write=True)
+
+    response = api_client.patch(
+        reverse("job-api-detail", kwargs={"pk": job.pk}),
+        {
+            "site": other_site.pk,
+            "status": JobStatus.CANCELLED,
+            "completed_date": "2026-05-02",
+            "closeout_note": "Should not land.",
+        },
+        format="json",
+    )
+
+    assert response.status_code == 400
+    assert set(response.json()) == {"site", "status", "completed_date", "closeout_note"}
+    job.refresh_from_db()
+    assert job.site == site
+    assert job.status == JobStatus.ASSIGNED
+    assert job.completed_date is None
+    assert job.closeout_note == ""
+
+
+@pytest.mark.django_db
+def test_assigned_job_api_full_update_allows_unchanged_trip_managed_fields():
+    user = create_user()
+    site = create_site()
+    work_programme = WorkProgramme.objects.create(name="2026 Field Work")
+    trip = Trip.objects.create(
+        name="Ridge trip",
+        start_date=date(2026, 5, 1),
+        end_date=date(2026, 5, 5),
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Inspect cabinet")
+    assign_job_to_site_visit(site_visit, job)
+    api_client, _token = authenticated_api_client(user, can_write=True)
+
+    response = api_client.put(
+        reverse("job-api-detail", kwargs={"pk": job.pk}),
+        {
+            "site": site.pk,
+            "template": None,
+            "work_programme": work_programme.pk,
+            "title": "Updated cabinet",
+            "description": "Metadata correction.",
+            "estimated_duration_minutes": 45,
+            "priority": "high",
+            "status": JobStatus.ASSIGNED,
+            "completed_date": None,
+            "closeout_note": "",
+        },
+        format="json",
+    )
+
+    assert response.status_code == 200
+    job.refresh_from_db()
+    assert job.site == site
+    assert job.status == JobStatus.ASSIGNED
+    assert job.completed_date is None
+    assert job.closeout_note == ""
+    assert job.work_programme == work_programme
+    assert job.title == "Updated cabinet"
 
 
 @pytest.mark.django_db

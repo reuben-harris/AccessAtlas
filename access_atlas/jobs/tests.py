@@ -855,10 +855,12 @@ def test_terminal_trip_job_requirement_structure_is_read_only(client):
 
 
 @pytest.mark.django_db
-def test_terminal_trip_job_update_is_frozen(client):
+def test_terminal_trip_job_update_allows_metadata_but_keeps_trip_fields(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
     site = create_site()
+    other_site = create_site("AA-002")
+    work_programme = WorkProgramme.objects.create(name="2026 Field Work")
     trip = Trip.objects.create(
         name="Trip",
         start_date="2026-04-21",
@@ -875,21 +877,33 @@ def test_terminal_trip_job_update_is_frozen(client):
     post_response = client.post(
         reverse("job_update", kwargs={"pk": job.pk}),
         {
-            "site": site.pk,
-            "work_programme": "",
+            "site": other_site.pk,
+            "work_programme": work_programme.pk,
             "title": "Updated cabinet",
-            "description": "",
-            "estimated_duration_minutes": "",
-            "priority": "normal",
+            "description": "Metadata correction.",
+            "estimated_duration_minutes": "45",
+            "priority": Priority.HIGH,
+            "status": JobStatus.CANCELLED,
+            "completed_date": "2026-04-21",
+            "closeout_note": "Should not land.",
         },
     )
 
-    assert get_response.status_code == 302
-    assert get_response.url == job.get_absolute_url()
+    assert get_response.status_code == 200
     assert post_response.status_code == 302
     assert post_response.url == job.get_absolute_url()
     job.refresh_from_db()
-    assert job.title == "Inspect cabinet"
+    trip.refresh_from_db()
+    assert job.site == site
+    assert job.work_programme == work_programme
+    assert job.title == "Updated cabinet"
+    assert job.description == "Metadata correction."
+    assert job.estimated_duration_minutes == 45
+    assert job.priority == Priority.HIGH
+    assert job.status == JobStatus.ASSIGNED
+    assert job.completed_date is None
+    assert job.closeout_note == ""
+    assert trip.status == TripStatus.COMPLETED
 
 
 @pytest.mark.django_db
@@ -1316,7 +1330,7 @@ def test_job_list_links_to_map_view(client):
 
 
 @pytest.mark.django_db
-def test_job_list_disables_edit_for_jobs_on_terminal_trips(client):
+def test_job_list_allows_edit_for_jobs_on_terminal_trips(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
     site = create_site()
@@ -1327,9 +1341,9 @@ def test_job_list_disables_edit_for_jobs_on_terminal_trips(client):
         trip_leader=user,
     )
     site_visit = SiteVisit.objects.create(trip=trip, site=site)
-    frozen_job = Job.objects.create(site=site, title="Frozen job")
+    terminal_trip_job = Job.objects.create(site=site, title="Terminal trip job")
     editable_job = Job.objects.create(site=site, title="Editable job")
-    assign_job_to_site_visit(site_visit, frozen_job)
+    assign_job_to_site_visit(site_visit, terminal_trip_job)
     trip.status = TripStatus.COMPLETED
     trip.save(update_fields=["status", "updated_at"])
 
@@ -1337,9 +1351,8 @@ def test_job_list_disables_edit_for_jobs_on_terminal_trips(client):
 
     content = response.content.decode()
     assert response.status_code == 200
-    assert "normal job editing is frozen" in content
-    assert 'aria-label="Edit Frozen job"' in content
-    assert reverse("job_update", kwargs={"pk": frozen_job.pk}) not in content
+    assert "normal job editing is frozen" not in content
+    assert reverse("job_update", kwargs={"pk": terminal_trip_job.pk}) in content
     assert reverse("job_update", kwargs={"pk": editable_job.pk}) in content
 
 
@@ -1525,7 +1538,7 @@ def test_job_bulk_edit_blocks_assigned_status_changes_before_saving(client):
 
 
 @pytest.mark.django_db
-def test_job_bulk_edit_blocks_terminal_trip_jobs_before_saving(client):
+def test_job_bulk_edit_blocks_assigned_completed_date_clear_before_saving(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
     site = create_site()
@@ -1536,33 +1549,72 @@ def test_job_bulk_edit_blocks_terminal_trip_jobs_before_saving(client):
         trip_leader=user,
     )
     site_visit = SiteVisit.objects.create(trip=trip, site=site)
-    frozen_job = Job.objects.create(site=site, title="Frozen job")
+    assigned_job = Job.objects.create(site=site, title="Assigned job")
+    editable_job = Job.objects.create(
+        site=site,
+        title="Editable job",
+        status=JobStatus.COMPLETED,
+        completed_date=parse_date("2026-04-21"),
+    )
+    assign_job_to_site_visit(site_visit, assigned_job)
+    assigned_job.status = JobStatus.COMPLETED
+    assigned_job.completed_date = parse_date("2026-04-21")
+    assigned_job.save(update_fields=["status", "completed_date", "updated_at"])
+
+    response = client.post(
+        reverse("job_bulk_edit"),
+        {
+            "pk": [str(assigned_job.pk), str(editable_job.pk)],
+            "_nullify": "completed_date",
+            "apply_bulk_edit": "1",
+        },
+    )
+
+    assigned_job.refresh_from_db()
+    editable_job.refresh_from_db()
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Assigned jobs cannot have completed date changed by bulk edit" in content
+    assert assigned_job.completed_date == parse_date("2026-04-21")
+    assert editable_job.completed_date == parse_date("2026-04-21")
+
+
+@pytest.mark.django_db
+def test_job_bulk_edit_allows_terminal_trip_job_metadata(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    terminal_trip_job = Job.objects.create(site=site, title="Terminal trip job")
     editable_job = Job.objects.create(site=site, title="Editable job")
-    assign_job_to_site_visit(site_visit, frozen_job)
+    assign_job_to_site_visit(site_visit, terminal_trip_job)
     trip.status = TripStatus.COMPLETED
     trip.save(update_fields=["status", "updated_at"])
 
     response = client.post(
         reverse("job_bulk_edit"),
         {
-            "pk": [str(frozen_job.pk), str(editable_job.pk)],
+            "pk": [str(terminal_trip_job.pk), str(editable_job.pk)],
             "priority": Priority.URGENT,
             "apply_bulk_edit": "1",
         },
     )
 
-    frozen_job.refresh_from_db()
+    terminal_trip_job.refresh_from_db()
     editable_job.refresh_from_db()
-    content = response.content.decode()
-    assert response.status_code == 200
-    assert "normal job editing is frozen" in content
-    assert "Resolve the blocking jobs" in content
-    assert frozen_job.priority == Priority.NORMAL
-    assert editable_job.priority == Priority.NORMAL
+    assert response.status_code == 302
+    assert terminal_trip_job.priority == Priority.URGENT
+    assert editable_job.priority == Priority.URGENT
 
 
 @pytest.mark.django_db
-def test_job_bulk_edit_service_is_all_or_nothing_for_invalid_selection():
+def test_job_bulk_edit_service_allows_terminal_trip_job_metadata():
     user = User.objects.create_user(email="user@example.com")
     site = create_site()
     trip = Trip.objects.create(
@@ -1572,19 +1624,19 @@ def test_job_bulk_edit_service_is_all_or_nothing_for_invalid_selection():
         trip_leader=user,
     )
     site_visit = SiteVisit.objects.create(trip=trip, site=site)
-    frozen_job = Job.objects.create(site=site, title="Frozen job")
+    terminal_trip_job = Job.objects.create(site=site, title="Terminal trip job")
     editable_job = Job.objects.create(site=site, title="Editable job")
-    assign_job_to_site_visit(site_visit, frozen_job)
+    assign_job_to_site_visit(site_visit, terminal_trip_job)
     trip.status = TripStatus.COMPLETED
     trip.save(update_fields=["status", "updated_at"])
 
-    with pytest.raises(ValidationError):
-        bulk_edit_jobs([frozen_job, editable_job], priority=Priority.URGENT)
+    result = bulk_edit_jobs([terminal_trip_job, editable_job], priority=Priority.URGENT)
 
-    frozen_job.refresh_from_db()
+    terminal_trip_job.refresh_from_db()
     editable_job.refresh_from_db()
-    assert frozen_job.priority == Priority.NORMAL
-    assert editable_job.priority == Priority.NORMAL
+    assert result.updated == 2
+    assert terminal_trip_job.priority == Priority.URGENT
+    assert editable_job.priority == Priority.URGENT
 
 
 @pytest.mark.django_db
@@ -1629,7 +1681,7 @@ def test_job_bulk_edit_selection_post_ignores_stale_query_selection(client):
 
 
 @pytest.mark.django_db
-def test_job_bulk_edit_select_all_excludes_frozen_jobs(client):
+def test_job_bulk_edit_select_all_includes_terminal_trip_jobs(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
     site = create_site()
@@ -1640,9 +1692,9 @@ def test_job_bulk_edit_select_all_excludes_frozen_jobs(client):
         trip_leader=user,
     )
     site_visit = SiteVisit.objects.create(trip=trip, site=site)
-    frozen_job = Job.objects.create(site=site, title="Frozen job")
+    terminal_trip_job = Job.objects.create(site=site, title="Terminal trip job")
     editable_job = Job.objects.create(site=site, title="Editable job")
-    assign_job_to_site_visit(site_visit, frozen_job)
+    assign_job_to_site_visit(site_visit, terminal_trip_job)
     trip.status = TripStatus.COMPLETED
     trip.save(update_fields=["status", "updated_at"])
 
@@ -1650,9 +1702,9 @@ def test_job_bulk_edit_select_all_excludes_frozen_jobs(client):
 
     content = response.content.decode()
     assert response.status_code == 200
-    assert response.context["selected_count"] == 1
+    assert response.context["selected_count"] == 2
     assert editable_job.title in content
-    assert frozen_job.title not in content
+    assert terminal_trip_job.title in content
 
 
 @pytest.mark.django_db
@@ -1684,7 +1736,7 @@ def test_job_bulk_edit_select_all_respects_current_filters(client):
 
 
 @pytest.mark.django_db
-def test_job_list_select_all_count_excludes_frozen_jobs(client):
+def test_job_list_select_all_count_includes_terminal_trip_jobs(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
     site = create_site()
@@ -1695,9 +1747,9 @@ def test_job_list_select_all_count_excludes_frozen_jobs(client):
         trip_leader=user,
     )
     site_visit = SiteVisit.objects.create(trip=trip, site=site)
-    frozen_job = Job.objects.create(site=site, title="Frozen job")
+    terminal_trip_job = Job.objects.create(site=site, title="Terminal trip job")
     Job.objects.create(site=site, title="Editable job")
-    assign_job_to_site_visit(site_visit, frozen_job)
+    assign_job_to_site_visit(site_visit, terminal_trip_job)
     trip.status = TripStatus.COMPLETED
     trip.save(update_fields=["status", "updated_at"])
 
@@ -1705,10 +1757,10 @@ def test_job_list_select_all_count_excludes_frozen_jobs(client):
 
     content = response.content.decode()
     assert response.status_code == 200
-    assert response.context["bulk_selectable_count"] == 1
-    assert response.context["bulk_excluded_count"] == 1
-    assert "Select all 1 selectable jobs matching current filters" in content
-    assert "1 frozen job not included" in content
+    assert response.context["bulk_selectable_count"] == 2
+    assert response.context["bulk_excluded_count"] == 0
+    assert "Select all 2 selectable jobs matching current filters" in content
+    assert "frozen job not included" not in content
 
 
 @pytest.mark.django_db
@@ -1723,8 +1775,8 @@ def test_job_map_payload_includes_bulk_selection_contract(client):
         trip_leader=user,
     )
     site_visit = SiteVisit.objects.create(trip=trip, site=site)
-    frozen_job = Job.objects.create(site=site, title="Frozen job")
-    assign_job_to_site_visit(site_visit, frozen_job)
+    terminal_trip_job = Job.objects.create(site=site, title="Terminal trip job")
+    assign_job_to_site_visit(site_visit, terminal_trip_job)
     trip.status = TripStatus.COMPLETED
     trip.save(update_fields=["status", "updated_at"])
 
@@ -1735,8 +1787,8 @@ def test_job_map_payload_includes_bulk_selection_contract(client):
     job_payload = map_sites[0]["jobs"][0]
     assert response.status_code == 200
     assert site_payload["id"] == site.pk
-    assert job_payload["bulkEditable"] is False
-    assert "normal job editing is frozen" in job_payload["bulkDisabledReason"]
+    assert job_payload["bulkEditable"] is True
+    assert job_payload["bulkDisabledReason"] == ""
 
 
 @pytest.mark.django_db

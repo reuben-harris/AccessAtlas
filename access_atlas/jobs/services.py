@@ -77,28 +77,9 @@ def assign_jobs_to_work_programme(
     return len(selected_jobs)
 
 
-def job_edit_frozen_reason(job: Job) -> str:
-    """Return why normal job editing is blocked for terminal-trip assignments."""
-    assignment = getattr(job, "site_visit_assignment", None)
-    if assignment is None or not assignment.site_visit.trip.is_terminal:
-        return ""
-    trip = assignment.site_visit.trip
-    return (
-        f"This job is assigned to {trip.get_status_display().lower()} trip "
-        f'"{trip.name}", so normal job editing is frozen.'
-    )
-
-
 def bulk_editable_jobs_queryset(queryset):
     """Return jobs selectable by the bulk-edit UI."""
-    from access_atlas.trips.models import TripStatus
-
-    return queryset.exclude(
-        site_visit_assignment__site_visit__trip__status__in=[
-            TripStatus.COMPLETED,
-            TripStatus.CANCELLED,
-        ]
-    )
+    return queryset
 
 
 def _apply_bulk_job_changes(
@@ -147,13 +128,20 @@ def _apply_bulk_job_changes(
     return changed
 
 
-def _bulk_job_blocker_reason(job: Job, *, status: str = "") -> str:
-    frozen_reason = job_edit_frozen_reason(job)
-    if frozen_reason:
-        return frozen_reason
+def _bulk_job_blocker_reason(
+    job: Job,
+    *,
+    status: str = "",
+    clear_completed_date: bool = False,
+) -> str:
     if status and job.is_assigned:
         return (
             "Assigned jobs cannot have status changed by bulk edit "
+            "because trip closeout manages them."
+        )
+    if clear_completed_date and job.is_assigned:
+        return (
+            "Assigned jobs cannot have completed date changed by bulk edit "
             "because trip closeout manages them."
         )
     return ""
@@ -188,7 +176,11 @@ def validate_bulk_edit_jobs(
     return validate_bulk_edit_objects(
         jobs,
         apply_changes=apply_changes,
-        blocker_reason=lambda job: _bulk_job_blocker_reason(job, status=status),
+        blocker_reason=lambda job: _bulk_job_blocker_reason(
+            job,
+            status=status,
+            clear_completed_date=clear_completed_date,
+        ),
     )
 
 
