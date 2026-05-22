@@ -2315,6 +2315,124 @@ def test_job_list_summarizes_all_selected_status_filters(client):
 
 
 @pytest.mark.django_db
+def test_job_list_filters_by_job_template_and_labels_retired_choices(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    active_template = JobTemplate.objects.create(title="Replace sensor")
+    retired_template = JobTemplate.objects.create(
+        title="Legacy inspection",
+        is_active=False,
+    )
+    unused_retired_template = JobTemplate.objects.create(
+        title="Unused retired template",
+        is_active=False,
+    )
+    Job.objects.create(
+        site=site,
+        template=active_template,
+        title="Replacement job",
+    )
+    Job.objects.create(
+        site=site,
+        template=retired_template,
+        title="Legacy inspection job",
+    )
+    Job.objects.create(site=site, title="Manual job")
+
+    response = client.get(reverse("job_list"), {"template": str(retired_template.pk)})
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert [job.title for job in object_list] == ["Legacy inspection job"]
+    assert [chip["label"] for chip in response.context["active_filter_chips"]] == [
+        "Job Template is Legacy inspection (retired)"
+    ]
+    content = response.content.decode()
+    assert "Job Template" in content
+    assert "Legacy inspection (retired)" in content
+    assert f"{unused_retired_template.title} (retired)" in content
+
+
+@pytest.mark.django_db
+def test_job_list_filters_jobs_without_template(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    template = JobTemplate.objects.create(title="Replace sensor")
+    Job.objects.create(site=site, template=template, title="Templated job")
+    Job.objects.create(site=site, title="Manual job")
+
+    response = client.get(reverse("job_list"), {"template__empty": "true"})
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert [job.title for job in object_list] == ["Manual job"]
+    assert [chip["label"] for chip in response.context["active_filter_chips"]] == [
+        "Job Template is empty"
+    ]
+
+
+@pytest.mark.django_db
+def test_job_list_filters_jobs_with_any_template(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    template = JobTemplate.objects.create(title="Replace sensor")
+    retired_template = JobTemplate.objects.create(
+        title="Legacy inspection",
+        is_active=False,
+    )
+    Job.objects.create(site=site, template=template, title="Replacement job")
+    Job.objects.create(
+        site=site,
+        template=retired_template,
+        title="Legacy inspection job",
+    )
+    Job.objects.create(site=site, title="Manual job")
+
+    response = client.get(reverse("job_list"), {"template__empty": "false"})
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert [job.title for job in object_list] == [
+        "Legacy inspection job",
+        "Replacement job",
+    ]
+    assert [chip["label"] for chip in response.context["active_filter_chips"]] == [
+        "Job Template is not empty"
+    ]
+
+
+@pytest.mark.django_db
+def test_job_list_saves_and_restores_template_filter_preference(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    template = JobTemplate.objects.create(title="Replace sensor")
+    Job.objects.create(site=site, template=template, title="Templated job")
+    Job.objects.create(site=site, title="Manual job")
+
+    response = client.get(reverse("job_list"), {"template": str(template.pk)})
+
+    assert response.status_code == 200
+    assert get_user_preference(user, list_filter_preference_key("jobs")) == {
+        "params": {"template": [str(template.pk)]}
+    }
+
+    response = client.get(reverse("job_list"))
+
+    assert response.status_code == 302
+    assert response.url == f"{reverse('job_list')}?template={template.pk}"
+
+    response = client.get(response.url)
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert [job.title for job in object_list] == ["Templated job"]
+
+
+@pytest.mark.django_db
 def test_job_list_filters_by_any_site_tag(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -2408,6 +2526,25 @@ def test_job_map_applies_shared_status_filter(client):
 
 
 @pytest.mark.django_db
+def test_job_map_applies_shared_template_filter(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    template = JobTemplate.objects.create(title="Replace sensor")
+    Job.objects.create(site=site, template=template, title="Templated job")
+    Job.objects.create(site=site, title="Manual job")
+
+    response = client.get(reverse("job_map"), {"template": str(template.pk)})
+
+    assert response.status_code == 200
+    map_sites = parse_json_script(response.content.decode(), "job-map-data")
+    assert [job["title"] for job in map_sites[0]["jobs"]] == ["Templated job"]
+    assert response.context["search_result_count"] == 1
+    content = response.content.decode()
+    assert 'data-filter-count="1"' in content
+
+
+@pytest.mark.django_db
 def test_job_charts_apply_shared_status_filter(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -2432,6 +2569,24 @@ def test_job_charts_apply_shared_status_filter(client):
     assert "vendor/chart.js/chart.umd.min.js" in content
     assert 'src="/static/js/jobs_charts.js"' in content
     assert "Charts" in content
+
+
+@pytest.mark.django_db
+def test_job_charts_apply_shared_template_filter(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = create_site()
+    template = JobTemplate.objects.create(title="Replace sensor")
+    Job.objects.create(site=site, template=template, title="Templated job")
+    Job.objects.create(site=site, title="Manual job")
+
+    response = client.get(reverse("job_charts"), {"template": str(template.pk)})
+
+    assert response.status_code == 200
+    chart_data = parse_json_script(response.content.decode(), "job-status-chart-data")
+    assert chart_data["total"] == 1
+    assert chart_data["counts"] == [1, 0, 0, 0]
+    assert response.context["search_result_count"] == 1
 
 
 @pytest.mark.django_db
