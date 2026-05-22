@@ -940,7 +940,7 @@ def test_global_history_warns_for_deleted_related_object_history(client, user):
 
     content = response.content.decode()
     assert "warning-indicator" in content
-    assert "ti-alert-triangle" in content
+    assert "ti ti-filled ti-alert-triangle" in content
     assert expected_warning in content
 
 
