@@ -25,6 +25,7 @@ from access_atlas.core.global_history import (
     history_detail_url,
     history_model_for_slug,
     history_object_display,
+    history_object_display_has_missing_site_code,
     history_object_type_choices,
     history_user_choices,
     live_object_exists,
@@ -383,6 +384,9 @@ def global_history_detail(request, object_type: str, history_id: int):
         {
             "object": history_record.instance,
             "history_object_display": object_display,
+            "history_object_display_has_missing_site_code": (
+                history_object_display_has_missing_site_code(history_record.instance)
+            ),
             "history_object_display_warning": display_warning,
             "history_object_display_warning_message": display_warning_message,
             "history_object_type": history_record.instance._meta.verbose_name.title(),

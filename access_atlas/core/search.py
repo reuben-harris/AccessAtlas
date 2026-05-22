@@ -5,6 +5,7 @@ from django.db import DatabaseError
 from django.db.models import Q
 
 from access_atlas.jobs.models import Job, JobTemplate, WorkProgramme
+from access_atlas.sites.display import SITE_CODE_PLACEHOLDER, display_site_code
 from access_atlas.sites.models import AccessRecord, Site
 from access_atlas.trips.models import SiteVisit, Trip
 
@@ -27,6 +28,8 @@ class SearchResultRow:
     value: str
     object_label: str
     object_url: str
+    value_is_missing_site_code: bool = False
+    object_label_has_missing_site_code: bool = False
 
 
 @dataclass(frozen=True)
@@ -52,23 +55,26 @@ def normalize_sort_value(value: str | None) -> str:
 
 def first_matching_value(
     query: str,
-    candidates: list[str],
+    candidates: list[str | None],
     lookup_type: str,
 ) -> str:
     """Return the first candidate that matches the active lookup mode."""
 
-    return first_matching_candidate(
-        query,
-        [("Value", candidate) for candidate in candidates],
-        lookup_type,
-    )[1]
+    return (
+        first_matching_candidate(
+            query,
+            [("Value", candidate) for candidate in candidates],
+            lookup_type,
+        )[1]
+        or ""
+    )
 
 
 def first_matching_candidate(
     query: str,
-    candidates: list[tuple[str, str]],
+    candidates: list[tuple[str, str | None]],
     lookup_type: str,
-) -> tuple[str, str]:
+) -> tuple[str, str | None]:
     """Return the first matching field label and value for search results."""
 
     if lookup_type == "iregex":
@@ -77,12 +83,26 @@ def first_matching_candidate(
         except re.error:
             return candidates[0] if candidates else ("Value", "")
         for label, candidate in candidates:
-            if pattern.search(candidate):
+            if candidate is not None and pattern.search(candidate):
+                return label, candidate
+            if (
+                candidate is None
+                and label in {"Code", "Site Code"}
+                and value_matches_lookup(query, SITE_CODE_PLACEHOLDER, lookup_type)
+            ):
                 return label, candidate
         return candidates[0] if candidates else ("Value", "")
 
     normalized_query = query.casefold()
     for label, candidate in candidates:
+        if candidate is None:
+            if label in {"Code", "Site Code"} and value_matches_lookup(
+                query,
+                SITE_CODE_PLACEHOLDER,
+                lookup_type,
+            ):
+                return label, candidate
+            continue
         normalized_candidate = candidate.casefold()
         if lookup_type == "iexact" and normalized_candidate == normalized_query:
             return label, candidate
@@ -110,6 +130,48 @@ def build_search_predicate(
     return predicate
 
 
+def value_matches_lookup(query: str, candidate: str, lookup_type: str) -> bool:
+    if lookup_type == "iregex":
+        return re.search(query, candidate, re.IGNORECASE) is not None
+
+    normalized_query = query.casefold()
+    normalized_candidate = candidate.casefold()
+    if lookup_type == "iexact":
+        return normalized_candidate == normalized_query
+    if lookup_type == "istartswith":
+        return normalized_candidate.startswith(normalized_query)
+    if lookup_type == "iendswith":
+        return normalized_candidate.endswith(normalized_query)
+    return normalized_query in normalized_candidate
+
+
+def with_missing_site_code_match(
+    predicate: Q,
+    query: str,
+    lookup_type: str,
+    field_name: str,
+) -> Q:
+    if value_matches_lookup(query, SITE_CODE_PLACEHOLDER, lookup_type):
+        return predicate | Q(**{f"{field_name}__isnull": True})
+    return predicate
+
+
+def is_site_code_field(field_label: str) -> bool:
+    return field_label in {"Code", "Site Code"}
+
+
+def is_missing_site_code_value(field_label: str, value: str | None) -> bool:
+    return is_site_code_field(field_label) and value is None
+
+
+def search_display_value(field_label: str, value: str | None) -> str:
+    """Render matched site-code values using the same empty-code label as the UI."""
+
+    if is_site_code_field(field_label):
+        return display_site_code(value)
+    return value or ""
+
+
 def build_site_rows(queryset, query: str, lookup_type: str) -> list[SearchResultRow]:
     rows = []
     for site in queryset:
@@ -125,9 +187,14 @@ def build_site_rows(queryset, query: str, lookup_type: str) -> list[SearchResult
         rows.append(
             SearchResultRow(
                 object_type=f"Site > {field_label}",
-                value=value,
+                value=search_display_value(field_label, value),
                 object_label=str(site),
                 object_url=site.get_absolute_url(),
+                value_is_missing_site_code=is_missing_site_code_value(
+                    field_label,
+                    value,
+                ),
+                object_label_has_missing_site_code=site.code is None,
             )
         )
     return rows
@@ -153,9 +220,13 @@ def build_job_rows(queryset, query: str, lookup_type: str) -> list[SearchResultR
         rows.append(
             SearchResultRow(
                 object_type=f"Job > {field_label}",
-                value=value,
+                value=search_display_value(field_label, value),
                 object_label=job.title,
                 object_url=job.get_absolute_url(),
+                value_is_missing_site_code=is_missing_site_code_value(
+                    field_label,
+                    value,
+                ),
             )
         )
     return rows
@@ -241,11 +312,16 @@ def build_site_visit_rows(
         rows.append(
             SearchResultRow(
                 object_type=f"Site Visit > {field_label}",
-                value=value,
+                value=search_display_value(field_label, value),
                 object_label=(
                     f"{site_visit.trip.name} - {site_visit.site.display_label}"
                 ),
                 object_url=site_visit.get_absolute_url(),
+                value_is_missing_site_code=is_missing_site_code_value(
+                    field_label,
+                    value,
+                ),
+                object_label_has_missing_site_code=site_visit.site.code is None,
             )
         )
     return rows
@@ -270,9 +346,14 @@ def build_access_record_rows(
         rows.append(
             SearchResultRow(
                 object_type=f"Access Record > {field_label}",
-                value=value,
+                value=search_display_value(field_label, value),
                 object_label=str(access_record),
                 object_url=access_record.get_absolute_url(),
+                value_is_missing_site_code=is_missing_site_code_value(
+                    field_label,
+                    value,
+                ),
+                object_label_has_missing_site_code=access_record.site.code is None,
             )
         )
     return rows
@@ -323,10 +404,13 @@ def build_global_search_results(
             return SearchResults(rows=[], total=0, error="Invalid regular expression.")
 
     try:
-        site_matches = Site.objects.filter(
-            build_search_predicate(("code", "name", "description"), query, lookup_type)
+        site_predicate = with_missing_site_code_match(
+            build_search_predicate(("code", "name", "description"), query, lookup_type),
+            query,
+            lookup_type,
+            "code",
         )
-        job_matches = Job.objects.select_related("site", "work_programme").filter(
+        job_predicate = with_missing_site_code_match(
             build_search_predicate(
                 (
                     "title",
@@ -337,7 +421,14 @@ def build_global_search_results(
                 ),
                 query,
                 lookup_type,
-            )
+            ),
+            query,
+            lookup_type,
+            "site__code",
+        )
+        site_matches = Site.objects.filter(site_predicate)
+        job_matches = Job.objects.select_related("site", "work_programme").filter(
+            job_predicate
         )
         job_template_matches = JobTemplate.objects.filter(
             build_search_predicate(("title", "description"), query, lookup_type)
@@ -348,19 +439,31 @@ def build_global_search_results(
         trip_matches = Trip.objects.filter(
             build_search_predicate(("name",), query, lookup_type)
         )
-        site_visit_matches = SiteVisit.objects.select_related("trip", "site").filter(
+        site_visit_predicate = with_missing_site_code_match(
             build_search_predicate(
                 ("trip__name", "site__code", "site__name"),
                 query,
                 lookup_type,
-            )
+            ),
+            query,
+            lookup_type,
+            "site__code",
         )
-        access_record_matches = AccessRecord.objects.select_related("site").filter(
+        access_record_predicate = with_missing_site_code_match(
             build_search_predicate(
                 ("name", "site__code", "site__name"),
                 query,
                 lookup_type,
-            )
+            ),
+            query,
+            lookup_type,
+            "site__code",
+        )
+        site_visit_matches = SiteVisit.objects.select_related("trip", "site").filter(
+            site_visit_predicate
+        )
+        access_record_matches = AccessRecord.objects.select_related("site").filter(
+            access_record_predicate
         )
         # Force queryset evaluation inside the error boundary because database
         # regex failures happen when PostgreSQL evaluates the query, not when the

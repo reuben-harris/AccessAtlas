@@ -1,7 +1,7 @@
 {% extends "base/base.html" %}
-{% load form_extras static %}
+{% load form_extras site_display static %}
 
-{% block title %}{{ object.code }} Photos - Access Atlas{% endblock %}
+{% block title %}{{ object.display_label }} Photos - Access Atlas{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{% static 'vendor/photoswipe/photoswipe.css' %}">
@@ -11,7 +11,7 @@
 <div class="page-header d-print-none">
   <div class="row align-items-center">
     <div class="col">
-      <h2 class="page-title">{{ object.name }}</h2>
+      <h2 class="page-title">{% include "includes/site_label.html" with site=object %}</h2>
     </div>
     <div class="col-auto ms-auto">
       <a class="btn btn-info" href="{{ site_search_url }}" target="_blank" rel="noopener noreferrer" title="Open site coordinates in Google Maps">
@@ -124,7 +124,7 @@
                 data-site-photo-toggle
                 aria-label="Select photo uploaded {{ photo.uploaded_at|date:'d M Y H:i' }}"
               >
-                <img src="{{ photo.thumbnail.url }}" alt="{{ object.code }} site photo" loading="lazy">
+                <img src="{{ photo.thumbnail.url }}" alt="{{ object.display_label }} site photo" loading="lazy">
               </button>
               <a
                 class="site-photo-view-button"

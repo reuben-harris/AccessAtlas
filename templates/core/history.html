@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load site_display %}
 
 {% block title %}History - Access Atlas{% endblock %}
 
@@ -38,9 +39,9 @@
             <td>
               <div class="d-inline-flex align-items-center gap-2">
                 {% if entry.object_url %}
-                  <a href="{{ entry.object_url }}">{{ entry.object_display }}</a>
+                  <a href="{{ entry.object_url }}">{% if entry.object_display_has_missing_site_code %}{{ entry.object_display|style_missing_site_code }}{% else %}{{ entry.object_display }}{% endif %}</a>
                 {% else %}
-                  <span>{{ entry.object_display }}</span>
+                  <span>{% if entry.object_display_has_missing_site_code %}{{ entry.object_display|style_missing_site_code }}{% else %}{{ entry.object_display }}{% endif %}</span>
                 {% endif %}
                 {% if entry.object_display_warning %}
                   {% include "includes/warning_indicator.html" with title=entry.object_display_warning_message %}

@@ -11,7 +11,7 @@
   }
 
   function siteCodeLabel(value) {
-    return value || MISSING_SITE_CODE_LABEL;
+    return value == null ? MISSING_SITE_CODE_LABEL : String(value);
   }
 
   function siteCodeHtml(value) {
@@ -20,6 +20,14 @@
     return code === MISSING_SITE_CODE_LABEL
       ? `<span class="fst-italic">${content}</span>`
       : content;
+  }
+
+  function siteLabel(value, name) {
+    return `${siteCodeLabel(value)} - ${name == null ? "" : String(name)}`;
+  }
+
+  function siteLabelHtml(value, name) {
+    return `${siteCodeHtml(value)} - ${escapeHtml(name)}`;
   }
 
   function resolvedTheme() {
@@ -1148,6 +1156,8 @@
   accessAtlas.escapeHtml = escapeHtml;
   accessAtlas.siteCodeLabel = siteCodeLabel;
   accessAtlas.siteCodeHtml = siteCodeHtml;
+  accessAtlas.siteLabel = siteLabel;
+  accessAtlas.siteLabelHtml = siteLabelHtml;
   accessAtlas.createBasemapController = createBasemapController;
   accessAtlas.createThemeTileController = createThemeTileController;
   accessAtlas.fitLayersOrDefault = fitLayersOrDefault;

@@ -6,15 +6,15 @@
     document.querySelectorAll(".trip-gantt-view-mode"),
   );
   const escapeHtml = window.AccessAtlas?.escapeHtml;
-  const siteCodeLabel = window.AccessAtlas?.siteCodeLabel;
   const siteCodeHtml = window.AccessAtlas?.siteCodeHtml;
+  const siteLabel = window.AccessAtlas?.siteLabel;
 
   if (
     !ganttElement ||
     !dataElement ||
     typeof escapeHtml !== "function" ||
-    typeof siteCodeLabel !== "function" ||
     typeof siteCodeHtml !== "function" ||
+    typeof siteLabel !== "function" ||
     typeof Gantt === "undefined"
   ) {
     return;
@@ -23,7 +23,7 @@
   const rows = JSON.parse(dataElement.textContent);
 
   function taskLabel(siteVisit) {
-    return `${siteCodeLabel(siteVisit.siteCode)} - ${siteVisit.siteName}`;
+    return siteLabel(siteVisit.siteCode, siteVisit.siteName);
   }
 
   function typeBadge(task) {
@@ -70,7 +70,7 @@
           url: siteVisit.url,
           record_type: "site_visit",
           trip_name: row.tripName,
-          site_code: siteCodeLabel(siteVisit.siteCode),
+          site_code: siteVisit.siteCode,
           site_name: siteVisit.siteName,
           status: siteVisit.status,
           status_label: siteVisit.statusLabel,

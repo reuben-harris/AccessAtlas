@@ -1,12 +1,12 @@
 {% extends "base/base.html" %}
-{% load status_badges %}
-{% block title %}{{ object.code }} - Access Atlas{% endblock %}
+{% load site_display status_badges %}
+{% block title %}{{ object.display_label }} - Access Atlas{% endblock %}
 
 {% block content %}
 <div class="page-header d-print-none">
   <div class="row align-items-center">
     <div class="col">
-      <h2 class="page-title">{{ object.name }}</h2>
+      <h2 class="page-title">{% include "includes/site_label.html" with site=object %}</h2>
     </div>
     <div class="col-auto ms-auto">
       <a class="btn btn-info" href="{{ site_search_url }}" target="_blank" rel="noopener noreferrer" title="Open site coordinates in Google Maps">
@@ -33,7 +33,7 @@
   <div class="card-body">
     <dl class="row">
       <dt class="col-sm-3">Source</dt><dd class="col-sm-9">{{ object.source_name }}</dd>
-      <dt class="col-sm-3">Site Code</dt><dd class="col-sm-9">{{ object.code }}</dd>
+      <dt class="col-sm-3">Site Code</dt><dd class="col-sm-9">{% site_code object.code %}</dd>
       <dt class="col-sm-3">Site Name</dt><dd class="col-sm-9">{{ object.name }}</dd>
       <dt class="col-sm-3">Description</dt><dd class="col-sm-9">{{ object.description|linebreaksbr|default:"-" }}</dd>
       <dt class="col-sm-3">Tags</dt>

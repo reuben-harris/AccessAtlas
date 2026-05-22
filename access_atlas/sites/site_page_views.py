@@ -21,6 +21,7 @@ from access_atlas.core.mixins import (
     SortableListMixin,
 )
 
+from .display import site_code_filename_slug
 from .filters import SiteFilterSet
 from .forms import SitePhotoUploadForm
 from .models import Site, SitePhoto
@@ -300,7 +301,8 @@ class SitePhotoBulkDownloadView(LoginRequiredMixin, View):
                     zip_file.writestr(filename, image_file.read())
         archive.seek(0)
         response = HttpResponse(archive.getvalue(), content_type="application/zip")
+        archive_name = site_code_filename_slug(site.code, f"site-{site.pk}")
         response["Content-Disposition"] = (
-            f'attachment; filename="{site.code}-photos.zip"'
+            f'attachment; filename="{archive_name}-photos.zip"'
         )
         return response

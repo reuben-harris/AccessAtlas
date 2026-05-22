@@ -5,7 +5,7 @@
   const basemapConfigElement = document.getElementById("map-basemap-config");
   const basemapPreferenceElement = document.getElementById("map-basemap-preference");
   const escapeHtml = window.AccessAtlas?.escapeHtml;
-  const siteCodeHtml = window.AccessAtlas?.siteCodeHtml;
+  const siteLabelHtml = window.AccessAtlas?.siteLabelHtml;
   const createBasemapController = window.AccessAtlas?.createBasemapController;
   const fitLayersOrDefault = window.AccessAtlas?.fitLayersOrDefault;
   const addHomeControl = window.AccessAtlas?.addHomeControl;
@@ -22,7 +22,7 @@
     !basemapConfigElement ||
     !basemapPreferenceElement ||
     typeof escapeHtml !== "function" ||
-    typeof siteCodeHtml !== "function" ||
+    typeof siteLabelHtml !== "function" ||
     typeof createBasemapController !== "function" ||
     typeof fitLayersOrDefault !== "function" ||
     typeof addHomeControl !== "function" ||
@@ -117,9 +117,8 @@
     const first = siteVisits[0];
     return `
       <div class="trip-map-popup-title">
-        <a href="${escapeHtml(first.siteUrl)}">${siteCodeHtml(first.siteCode)}</a>
+        <a href="${escapeHtml(first.siteUrl)}">${siteLabelHtml(first.siteCode, first.siteName)}</a>
       </div>
-      <div class="trip-map-popup-name">${escapeHtml(first.siteName)}</div>
       <ul class="trip-map-popup-list">
         ${siteVisits.map(visitRow).join("")}
       </ul>
@@ -129,7 +128,7 @@
   function buildAccessPointPopup(point) {
     return `
       <div class="trip-map-popup-title">Access start</div>
-      <div><strong>Site:</strong> <a href="${escapeHtml(point.siteUrl || "#")}">${siteCodeHtml(point.siteCode)}</a> ${escapeHtml(point.siteName || "")}</div>
+      <div><strong>Site:</strong> <a href="${escapeHtml(point.siteUrl || "#")}">${siteLabelHtml(point.siteCode, point.siteName || "")}</a></div>
       <div><strong>Access Record:</strong> ${escapeHtml(point.recordName || "-")}</div>
       <div><strong>Label:</strong> ${escapeHtml(point.label || "-")}</div>
     `;

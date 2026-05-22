@@ -13,6 +13,8 @@ from access_atlas.accounts.preferences import (
 from access_atlas.core.global_history import (
     append_query_string,
     history_detail_url,
+    history_object_display,
+    history_object_display_has_missing_site_code,
     history_object_filter_query,
 )
 from access_atlas.core.history_diff import build_history_diff
@@ -437,8 +439,21 @@ class ObjectHistoryDetailMixin:
         context = super().get_context_data(**kwargs)
         history_record = self.get_history_record()
         previous_record, next_record = self.get_adjacent_history_records(history_record)
+        object_display, display_warning, display_warning_message = (
+            history_object_display(history_record.instance)
+        )
+        history_object_type = history_record.instance._meta.verbose_name.title()
         context.update(
             {
+                "history_object_display": object_display,
+                "history_object_display_has_missing_site_code": (
+                    history_object_display_has_missing_site_code(
+                        history_record.instance
+                    )
+                ),
+                "history_object_display_warning": display_warning,
+                "history_object_display_warning_message": display_warning_message,
+                "history_object_type": history_object_type,
                 "history_record": history_record,
                 "history_diff": build_history_diff(history_record, previous_record),
                 "previous_history_url": self.get_history_detail_url(previous_record)

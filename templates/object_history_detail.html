@@ -1,5 +1,6 @@
 {% extends "base/base.html" %}
 {% load history_extras %}
+{% load site_display %}
 
 {% block title %}{{ history_object_display }} History - Access Atlas{% endblock %}
 
@@ -8,7 +9,7 @@
   <div class="row align-items-center">
     <div class="col">
       <h2 class="page-title d-inline-flex align-items-center gap-2">
-        <span>{{ history_object_display }}</span>
+        <span>{% if history_object_display_has_missing_site_code %}{{ history_object_display|style_missing_site_code }}{% else %}{{ history_object_display }}{% endif %}</span>
         {% if history_object_display_warning %}
           {% include "includes/warning_indicator.html" with title=history_object_display_warning_message %}
         {% endif %}

@@ -2134,7 +2134,7 @@ def test_job_map_payload_uses_missing_site_code_label(client):
     site = Site.objects.create(
         source_name="dummy",
         external_id="blank",
-        code="",
+        code=None,
         name="Blank Code Site",
         latitude=-41.1,
         longitude=174.1,
@@ -2145,7 +2145,7 @@ def test_job_map_payload_uses_missing_site_code_label(client):
 
     assert response.status_code == 200
     payload = parse_json_script(response.content.decode(), "job-map-data")
-    assert payload[0]["site"]["code"] == "code not set"
+    assert payload[0]["site"]["code"] is None
 
 
 @pytest.mark.django_db

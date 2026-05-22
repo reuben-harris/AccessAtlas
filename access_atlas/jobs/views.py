@@ -902,7 +902,7 @@ class JobMapView(FilteredListMixin, LoginRequiredMixin, ListView):
                 {
                     "site": {
                         "id": site.pk,
-                        "code": site.display_code,
+                        "code": site.code,
                         "name": site.name,
                         "url": site.get_absolute_url(),
                         "latitude": float(site.latitude),

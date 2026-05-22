@@ -47,22 +47,21 @@ from access_atlas.sites.photo_services import extract_taken_date
 
 
 def test_site_display_helpers_use_missing_code_labels():
-    site = Site(code="", name="NIC House Test Facility")
+    site = Site(code=None, name="NIC House Test Facility")
 
     assert site.display_code == "code not set"
-    assert site.compact_display_code == "null"
     assert site.display_label == "code not set - NIC House Test Facility"
     assert str(site) == "code not set - NIC House Test Facility"
 
 
 @pytest.mark.django_db
-def test_site_list_renders_missing_code_as_clickable_compact_null(client):
+def test_site_list_renders_missing_code_as_clickable_label(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
     site = Site.objects.create(
         source_name="dummy",
         external_id="blank",
-        code="",
+        code=None,
         name="Blank Code Site",
         latitude=-41.1,
         longitude=174.1,
@@ -73,8 +72,53 @@ def test_site_list_renders_missing_code_as_clickable_compact_null(client):
     assert response.status_code == 200
     content = response.content.decode()
     assert site.get_absolute_url() in content
-    assert '<span class="fst-italic">null</span>' in content
-    assert 'text-secondary fst-italic">null' not in content
+    assert '<span class="fst-italic">code not set</span>' in content
+    assert '<span class="fst-italic">null</span>' not in content
+
+
+@pytest.mark.django_db
+def test_site_pages_render_missing_code_labels(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="blank",
+        code=None,
+        name="Blank Code Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+
+    detail_response = client.get(reverse("site_detail", kwargs={"pk": site.pk}))
+
+    assert detail_response.status_code == 200
+    detail_content = detail_response.content.decode()
+    assert (
+        "<title>code not set - Blank Code Site - Access Atlas</title>" in detail_content
+    )
+    assert '<span class="fst-italic">code not set</span>' in detail_content
+
+    access_records_response = client.get(
+        reverse("site_access_records", kwargs={"pk": site.pk})
+    )
+    history_response = client.get(reverse("site_history", kwargs={"pk": site.pk}))
+    photos_response = client.get(reverse("site_photos", kwargs={"pk": site.pk}))
+
+    assert access_records_response.status_code == 200
+    assert history_response.status_code == 200
+    assert photos_response.status_code == 200
+    assert (
+        "<title>code not set - Blank Code Site - Access Atlas</title>"
+        in access_records_response.content.decode()
+    )
+    assert (
+        "<title>code not set - Blank Code Site - Access Atlas</title>"
+        in history_response.content.decode()
+    )
+    assert (
+        "<title>code not set - Blank Code Site Photos - Access Atlas</title>"
+        in photos_response.content.decode()
+    )
 
 
 @pytest.mark.django_db
@@ -84,7 +128,7 @@ def test_site_map_payload_uses_missing_code_label(client):
     Site.objects.create(
         source_name="dummy",
         external_id="blank",
-        code="",
+        code=None,
         name="Blank Code Site",
         latitude=-41.1,
         longitude=174.1,
@@ -94,7 +138,7 @@ def test_site_map_payload_uses_missing_code_label(client):
 
     assert response.status_code == 200
     payload = parse_json_script(response.content.decode(), "site-list-map-data")
-    assert payload[0]["code"] == "code not set"
+    assert payload[0]["code"] is None
 
 
 @pytest.mark.django_db
@@ -104,7 +148,7 @@ def test_access_map_payload_uses_missing_site_code_label(client):
     site = Site.objects.create(
         source_name="dummy",
         external_id="blank",
-        code="",
+        code=None,
         name="Blank Code Site",
         latitude=-41.1,
         longitude=174.1,
@@ -131,7 +175,7 @@ def test_access_map_payload_uses_missing_site_code_label(client):
 
     assert response.status_code == 200
     payload = parse_json_script(response.content.decode(), "site-access-map-data")
-    assert payload["points"][0]["siteCode"] == "code not set"
+    assert payload["points"][0]["siteCode"] is None
 
 
 @pytest.mark.django_db
@@ -185,6 +229,53 @@ def test_sync_sites_from_payload_creates_and_updates_sites():
     assert site.tags == [{"label": "Road access", "color": "blue"}]
     assert site.sync_status == SiteSyncStatus.ACTIVE
     assert site.history.first().history_change_reason == "Updated from site feed"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("code", [None, "", "   "], ids=["null", "empty", "whitespace"])
+def test_sync_sites_normalizes_missing_site_codes_to_null(code):
+    payload = {
+        "schema_version": "1.0",
+        "source_name": "dummy",
+        "generated_at": "2026-04-21T00:00:00Z",
+        "sites": [
+            {
+                "external_id": "001",
+                "code": code,
+                "name": "Missing Code",
+                "latitude": -41.1,
+                "longitude": 174.1,
+            }
+        ],
+    }
+
+    result = sync_sites_from_payload(payload)
+
+    assert result.created == 1
+    assert Site.objects.get(source_name="dummy", external_id="001").code is None
+
+
+@pytest.mark.django_db
+def test_sync_sites_strips_site_code_before_saving():
+    payload = {
+        "schema_version": "1.0",
+        "source_name": "dummy",
+        "generated_at": "2026-04-21T00:00:00Z",
+        "sites": [
+            {
+                "external_id": "001",
+                "code": "  AA-001  ",
+                "name": "Trimmed Code",
+                "latitude": -41.1,
+                "longitude": 174.1,
+            }
+        ],
+    }
+
+    result = sync_sites_from_payload(payload)
+
+    assert result.created == 1
+    assert Site.objects.get(source_name="dummy", external_id="001").code == "AA-001"
 
 
 @pytest.mark.django_db
@@ -2824,6 +2915,32 @@ def test_site_photos_gallery_groups_unknown_dates_after_dated_photos(client):
 
 @pytest.mark.django_db
 @override_settings(MEDIA_ROOT="/tmp/access-atlas-test-media")
+def test_site_photos_uses_display_label_for_missing_code_alt_text(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="blank",
+        code=None,
+        name="Blank Code Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    client.post(
+        reverse("site_photos", kwargs={"pk": site.pk}),
+        {"photos": [image_file("blank-code.jpg")]},
+    )
+
+    response = client.get(reverse("site_photos", kwargs={"pk": site.pk}))
+
+    assert response.status_code == 200
+    assert (
+        'alt="code not set - Blank Code Site site photo"' in response.content.decode()
+    )
+
+
+@pytest.mark.django_db
+@override_settings(MEDIA_ROOT="/tmp/access-atlas-test-media")
 def test_site_photo_bulk_hide_hides_selected_photos_only(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -2871,9 +2988,9 @@ def test_site_photo_bulk_download_streams_selected_originals(client):
     client.force_login(user)
     site = Site.objects.create(
         source_name="dummy",
-        external_id="001",
-        code="AA-001",
-        name="Site",
+        external_id="blank",
+        code=None,
+        name="Blank Code Site",
         latitude=-41.1,
         longitude=174.1,
     )
@@ -2895,6 +3012,7 @@ def test_site_photo_bulk_download_streams_selected_originals(client):
 
     assert response.status_code == 200
     assert response["Content-Type"] == "application/zip"
+    assert f"site-{site.pk}-photos.zip" in response["Content-Disposition"]
     with ZipFile(BytesIO(response.content)) as archive:
         names = archive.namelist()
     assert len(names) == 2

@@ -11,6 +11,7 @@ from django.conf import settings
 from django.utils import timezone
 from simple_history.utils import update_change_reason
 
+from .display import normalize_site_code
 from .models import Site, SiteSyncStatus
 
 SUPPORTED_SCHEMA_VERSION = "1.0"
@@ -140,7 +141,7 @@ def sync_sites_from_payload(payload: dict[str, Any]) -> SyncResult:
             source_name=source_name,
             external_id=str(record["external_id"]),
             defaults={
-                "code": str(record["code"]),
+                "code": normalize_site_code(record["code"]),
                 "name": str(record["name"]),
                 "description": str(record.get("description") or ""),
                 "tags": normalize_site_tags(record.get("tags")),

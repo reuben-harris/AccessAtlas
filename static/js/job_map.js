@@ -15,7 +15,7 @@
     "[data-job-map-selection-submit]",
   );
   const escapeHtml = window.AccessAtlas?.escapeHtml;
-  const siteCodeHtml = window.AccessAtlas?.siteCodeHtml;
+  const siteLabelHtml = window.AccessAtlas?.siteLabelHtml;
   const createBasemapController = window.AccessAtlas?.createBasemapController;
   const fitLayersOrDefault = window.AccessAtlas?.fitLayersOrDefault;
   const sharedAddHomeControl = window.AccessAtlas?.addHomeControl;
@@ -44,7 +44,7 @@
     !selectionSummaryElement ||
     !selectionSubmitButton ||
     typeof escapeHtml !== "function" ||
-    typeof siteCodeHtml !== "function" ||
+    typeof siteLabelHtml !== "function" ||
     typeof createBasemapController !== "function" ||
     typeof fitLayersOrDefault !== "function" ||
     typeof sharedAddHomeControl !== "function" ||
@@ -411,7 +411,7 @@
 
     return `
       <div class="job-map-popup-title">
-        <a href="${escapeHtml(site.url)}">${siteCodeHtml(site.code)} - ${escapeHtml(site.name)}</a>
+        <a href="${escapeHtml(site.url)}">${siteLabelHtml(site.code, site.name)}</a>
       </div>
       ${buildSiteSelect(site)}
       <ul class="${listClass}">${jobList}</ul>
@@ -436,7 +436,7 @@
             <td>
               <a href="${escapeHtml(job.url)}">${escapeHtml(job.title)}</a>
             </td>
-            <td>${siteCodeHtml(job.site.code)} - ${escapeHtml(job.site.name)}</td>
+            <td>${siteLabelHtml(job.site.code, job.site.name)}</td>
             <td>
               <span class="job-map-popup-status" style="--job-map-status-color: ${escapeHtml(statusColorFor(job))};">${escapeHtml(job.status)}</span>
             </td>

@@ -1,13 +1,14 @@
 from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
 
+from .display import display_site_code
 from .models import AccessRecord, AccessRecordVersion, Site, SitePhoto
 
 
 @admin.register(Site)
 class SiteAdmin(SimpleHistoryAdmin):
     list_display = [
-        "code",
+        "display_code",
         "name",
         "source_name",
         "external_id",
@@ -19,7 +20,7 @@ class SiteAdmin(SimpleHistoryAdmin):
     readonly_fields = [
         "source_name",
         "external_id",
-        "code",
+        "display_code",
         "name",
         "description",
         "tags",
@@ -30,6 +31,10 @@ class SiteAdmin(SimpleHistoryAdmin):
         "created_at",
         "updated_at",
     ]
+
+    @admin.display(ordering="code", description="Code")
+    def display_code(self, obj: Site) -> str:
+        return display_site_code(obj.code)
 
 
 class AccessRecordVersionInline(admin.TabularInline):

@@ -1,7 +1,7 @@
 {% extends "base/base.html" %}
 {% load form_extras status_badges %}
 
-{% block title %}{{ object.site.display_code }} Visit - Access Atlas{% endblock %}
+{% block title %}{{ object.site.display_label }} Visit - Access Atlas{% endblock %}
 {% block head %}
   {{ block.super }}
   {% if assign_form %}

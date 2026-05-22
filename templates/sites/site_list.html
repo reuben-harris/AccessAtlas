@@ -1,5 +1,5 @@
 {% extends "base/base.html" %}
-{% load status_badges %}
+{% load site_display status_badges %}
 
 {% block title %}Sites - Access Atlas{% endblock %}
 
@@ -39,11 +39,7 @@
           <tr>
             <td>
               <a href="{% url 'site_detail' site.pk %}">
-                {% if site.code %}
-                  {{ site.display_code }}
-                {% else %}
-                  <span class="fst-italic">{{ site.compact_display_code }}</span>
-                {% endif %}
+                {% site_code site.code %}
               </a>
             </td>
             <td>

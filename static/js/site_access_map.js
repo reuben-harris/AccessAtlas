@@ -13,7 +13,7 @@
     document.querySelectorAll('[data-map-toggle="access-record"]'),
   );
   const escapeHtml = window.AccessAtlas?.escapeHtml;
-  const siteCodeHtml = window.AccessAtlas?.siteCodeHtml;
+  const siteLabelHtml = window.AccessAtlas?.siteLabelHtml;
   const createBasemapController = window.AccessAtlas?.createBasemapController;
   const fitLayersOrDefault = window.AccessAtlas?.fitLayersOrDefault;
   const sharedAddHomeControl = window.AccessAtlas?.addHomeControl;
@@ -35,7 +35,7 @@
     !basemapConfigElement ||
     !basemapPreferenceElement ||
     typeof escapeHtml !== "function" ||
-    typeof siteCodeHtml !== "function" ||
+    typeof siteLabelHtml !== "function" ||
     typeof createBasemapController !== "function" ||
     typeof fitLayersOrDefault !== "function" ||
     typeof sharedAddHomeControl !== "function" ||
@@ -223,7 +223,7 @@
         : "";
     return `
       <div class="site-access-map-popup-title">${escapeHtml(feature.typeLabel)}</div>
-      <div><strong>Site:</strong> <a href="${escapeHtml(feature.siteUrl || "#")}">${siteCodeHtml(feature.siteCode)}</a> ${escapeHtml(feature.siteName || "")}</div>
+      <div><strong>Site:</strong> <a href="${escapeHtml(feature.siteUrl || "#")}">${siteLabelHtml(feature.siteCode, feature.siteName || "")}</a></div>
       <div><strong>Access Record:</strong> ${escapeHtml(feature.recordName)}</div>
       <div><strong>Label:</strong> ${escapeHtml(feature.label || "-")}</div>
       <div><strong>Coordinates:</strong> ${escapeHtml(

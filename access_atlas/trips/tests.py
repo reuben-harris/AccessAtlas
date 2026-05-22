@@ -35,7 +35,7 @@ def create_requirement_site(
 ):
     return Site.objects.create(
         source_name="dummy",
-        external_id=code,
+        external_id=code or name,
         code=code,
         name=name,
         latitude=latitude,
@@ -79,7 +79,7 @@ def assert_trip_approval_is_unchanged(trip):
 def test_trip_detail_renders_missing_site_code_with_shared_label(client):
     user = User.objects.create_user(email="user@example.com")
     trip = create_trip(user)
-    site = create_requirement_site(code="", name="NIC House Test Facility")
+    site = create_requirement_site(code=None, name="NIC House Test Facility")
     SiteVisit.objects.create(trip=trip, site=site)
     client.force_login(user)
 
@@ -96,7 +96,7 @@ def test_trip_detail_renders_missing_site_code_with_shared_label(client):
 def test_trip_map_payload_uses_missing_site_code_label(client):
     user = User.objects.create_user(email="user@example.com")
     trip = create_trip(user)
-    site = create_requirement_site(code="", name="NIC House Test Facility")
+    site = create_requirement_site(code=None, name="NIC House Test Facility")
     SiteVisit.objects.create(
         trip=trip,
         site=site,
@@ -108,7 +108,7 @@ def test_trip_map_payload_uses_missing_site_code_label(client):
 
     assert response.status_code == 200
     payload = parse_json_script(response.content.decode(), "trip-map-data")
-    assert payload["visits"][0]["siteCode"] == "code not set"
+    assert payload["visits"][0]["siteCode"] is None
 
 
 @pytest.mark.django_db
@@ -1838,8 +1838,8 @@ def test_trip_requirement_create_limits_job_dropdown_to_trip_jobs(client):
 
     assert form_response.status_code == 200
     assert 'name="job"' in content
-    assert f"AA-001 - {first_job.title}" in content
-    assert f"AA-002 - {second_job.title}" in content
+    assert f"AA-001 - Site A - {first_job.title}" in content
+    assert f"AA-002 - Site B - {second_job.title}" in content
     assert "Unplanned job" not in content
     assert "Other trip job" not in content
     assert post_response.status_code == 302
@@ -1901,8 +1901,8 @@ def test_trip_requirement_edit_can_reassign_within_trip_only(client):
     content = form_response.content.decode()
 
     assert form_response.status_code == 200
-    assert f"AA-001 - {first_job.title}" in content
-    assert f"AA-002 - {second_job.title}" in content
+    assert f"AA-001 - Site A - {first_job.title}" in content
+    assert f"AA-002 - Site B - {second_job.title}" in content
     assert "Other trip job" not in content
     assert valid_response.status_code == 302
     assert valid_response.url == trip.get_requirements_url()
