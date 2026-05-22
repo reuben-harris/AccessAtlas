@@ -20,6 +20,7 @@ from .services import (
     submit_trip_for_approval,
     unassign_site_visit_job,
 )
+from .view_helpers import trip_assignment_lock_reason
 
 
 def hidden_post_fields(post_data) -> list[tuple[str, str]]:
@@ -38,10 +39,7 @@ def hidden_post_fields(post_data) -> list[tuple[str, str]]:
 def assign_job(request, pk):
     site_visit = get_object_or_404(SiteVisit, pk=pk)
     if site_visit.trip.is_terminal:
-        messages.info(
-            request,
-            "Jobs cannot be assigned to completed or cancelled trips.",
-        )
+        messages.info(request, trip_assignment_lock_reason(site_visit.trip))
         return redirect(site_visit)
     form = AssignJobForm(request.POST, site=site_visit.site)
     if (
@@ -84,10 +82,7 @@ def unassign_job(request, pk):
     site_visit = assignment.site_visit
     job = assignment.job
     if site_visit.trip.is_terminal:
-        messages.info(
-            request,
-            "Jobs cannot be unassigned from completed or cancelled trips.",
-        )
+        messages.info(request, trip_assignment_lock_reason(site_visit.trip))
         return redirect(site_visit)
     if (
         request.method == "POST"

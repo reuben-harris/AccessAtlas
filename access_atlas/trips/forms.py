@@ -236,11 +236,17 @@ class AssignJobForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         site = kwargs.pop("site")
+        disabled_reason = kwargs.pop("disabled_reason", "")
         super().__init__(*args, **kwargs)
         self.fields["jobs"] = TomSelectModelMultipleChoiceField(
             label="Jobs",
             config=assignable_jobs_tomselect_config(site.pk),
         )
+        if disabled_reason:
+            field = self.fields["jobs"]
+            field.disabled = True
+            field.required = False
+            field.help_text = disabled_reason
 
 
 class TripCloseoutForm(forms.Form):

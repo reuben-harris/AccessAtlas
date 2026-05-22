@@ -23,6 +23,7 @@ from access_atlas.trips.services import (
     assign_jobs_to_site_visit,
     return_trip_to_draft,
 )
+from access_atlas.trips.view_helpers import trip_assignment_lock_reason
 
 
 def create_requirement_site(
@@ -242,7 +243,7 @@ def test_job_assignment_requires_non_terminal_trip():
 
 
 @pytest.mark.django_db
-def test_terminal_trip_site_visit_detail_hides_assignment_controls(client):
+def test_terminal_trip_site_visit_detail_shows_locked_assignment_controls(client):
     user = User.objects.create_user(email="user@example.com")
     site = Site.objects.create(
         source_name="dummy",
@@ -257,20 +258,32 @@ def test_terminal_trip_site_visit_detail_hides_assignment_controls(client):
         start_date=date(2026, 4, 21),
         end_date=date(2026, 4, 22),
         trip_leader=user,
-        status=TripStatus.COMPLETED,
     )
     site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    job = Job.objects.create(site=site, title="Site job")
+    assignment = assign_job_to_site_visit(site_visit, job)
+    trip.status = TripStatus.COMPLETED
+    trip.save(update_fields=["status", "updated_at"])
     client.force_login(user)
 
     response = client.get(reverse("site_visit_detail", kwargs={"pk": site_visit.pk}))
 
+    content = response.content.decode()
+    assign_url = reverse("assign_job", kwargs={"pk": site_visit.pk})
+    unassign_url = reverse("unassign_job", kwargs={"pk": assignment.pk})
+    expected_reason = trip_assignment_lock_reason(trip)
     assert response.status_code == 200
-    assert b"Assign Job" not in response.content
-    assign_url = reverse("assign_job", kwargs={"pk": site_visit.pk}).encode()
-    assert assign_url not in response.content
+    assert "Assign Jobs" in content
+    assert assign_url in content
+    assert 'name="jobs"' in content
+    assert "disabled" in content
+    assert expected_reason in content
+    assert "Unassign" in content
+    assert unassign_url not in content
+    assert reverse("job_update", kwargs={"pk": job.pk}) in content
     assert (
-        b"Jobs cannot be assigned to site visits on completed or cancelled trips."
-        in response.content
+        "Jobs cannot be assigned to site visits on completed or cancelled trips."
+        not in content
     )
 
 
@@ -3423,15 +3436,20 @@ def test_terminal_trip_assignment_urls_redirect_without_changes(client):
     assign_response = client.post(
         reverse("assign_job", kwargs={"pk": site_visit.pk}),
         {"jobs": [unassigned_job.pk]},
+        follow=True,
     )
     unassign_response = client.post(
-        reverse("unassign_job", kwargs={"pk": assignment.pk})
+        reverse("unassign_job", kwargs={"pk": assignment.pk}),
+        follow=True,
     )
 
-    assert assign_response.status_code == 302
-    assert assign_response.url == site_visit.get_absolute_url()
-    assert unassign_response.status_code == 302
-    assert unassign_response.url == site_visit.get_absolute_url()
+    expected_reason = trip_assignment_lock_reason(trip)
+    assert assign_response.status_code == 200
+    assert assign_response.redirect_chain == [(site_visit.get_absolute_url(), 302)]
+    assert expected_reason in assign_response.content.decode()
+    assert unassign_response.status_code == 200
+    assert unassign_response.redirect_chain == [(site_visit.get_absolute_url(), 302)]
+    assert expected_reason in unassign_response.content.decode()
     assigned_job.refresh_from_db()
     unassigned_job.refresh_from_db()
     assert assigned_job.status == JobStatus.ASSIGNED

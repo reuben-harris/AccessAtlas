@@ -62,6 +62,18 @@ def trip_detail_sections(
     ]
 
 
+def trip_assignment_lock_reason(trip: Trip) -> str:
+    """Explain why Site Visit job assignments are locked for terminal trips."""
+    if not trip.is_terminal:
+        return ""
+    status = trip.get_status_display().lower()
+    return (
+        f"Job assignment changes are locked because this trip is {status}. "
+        "Unassigned Jobs cannot be added to this Site Visit, and linked Jobs "
+        "cannot be unassigned."
+    )
+
+
 def site_visit_time_label(site_visit: SiteVisit) -> str:
     if site_visit.planned_start is None:
         return "Time not set"
