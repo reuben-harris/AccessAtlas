@@ -13,6 +13,11 @@ from access_atlas.jobs.models import (
     TemplateRequirement,
     WorkProgramme,
 )
+from access_atlas.jobs.policies import (
+    TRIP_MANAGED_JOB_FIELD_API_ERROR,
+    TRIP_MANAGED_JOB_FIELDS,
+    trip_managed_job_field_changed,
+)
 from access_atlas.sites.access_record_services import (
     create_access_record_from_upload,
     create_access_record_version_from_upload,
@@ -190,12 +195,6 @@ class WorkProgrammeSerializer(FullCleanModelSerializer):
         ]
 
 
-ASSIGNED_JOB_PROTECTED_FIELDS = ("site", "status", "completed_date", "closeout_note")
-ASSIGNED_JOB_PROTECTED_FIELD_ERROR = (
-    "Assigned jobs cannot change this field because the trip workflow manages it."
-)
-
-
 class JobSerializer(ConfirmationMixin, FullCleanModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name="job-api-detail")
     display = DisplayField(read_only=True)
@@ -237,19 +236,18 @@ class JobSerializer(ConfirmationMixin, FullCleanModelSerializer):
     def validate(self, attrs):
         if self.instance is not None and self.instance.is_assigned:
             errors = {
-                field_name: ASSIGNED_JOB_PROTECTED_FIELD_ERROR
-                for field_name in ASSIGNED_JOB_PROTECTED_FIELDS
+                field_name: TRIP_MANAGED_JOB_FIELD_API_ERROR
+                for field_name in TRIP_MANAGED_JOB_FIELDS
                 if field_name in attrs
-                and self._protected_field_changed(field_name, attrs[field_name])
+                and trip_managed_job_field_changed(
+                    self.instance,
+                    field_name,
+                    attrs[field_name],
+                )
             }
             if errors:
                 raise serializers.ValidationError(errors)
         return super().validate(attrs)
-
-    def _protected_field_changed(self, field_name, submitted_value) -> bool:
-        if field_name == "site":
-            return self.instance.site_id != getattr(submitted_value, "pk", None)
-        return getattr(self.instance, field_name) != submitted_value
 
 
 class RequirementSerializer(serializers.ModelSerializer):

@@ -14,6 +14,7 @@ from access_atlas.core.bulk_edit import (
 from access_atlas.sites.models import Site
 
 from .models import Job, JobStatus, JobTemplate, Requirement, WorkProgramme
+from .policies import trip_managed_job_bulk_edit_error
 
 BulkJobEditIssue = BulkEditIssue
 BulkJobEditResult = BulkEditResult
@@ -135,15 +136,9 @@ def _bulk_job_blocker_reason(
     clear_completed_date: bool = False,
 ) -> str:
     if status and job.is_assigned:
-        return (
-            "Assigned jobs cannot have status changed by bulk edit "
-            "because the trip workflow manages that field."
-        )
+        return trip_managed_job_bulk_edit_error("status")
     if clear_completed_date and job.is_assigned:
-        return (
-            "Assigned jobs cannot have completed date changed by bulk edit "
-            "because the trip workflow manages that field."
-        )
+        return trip_managed_job_bulk_edit_error("completed_date")
     return ""
 
 

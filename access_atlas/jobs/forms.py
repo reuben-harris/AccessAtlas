@@ -22,12 +22,9 @@ from .models import (
     TemplateRequirement,
     WorkProgramme,
 )
-
-ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON = (
-    "This field is managed by the trip workflow while the job is assigned to a trip."
-)
-ASSIGNED_JOB_SITE_DISABLED_REASON = (
-    "Site is managed by the trip workflow while this job is assigned to a trip."
+from .policies import (
+    trip_managed_job_field_help_text,
+    trip_managed_job_fields_for,
 )
 
 
@@ -113,13 +110,12 @@ class JobForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.instance.pk and self.instance.is_assigned:
-            self.fields["site"].disabled = True
-            self.fields["site"].help_text = ASSIGNED_JOB_SITE_DISABLED_REASON
-            for field_name in ("status", "completed_date", "closeout_note"):
+        trip_managed_fields = trip_managed_job_fields_for(self.instance)
+        if trip_managed_fields:
+            for field_name in trip_managed_fields:
                 field = self.fields[field_name]
                 field.disabled = True
-                field.help_text = ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON
+                field.help_text = trip_managed_job_field_help_text(field_name)
             return
         choices = [
             (value, label)
