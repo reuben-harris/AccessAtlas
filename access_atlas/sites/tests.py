@@ -642,6 +642,104 @@ def test_site_list_shows_stale_sites_by_default(client):
 
 
 @pytest.mark.django_db
+def test_site_code_filter_exposes_empty_operators(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+
+    response = client.get(reverse("site_list"))
+
+    assert response.status_code == 200
+    code_control = next(
+        control
+        for control in response.context["filter_controls"]
+        if control["name"] == "code"
+    )
+    assert [operator["label"] for operator in code_control["operators"]][-2:] == [
+        "is empty",
+        "is not empty",
+    ]
+    assert code_control["uses_empty_operator"] is True
+
+
+@pytest.mark.django_db
+def test_site_list_filters_sites_with_empty_code(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    Site.objects.create(
+        source_name="dummy",
+        external_id="null",
+        code=None,
+        name="Null Code",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    Site.objects.create(
+        source_name="dummy",
+        external_id="blank",
+        code="",
+        name="Blank Code",
+        latitude=-42.1,
+        longitude=175.1,
+    )
+    Site.objects.create(
+        source_name="dummy",
+        external_id="set",
+        code="AA-001",
+        name="Set Code",
+        latitude=-43.1,
+        longitude=176.1,
+    )
+
+    response = client.get(reverse("site_list"), {"code__empty": "true"})
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert {site.name for site in object_list} == {"Blank Code", "Null Code"}
+    assert [chip["label"] for chip in response.context["active_filter_chips"]] == [
+        "Code is empty"
+    ]
+
+
+@pytest.mark.django_db
+def test_site_list_filters_sites_with_non_empty_code(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    Site.objects.create(
+        source_name="dummy",
+        external_id="null",
+        code=None,
+        name="Null Code",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    Site.objects.create(
+        source_name="dummy",
+        external_id="blank",
+        code="",
+        name="Blank Code",
+        latitude=-42.1,
+        longitude=175.1,
+    )
+    Site.objects.create(
+        source_name="dummy",
+        external_id="set",
+        code="AA-001",
+        name="Set Code",
+        latitude=-43.1,
+        longitude=176.1,
+    )
+
+    response = client.get(reverse("site_list"), {"code__empty": "false"})
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert [site.name for site in object_list] == ["Set Code"]
+    assert [chip["label"] for chip in response.context["active_filter_chips"]] == [
+        "Code is not empty"
+    ]
+
+
+@pytest.mark.django_db
 def test_site_list_can_explicitly_include_stale_sites(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
