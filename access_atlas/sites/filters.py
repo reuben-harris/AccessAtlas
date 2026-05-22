@@ -13,6 +13,7 @@ from access_atlas.core.list_filters import (
     AccessAtlasFilterSet,
     EmptyValueFilter,
     FilterFieldSpec,
+    FilterOperator,
 )
 from access_atlas.core.status_display import status_filter_choice_attributes
 
@@ -29,6 +30,23 @@ from .models import (
 ACCESS_WARNING_CHOICES = (
     ("true", "With access warnings"),
     ("false", "Without access warnings"),
+)
+SITE_CODE_OPERATORS = (
+    *TEXT_OPERATORS,
+    FilterOperator(
+        "empty_true",
+        "is empty",
+        "__empty",
+        no_value=True,
+        submitted_value="true",
+    ),
+    FilterOperator(
+        "empty_false",
+        "is not empty",
+        "__empty",
+        no_value=True,
+        submitted_value="false",
+    ),
 )
 
 
@@ -105,6 +123,7 @@ class SiteFilterSet(AccessAtlasFilterSet):
     )
     code__regex = django_filters.CharFilter(field_name="code", lookup_expr="regex")
     code__iregex = django_filters.CharFilter(field_name="code", lookup_expr="iregex")
+    code__empty = EmptyValueFilter(field_name="code", include_blank=True)
     name = django_filters.CharFilter(field_name="name", lookup_expr="exact")
     name__not = django_filters.CharFilter(
         field_name="name",
@@ -229,7 +248,7 @@ class SiteFilterSet(AccessAtlasFilterSet):
             "code",
             "Code",
             "text",
-            TEXT_OPERATORS,
+            SITE_CODE_OPERATORS,
             placeholder="Site code",
         ),
         FilterFieldSpec(
