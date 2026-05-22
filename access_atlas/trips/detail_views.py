@@ -28,6 +28,7 @@ from .view_helpers import (
     site_visit_detail_sections,
     trip_action_controls,
     trip_approval_summary,
+    trip_assignment_lock_reason,
     trip_detail_sections,
 )
 
@@ -400,8 +401,12 @@ class SiteVisitDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if not self.object.trip.is_terminal:
-            context["assign_form"] = AssignJobForm(site=self.object.site)
+        assignment_lock_reason = trip_assignment_lock_reason(self.object.trip)
+        context["assign_form"] = AssignJobForm(
+            site=self.object.site,
+            disabled_reason=assignment_lock_reason,
+        )
+        context["assignment_lock_reason"] = assignment_lock_reason
         context["detail_sections"] = site_visit_detail_sections(self.object, "overview")
         context["detail_navigation_label"] = "Site visit sections"
         return context

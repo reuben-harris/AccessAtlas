@@ -5,9 +5,17 @@
       <form method="post" action="{{ action_url }}">
         {% csrf_token %}
         {% include "includes/form_fields.html" with form=form %}
-        <button class="btn btn-primary" type="submit">
-          <i class="ti ti-link" aria-hidden="true"></i>{{ submit_label|default:"Assign" }}
-        </button>
+        {% if disabled_reason %}
+          <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="{{ disabled_reason }}">
+            <button class="btn btn-secondary disabled" type="button" disabled>
+              <i class="ti ti-lock" aria-hidden="true"></i>{{ submit_label|default:"Assign" }}
+            </button>
+          </span>
+        {% else %}
+          <button class="btn btn-primary" type="submit">
+            <i class="ti ti-link" aria-hidden="true"></i>{{ submit_label|default:"Assign" }}
+          </button>
+        {% endif %}
       </form>
     </div>
   </div>
