@@ -24,10 +24,10 @@ from .models import (
 )
 
 ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON = (
-    "This field is managed by trip closeout while the job is assigned to a trip."
+    "This field is managed by the trip workflow while the job is assigned to a trip."
 )
 ASSIGNED_JOB_SITE_DISABLED_REASON = (
-    "Site cannot be changed while this job is assigned to a trip."
+    "Site is managed by the trip workflow while this job is assigned to a trip."
 )
 
 
