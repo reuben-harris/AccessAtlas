@@ -80,7 +80,6 @@ from .services import (
     bulk_edit_jobs,
     bulk_editable_jobs_queryset,
     create_job_from_template,
-    job_edit_frozen_reason,
     validate_bulk_edit_jobs,
 )
 from .status_display import JOB_STATUS_COLORS
@@ -608,13 +607,8 @@ class JobListView(
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        has_selectable_jobs_on_page = False
-        for job in context["object_list"]:
-            job.edit_frozen_reason = job_edit_frozen_reason(job)
-            if not job.edit_frozen_reason:
-                has_selectable_jobs_on_page = True
         bulk_selectable_count = bulk_editable_jobs_queryset(self.get_queryset()).count()
-        context["has_selectable_jobs_on_page"] = has_selectable_jobs_on_page
+        context["has_selectable_jobs_on_page"] = bool(context["object_list"])
         context["bulk_selectable_count"] = bulk_selectable_count
         context["bulk_excluded_count"] = max(
             0,
@@ -903,7 +897,6 @@ class JobMapView(FilteredListMixin, LoginRequiredMixin, ListView):
         sites = {}
         for job in context["object_list"]:
             site = job.site
-            frozen_reason = job_edit_frozen_reason(job)
             site_data = sites.setdefault(
                 site.pk,
                 {
@@ -930,8 +923,8 @@ class JobMapView(FilteredListMixin, LoginRequiredMixin, ListView):
                     if job.work_programme
                     else "",
                     "dueDate": job.due_date.isoformat() if job.due_date else "",
-                    "bulkEditable": not bool(frozen_reason),
-                    "bulkDisabledReason": frozen_reason,
+                    "bulkEditable": True,
+                    "bulkDisabledReason": "",
                 }
             )
         context["map_sites"] = list(sites.values())
@@ -1018,7 +1011,6 @@ class JobDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context["detail_sections"] = _job_detail_sections(self.object, "overview")
         context["detail_navigation_label"] = "Job sections"
-        context["job_edit_frozen_reason"] = job_edit_frozen_reason(self.object)
         return context
 
 
@@ -1032,7 +1024,6 @@ class JobRequirementsView(LoginRequiredMixin, DetailView):
         requirements_readonly = job_requirements_readonly(self.object)
         context["detail_sections"] = _job_detail_sections(self.object, "requirements")
         context["detail_navigation_label"] = "Job sections"
-        context["job_edit_frozen_reason"] = job_edit_frozen_reason(self.object)
         context["requirements"] = job_requirement_queryset(self.object, sort_value)
         context["requirements_readonly"] = requirements_readonly
         context["requirements_frozen_reason"] = job_requirements_frozen_reason(
@@ -1077,14 +1068,6 @@ class JobUpdateView(
     model = Job
     form_class = JobForm
     template_name = "object_form.html"
-
-    def dispatch(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        frozen_reason = job_edit_frozen_reason(self.object)
-        if frozen_reason:
-            messages.info(request, frozen_reason)
-            return redirect(self.object)
-        return super().dispatch(request, *args, **kwargs)
 
 
 @login_required

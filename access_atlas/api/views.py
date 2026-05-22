@@ -125,14 +125,6 @@ def require_approval_confirmation(trip: Trip | None, confirmed: bool) -> None:
         raise ValidationError({"confirm_approval_reset": APPROVAL_CONFIRMATION_ERROR})
 
 
-def approved_trip_for_job(job: Job) -> Trip | None:
-    assignment = getattr(job, "site_visit_assignment", None)
-    if assignment is None:
-        return None
-    trip = assignment.site_visit.trip
-    return trip if trip.status == TripStatus.APPROVED else None
-
-
 class SiteViewSet(
     mixins.RetrieveModelMixin,
     mixins.ListModelMixin,
@@ -211,7 +203,12 @@ class WorkProgrammeViewSet(NoDeleteModelViewSet):
 
 
 class JobViewSet(NoDeleteModelViewSet):
-    queryset = Job.objects.select_related("site", "template", "work_programme")
+    queryset = Job.objects.select_related(
+        "site",
+        "template",
+        "work_programme",
+        "site_visit_assignment__site_visit__trip",
+    )
     serializer_class = JobSerializer
     filterset_fields = ["site", "template", "work_programme", "priority", "status"]
     search_fields = [
@@ -231,20 +228,6 @@ class JobViewSet(NoDeleteModelViewSet):
         "updated_at",
     ]
     ordering = ["site__code", "title"]
-
-    def perform_update(self, serializer):
-        trip = approved_trip_for_job(serializer.instance)
-        confirmed = serializer.validated_data.get("confirm_approval_reset", False)
-        require_approval_confirmation(trip, confirmed)
-        with transaction.atomic():
-            instance = serializer.save()
-            update_change_reason(instance, "Updated via API")
-            if trip is not None:
-                invalidate_trip_approval(
-                    trip,
-                    self.request.user,
-                    "Returned to submitted after job API update",
-                )
 
     @action(
         detail=False,
