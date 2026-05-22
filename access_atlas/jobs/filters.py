@@ -50,6 +50,16 @@ def work_programme_choices() -> list[tuple[str, str]]:
     ]
 
 
+def job_template_choices() -> list[tuple[str, str]]:
+    return [
+        (
+            str(template.pk),
+            template.title if template.is_active else f"{template.title} (retired)",
+        )
+        for template in JobTemplate.objects.order_by("title")
+    ]
+
+
 def job_status_predicate(values: list[str]) -> Q:
     values = [value for value in values if value in JobStatus.values]
     predicate = Q()
@@ -361,6 +371,16 @@ class JobFilterSet(AccessAtlasFilterSet):
         exclude=True,
     )
     work_programme__empty = EmptyValueFilter(field_name="work_programme")
+    template = django_filters.ModelMultipleChoiceFilter(
+        field_name="template",
+        queryset=JobTemplate.objects.order_by("title"),
+    )
+    template__not = django_filters.ModelMultipleChoiceFilter(
+        field_name="template",
+        queryset=JobTemplate.objects.order_by("title"),
+        exclude=True,
+    )
+    template__empty = EmptyValueFilter(field_name="template")
     due_date = django_filters.DateFilter(
         field_name="work_programme__end_date",
         lookup_expr="exact",
@@ -489,6 +509,13 @@ class JobFilterSet(AccessAtlasFilterSet):
             "multiselect",
             RELATION_OPERATORS,
             choices=work_programme_choices,
+        ),
+        FilterFieldSpec(
+            "template",
+            "Job Template",
+            "multiselect",
+            RELATION_OPERATORS,
+            choices=job_template_choices,
         ),
         FilterFieldSpec("due_date", "Due date", "date", DATE_OPERATORS),
         FilterFieldSpec("completed_date", "Completed date", "date", DATE_OPERATORS),
