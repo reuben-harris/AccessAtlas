@@ -15,7 +15,6 @@ from access_atlas.core.list_filters import (
     AccessAtlasFilterSet,
     EmptyValueFilter,
     FilterFieldSpec,
-    ensure_querydict,
 )
 from access_atlas.core.status_display import status_filter_choice_attributes
 from access_atlas.sites.filters import site_ids_matching_any_tag, site_tag_choices
@@ -181,24 +180,6 @@ class JobTemplateFilterSet(AccessAtlasFilterSet):
     class Meta:
         model = JobTemplate
         fields: list[str] = []
-
-    def __init__(self, *args, **kwargs):
-        data = kwargs.get("data")
-        data = ensure_querydict(data)
-        kwargs["data"] = data
-        defaulted_filter_params: set[str] = set()
-        if (
-            data is not None
-            and "is_active" not in data
-            and "is_active__not" not in data
-        ):
-            data = data.copy()
-            data.setlist("is_active", ["true"])
-            kwargs["data"] = data
-            defaulted_filter_params.add("is_active")
-
-        super().__init__(*args, **kwargs)
-        self.defaulted_filter_params = defaulted_filter_params
 
     def filter_q(self, queryset: QuerySet, _name: str, value: str) -> QuerySet:
         if not value:

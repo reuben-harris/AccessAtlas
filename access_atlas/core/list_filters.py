@@ -161,15 +161,12 @@ class AccessAtlasFilterSet(django_filters.FilterSet):
     """Shared filter metadata and query-string helpers for object list filters."""
 
     filter_specs: tuple[FilterFieldSpec, ...] = ()
-    defaulted_filter_params: set[str]
-    clear_all_overrides: dict[str, list[str]] = {}
 
     def __init__(self, *args, **kwargs):
         if args:
             args = (ensure_querydict(args[0]), *args[1:])
         if "data" in kwargs:
             kwargs["data"] = ensure_querydict(kwargs["data"])
-        self.defaulted_filter_params = set()
         super().__init__(*args, **kwargs)
 
     @classmethod
@@ -286,13 +283,6 @@ class AccessAtlasFilterSet(django_filters.FilterSet):
         query.pop("page", None)
         query.setlist(FILTER_STATE_PARAM, [FILTER_STATE_UPDATE])
 
-        if parameter_name in self.defaulted_filter_params:
-            query.setlist(
-                parameter_name,
-                self.clear_all_overrides.get(parameter_name, []),
-            )
-            return querydict_url(request, query)
-
         if value is None:
             query.pop(parameter_name, None)
         else:
@@ -311,8 +301,6 @@ class AccessAtlasFilterSet(django_filters.FilterSet):
         query.setlist(FILTER_STATE_PARAM, [FILTER_STATE_UPDATE])
         for parameter_name in self.filter_parameter_names():
             query.pop(parameter_name, None)
-        for parameter_name, values in self.clear_all_overrides.items():
-            query.setlist(parameter_name, values)
         return querydict_url(request, query)
 
 
