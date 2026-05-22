@@ -18,6 +18,7 @@ from access_atlas.jobs.models import (
     TemplateRequirement,
     WorkProgramme,
 )
+from access_atlas.jobs.policies import TRIP_MANAGED_JOB_FIELD_API_ERROR
 from access_atlas.sites.models import Site, SitePhoto
 from access_atlas.trips.models import SiteVisit, Trip, TripStatus
 from access_atlas.trips.services import assign_job_to_site_visit
@@ -260,7 +261,17 @@ def test_assigned_job_api_rejects_trip_managed_field_changes():
     )
 
     assert response.status_code == 400
-    assert set(response.json()) == {"site", "status", "completed_date", "closeout_note"}
+    response_payload = response.json()
+    assert set(response_payload) == {
+        "site",
+        "status",
+        "completed_date",
+        "closeout_note",
+    }
+    assert all(
+        field_errors == [TRIP_MANAGED_JOB_FIELD_API_ERROR]
+        for field_errors in response_payload.values()
+    )
     job.refresh_from_db()
     assert job.site == site
     assert job.status == JobStatus.ASSIGNED

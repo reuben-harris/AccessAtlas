@@ -19,8 +19,6 @@ from access_atlas.accounts.preferences import (
 from access_atlas.core.list_filters import FILTER_STATE_PARAM, FILTER_STATE_UPDATE
 from access_atlas.core.test_utils import parse_json_script
 from access_atlas.jobs.forms import (
-    ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON,
-    ASSIGNED_JOB_SITE_DISABLED_REASON,
     AssignWorkProgrammeJobForm,
     JobBulkEditForm,
     JobForm,
@@ -36,6 +34,7 @@ from access_atlas.jobs.models import (
     TemplateRequirement,
     WorkProgramme,
 )
+from access_atlas.jobs.policies import TRIP_MANAGED_JOB_FIELD_HELP_TEXT
 from access_atlas.jobs.services import (
     assign_job_to_work_programme,
     assign_jobs_to_work_programme,
@@ -485,17 +484,15 @@ def test_assigned_job_form_disables_assignment_controlled_fields():
     assert form.fields["status"].disabled is True
     assert form.fields["completed_date"].disabled is True
     assert form.fields["closeout_note"].disabled is True
-    assert form.fields["site"].help_text == ASSIGNED_JOB_SITE_DISABLED_REASON
-    assert (
-        form.fields["status"].help_text == ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON
-    )
+    assert form.fields["site"].help_text == TRIP_MANAGED_JOB_FIELD_HELP_TEXT["site"]
+    assert form.fields["status"].help_text == TRIP_MANAGED_JOB_FIELD_HELP_TEXT["status"]
     assert (
         form.fields["completed_date"].help_text
-        == ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON
+        == TRIP_MANAGED_JOB_FIELD_HELP_TEXT["completed_date"]
     )
     assert (
         form.fields["closeout_note"].help_text
-        == ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON
+        == TRIP_MANAGED_JOB_FIELD_HELP_TEXT["closeout_note"]
     )
 
 
@@ -535,14 +532,14 @@ def test_assigned_job_update_form_shows_frozen_assignment_controlled_fields(clie
     assert content.count("disabled-form-field-control") >= 4
     assert content.count("disabled-field-reason-button") >= 4
     assert content.count('data-bs-toggle="popover"') >= 4
-    assert content.count(ASSIGNED_JOB_SITE_DISABLED_REASON) == 1
-    assert content.count(ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON) == 3
+    assert content.count(TRIP_MANAGED_JOB_FIELD_HELP_TEXT["site"]) == 1
+    assert content.count(TRIP_MANAGED_JOB_FIELD_HELP_TEXT["status"]) == 3
     assert (
-        f'<div class="form-hint">{ASSIGNED_JOB_SITE_DISABLED_REASON}</div>'
+        f'<div class="form-hint">{TRIP_MANAGED_JOB_FIELD_HELP_TEXT["site"]}</div>'
         not in content
     )
     assert (
-        f'<div class="form-hint">{ASSIGNED_JOB_CLOSEOUT_FIELD_DISABLED_REASON}</div>'
+        f'<div class="form-hint">{TRIP_MANAGED_JOB_FIELD_HELP_TEXT["status"]}</div>'
         not in content
     )
 
