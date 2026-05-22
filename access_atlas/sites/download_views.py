@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.utils.text import slugify
 from django.views.decorators.http import require_GET
 
+from .display import site_code_filename_slug
 from .kml import convert_geojson_to_kml_bytes
 from .models import AccessRecord, AccessRecordVersion
 
@@ -14,7 +15,10 @@ def build_access_record_download_filename(
     version: AccessRecordVersion,
     extension: str,
 ) -> str:
-    site_code = slugify(access_record.site.code) or f"site-{access_record.site_id}"
+    site_code = site_code_filename_slug(
+        access_record.site.code,
+        f"site-{access_record.site_id}",
+    )
     record_name = slugify(access_record.name) or f"record-{access_record.pk}"
     return f"{site_code}-{record_name}-v{version.version_number}.{extension}"
 

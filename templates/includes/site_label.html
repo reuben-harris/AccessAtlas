@@ -1,5 +1,2 @@
-{% if site.code %}
-  {{ site.display_label }}
-{% else %}
-  <span class="fst-italic">{{ site.display_code }}</span> - {{ site.name }}
-{% endif %}
+{% load site_display %}
+{% site_label site %}

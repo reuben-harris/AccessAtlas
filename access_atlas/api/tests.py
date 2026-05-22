@@ -112,6 +112,25 @@ def test_api_token_authenticates_and_updates_last_used():
 
 
 @pytest.mark.django_db
+def test_sites_api_serializes_missing_site_code_as_null():
+    user = create_user()
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="blank",
+        code=None,
+        name="Blank Code Site",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    api_client, _token = authenticated_api_client(user)
+
+    response = api_client.get(reverse("site-api-detail", kwargs={"pk": site.pk}))
+
+    assert response.status_code == 200
+    assert response.json()["code"] is None
+
+
+@pytest.mark.django_db
 def test_read_only_api_token_cannot_write():
     user = create_user()
     api_client, _token = authenticated_api_client(user, can_write=False)

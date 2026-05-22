@@ -5,20 +5,7 @@ from django.db import models
 from django.urls import reverse
 from simple_history.models import HistoricalRecords
 
-SITE_CODE_PLACEHOLDER = "code not set"
-SITE_CODE_COMPACT_PLACEHOLDER = "null"
-
-
-def display_site_code(code: str | None, *, compact: bool = False) -> str:
-    if code:
-        return code
-    if compact:
-        return SITE_CODE_COMPACT_PLACEHOLDER
-    return SITE_CODE_PLACEHOLDER
-
-
-def display_site_label(code: str | None, name: str) -> str:
-    return f"{display_site_code(code)} - {name}"
+from .display import display_site_code, display_site_label
 
 
 class SiteSyncStatus(models.TextChoices):
@@ -29,7 +16,8 @@ class SiteSyncStatus(models.TextChoices):
 class Site(models.Model):
     source_name = models.CharField(max_length=100)
     external_id = models.CharField(max_length=255)
-    code = models.CharField(max_length=100)
+    # Site codes are externally owned; NULL preserves codes the feed did not supply.
+    code = models.CharField(max_length=100, null=True, blank=True)  # noqa: DJ001
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     tags = models.JSONField(default=list, blank=True)
@@ -72,10 +60,6 @@ class Site(models.Model):
     @property
     def display_code(self) -> str:
         return display_site_code(self.code)
-
-    @property
-    def compact_display_code(self) -> str:
-        return display_site_code(self.code, compact=True)
 
     @property
     def display_label(self) -> str:

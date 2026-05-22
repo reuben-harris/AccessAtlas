@@ -193,7 +193,7 @@ def site(db):
 def _site(
     *,
     external_id: str,
-    code: str,
+    code: str | None,
     name: str,
     description: str = "",
 ) -> Site:
@@ -683,6 +683,67 @@ def test_global_history_renders_changes(logged_in_client, site):
 
 
 @pytest.mark.django_db
+def test_history_renders_missing_site_code_label_italic(logged_in_client, user):
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="missing-code-history",
+        code=None,
+        name="NIC House Test Facility",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Non Submitted Trip",
+        start_date="2026-04-21",
+        end_date="2026-04-22",
+        trip_leader=user,
+    )
+    visit = SiteVisit.objects.create(trip=trip, site=site)
+
+    expected_label = (
+        'Non Submitted Trip - <span class="fst-italic">code not set</span> - '
+        "NIC House Test Facility"
+    )
+
+    response = logged_in_client.get(
+        reverse("global_history"),
+        {"object_type": "site-visit", "object_id": str(visit.pk)},
+    )
+
+    assert response.status_code == 200
+    assert response.context["entries"][0].object_display_has_missing_site_code is True
+    assert expected_label in response.content.decode()
+
+    history_record = visit.history.first()
+    global_detail_response = logged_in_client.get(
+        reverse(
+            "global_history_detail",
+            kwargs={
+                "object_type": "site-visit",
+                "history_id": history_record.history_id,
+            },
+        )
+    )
+
+    assert global_detail_response.status_code == 200
+    assert (
+        global_detail_response.context["history_object_display_has_missing_site_code"]
+        is True
+    )
+    assert expected_label in global_detail_response.content.decode()
+
+    object_detail_response = logged_in_client.get(
+        reverse(
+            "site_visit_history_detail",
+            kwargs={"pk": visit.pk, "history_id": history_record.history_id},
+        )
+    )
+
+    assert object_detail_response.status_code == 200
+    assert expected_label in object_detail_response.content.decode()
+
+
+@pytest.mark.django_db
 def test_global_history_supports_search_and_pagination(logged_in_client):
     for index in range(30):
         Site.objects.create(
@@ -1128,7 +1189,7 @@ def test_site_autocomplete_returns_code_and_name(logged_in_client):
 def test_site_autocomplete_returns_missing_code_label(logged_in_client):
     _site(
         external_id="blank",
-        code="",
+        code=None,
         name="NIC House Test Facility",
     )
 
@@ -1143,7 +1204,7 @@ def test_site_autocomplete_returns_missing_code_label(logged_in_client):
 def test_global_search_uses_missing_site_code_label(logged_in_client):
     _site(
         external_id="blank",
-        code="",
+        code=None,
         name="NIC House Test Facility",
     )
 
@@ -1154,6 +1215,60 @@ def test_global_search_uses_missing_site_code_label(logged_in_client):
         row for row in _global_search_rows(response) if row.object_type == "Site > Name"
     )
     assert site_row.object_label == "code not set - NIC House Test Facility"
+
+
+@pytest.mark.django_db
+def test_global_search_displays_missing_site_code_matches(logged_in_client, user):
+    site = _site(
+        external_id="blank",
+        code=None,
+        name="NIC House Test Facility",
+        description="Searchable site description",
+    )
+    Job.objects.create(
+        site=site,
+        title="Inspect cabinet",
+        description="Searchable job description",
+    )
+    trip = Trip.objects.create(
+        name="Field Trip",
+        start_date="2026-05-01",
+        end_date="2026-05-02",
+        trip_leader=user,
+    )
+    SiteVisit.objects.create(trip=trip, site=site)
+    AccessRecord.objects.create(site=site, name="Road access")
+
+    response = logged_in_client.get(
+        reverse("search"),
+        {"q": "code not set"},
+    )
+
+    assert response.status_code == 200
+    rows_by_type = {
+        row.object_type: row
+        for row in _global_search_rows(response)
+        if row.object_type
+        in {
+            "Site > Code",
+            "Job > Site Code",
+            "Site Visit > Site Code",
+            "Access Record > Site Code",
+        }
+    }
+    assert rows_by_type["Site > Code"].value == "code not set"
+    assert rows_by_type["Job > Site Code"].value == "code not set"
+    assert rows_by_type["Site Visit > Site Code"].value == "code not set"
+    assert rows_by_type["Access Record > Site Code"].value == "code not set"
+    content = response.content.decode()
+    assert (
+        '<span class="fst-italic"><mark class="search-match">code not set</mark></span>'
+        in content
+    )
+    assert (
+        '<span class="fst-italic">code not set</span> - NIC House Test Facility'
+        in content
+    )
 
 
 @pytest.mark.django_db

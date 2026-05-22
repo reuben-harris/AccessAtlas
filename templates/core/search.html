@@ -1,5 +1,5 @@
 {% extends "base/base.html" %}
-{% load search_extras %}
+{% load search_extras site_display %}
 
 {% block title %}Search - Access Atlas{% endblock %}
 
@@ -87,8 +87,22 @@
           {% for row in result_rows %}
             <tr>
               <td>{{ row.object_type }}</td>
-              <td>{{ row.value|highlight_match:highlight_query }}</td>
-              <td><a href="{{ row.object_url }}">{{ row.object_label }}</a></td>
+              <td>
+                {% if row.value_is_missing_site_code %}
+                  <span class="fst-italic">{{ row.value|highlight_match:highlight_query }}</span>
+                {% else %}
+                  {{ row.value|highlight_match:highlight_query }}
+                {% endif %}
+              </td>
+              <td>
+                <a href="{{ row.object_url }}">
+                  {% if row.object_label_has_missing_site_code %}
+                    {{ row.object_label|style_missing_site_code }}
+                  {% else %}
+                    {{ row.object_label }}
+                  {% endif %}
+                </a>
+              </td>
             </tr>
           {% endfor %}
         {% else %}

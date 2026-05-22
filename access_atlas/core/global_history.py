@@ -22,6 +22,7 @@ class HistoryEntry:
     object_type_slug: str
     object_id: str
     object_display: str
+    object_display_has_missing_site_code: bool
     object_display_warning: bool
     object_display_warning_message: str
     object_url: str
@@ -104,6 +105,22 @@ def history_object_display(instance) -> tuple[str, bool, str]:
         return display, True, DELETED_RELATED_OBJECT_WARNING
 
 
+def history_object_display_has_missing_site_code(instance) -> bool:
+    """Return whether an object label includes the shared missing-site-code label."""
+    try:
+        if isinstance(instance, Site):
+            return instance.code is None
+        if isinstance(instance, (AccessRecord, SitePhoto)):
+            return instance.site.code is None
+        if isinstance(instance, SiteVisit):
+            return instance.site.code is None
+        if isinstance(instance, SiteVisitJob):
+            return instance.site_visit.site.code is None
+    except ObjectDoesNotExist:
+        return False
+    return False
+
+
 def build_history_entry(
     record,
     live_object_ids: set[object] | None = None,
@@ -126,6 +143,9 @@ def build_history_entry(
         object_type_slug=object_type_slug,
         object_id=str(instance.pk),
         object_display=object_display,
+        object_display_has_missing_site_code=(
+            history_object_display_has_missing_site_code(instance)
+        ),
         object_display_warning=warning,
         object_display_warning_message=warning_message,
         object_url=object_url,

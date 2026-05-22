@@ -4,7 +4,8 @@ from django_tomselect.autocompletes import AutocompleteModelView
 
 from access_atlas.accounts.models import User
 from access_atlas.jobs.models import Job, JobStatus, JobTemplate, WorkProgramme
-from access_atlas.sites.models import Site, display_site_label
+from access_atlas.sites.display import display_site_label
+from access_atlas.sites.models import Site
 
 
 def site_label(site: Site) -> str:
@@ -44,8 +45,9 @@ class SiteAutocompleteView(AccessAtlasAutocompleteView):
         results: list[dict[str, object]],
     ) -> list[dict[str, object]]:
         for item in results:
+            code = item.get("code")
             item["label"] = display_site_label(
-                str(item.get("code") or ""),
+                str(code) if code is not None else None,
                 str(item["name"]),
             )
         return results

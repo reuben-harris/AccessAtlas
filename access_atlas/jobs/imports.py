@@ -118,6 +118,8 @@ def build_job_import_lookups(rows: list[dict[str, str]]) -> JobImportLookups:
         for site in Site.objects.filter(
             case_insensitive_predicate("code", site_codes)
         ).order_by("code", "pk"):
+            if site.code is None:
+                continue
             sites_by_code.setdefault(import_lookup_key(site.code), site)
 
     templates_by_title: dict[str, list[JobTemplate]] = {}
