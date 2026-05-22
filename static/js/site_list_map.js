@@ -108,12 +108,12 @@
 
   function markerIconClass(site) {
     if (site.hasWarnings) {
-      return "ti-alert-triangle-filled";
+      return "ti-alert-triangle";
     }
     if (site.syncStatus === "stale") {
       return "ti-clock-exclamation";
     }
-    return "ti-point-filled";
+    return "ti-point";
   }
 
   function markerSize() {
@@ -133,7 +133,7 @@
       className: "site-list-map-marker",
       html: `
         <span class="site-list-map-marker-pin" style="--site-list-map-marker-color: ${escapeHtml(markerColor(site))}; --site-list-map-marker-size: ${size.pin}px; --site-list-map-marker-icon-size: ${size.icon}px;">
-          <i class="ti ${escapeHtml(markerIconClass(site))}" aria-hidden="true"></i>
+          <i class="ti ti-outlined ${escapeHtml(markerIconClass(site))}" aria-hidden="true"></i>
         </span>
       `,
       iconAnchor: size.anchor,

@@ -43,7 +43,7 @@
               <form method="post" action="{{ oidc_login_url }}" class="mb-3">
                 {% csrf_token %}
                 <button class="btn btn-primary w-100" type="submit">
-                  <i class="ti ti-login-2" aria-hidden="true"></i>Continue with {{ oidc_provider_name }}
+                  <i class="ti ti-outlined ti-login-2" aria-hidden="true"></i>Continue with {{ oidc_provider_name }}
                 </button>
               </form>
             {% endif %}
@@ -60,7 +60,7 @@
                 {% endif %}
                 {% include "includes/form_fields.html" %}
                 <button class="btn btn-primary w-100" type="submit">
-                  <i class="ti ti-mail" aria-hidden="true"></i>Continue with email
+                  <i class="ti ti-outlined ti-mail" aria-hidden="true"></i>Continue with email
                 </button>
               </form>
             {% elif form.non_field_errors %}

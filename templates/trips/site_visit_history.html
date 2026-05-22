@@ -10,7 +10,7 @@
       <h2 class="page-title d-flex align-items-center flex-wrap gap-2">
         <span>{% include "includes/site_label.html" with site=object.site %}</span>
         <span class="text-secondary d-inline-flex align-items-center">
-          <i class="ti ti-chevron-right" aria-hidden="true"></i>
+          <i class="ti ti-outlined ti-chevron-right" aria-hidden="true"></i>
         </span>
         <span class="text-secondary">{{ object.trip }}</span>
       </h2>
@@ -19,12 +19,12 @@
       {% if object.trip.is_terminal %}
         <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="Site visits cannot be edited on completed or cancelled trips.">
           <button class="btn btn-secondary disabled" type="button" disabled>
-            <i class="ti ti-pencil-off" aria-hidden="true"></i>Edit
+            <i class="ti ti-outlined ti-pencil-off" aria-hidden="true"></i>Edit
           </button>
         </span>
       {% else %}
         <a class="btn btn-warning" href="{% url 'site_visit_update' object.pk %}">
-          <i class="ti ti-pencil" aria-hidden="true"></i>Edit
+          <i class="ti ti-outlined ti-pencil" aria-hidden="true"></i>Edit
         </a>
       {% endif %}
     </div>

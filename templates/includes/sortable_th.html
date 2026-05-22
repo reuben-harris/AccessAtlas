@@ -8,9 +8,9 @@
   <a class="table-sort-link{% if current_sort_field == sort_key %} is-active{% endif %}" href="{{ sort_url }}">
     <span>{{ label }}</span>
     {% if current_sort_field == sort_key %}
-      <i class="ti {% if current_sort_descending %}ti-chevron-down{% else %}ti-chevron-up{% endif %}" aria-hidden="true"></i>
+      <i class="ti ti-outlined {% if current_sort_descending %}ti-chevron-down{% else %}ti-chevron-up{% endif %}" aria-hidden="true"></i>
     {% else %}
-      <i class="ti ti-selector text-secondary" aria-hidden="true"></i>
+      <i class="ti ti-outlined ti-selector text-secondary" aria-hidden="true"></i>
     {% endif %}
   </a>
 </th>

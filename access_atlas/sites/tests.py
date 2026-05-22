@@ -1375,7 +1375,7 @@ def test_site_detail_shows_access_record_actions(client):
         in content
     )
     assert "No access start point in latest revision." in content
-    assert "ti ti-pencil" in content
+    assert "ti ti-outlined ti-pencil" in content
     assert "Upload revision" in content
     assert (
         reverse("access_record_version_create", kwargs={"pk": access_record.pk})
@@ -1396,7 +1396,7 @@ def test_access_record_list_shows_global_create_actions(client):
     assert create_url in content
     assert "New access record" in content
     assert 'class="nav-create-link"' in content
-    assert "ti ti-plus" in content
+    assert "ti ti-outlined ti-plus" in content
 
 
 @pytest.mark.django_db

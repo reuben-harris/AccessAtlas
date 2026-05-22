@@ -1,12 +1,12 @@
 <div class="btn-list">
   {% if trip_action_controls.edit_enabled %}
     <a class="btn btn-warning" href="{% url 'trip_update' object.pk %}">
-      <i class="ti ti-pencil" aria-hidden="true"></i>Edit
+      <i class="ti ti-outlined ti-pencil" aria-hidden="true"></i>Edit
     </a>
   {% else %}
     <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="{{ trip_action_controls.edit_disabled_reason }}">
       <button class="btn btn-secondary disabled" type="button" disabled>
-        <i class="ti ti-pencil-off" aria-hidden="true"></i>Edit
+        <i class="ti ti-outlined ti-pencil-off" aria-hidden="true"></i>Edit
       </button>
     </span>
   {% endif %}
@@ -16,13 +16,13 @@
       {% csrf_token %}
       <input type="hidden" name="next" value="{{ request.path }}">
       <button class="btn btn-primary" type="submit">
-        <i class="ti ti-send" aria-hidden="true"></i>Submit for approval
+        <i class="ti ti-outlined ti-send" aria-hidden="true"></i>Submit for approval
       </button>
     </form>
   {% else %}
     <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="{{ trip_action_controls.submit_disabled_reason }}">
       <button class="btn btn-secondary disabled" type="button" disabled>
-        <i class="ti ti-send-off" aria-hidden="true"></i>Submit for approval
+        <i class="ti ti-outlined ti-send-off" aria-hidden="true"></i>Submit for approval
       </button>
     </span>
   {% endif %}
@@ -32,55 +32,55 @@
       {% csrf_token %}
       <input type="hidden" name="next" value="{{ request.path }}">
       <button class="btn btn-success" type="submit">
-        <i class="ti ti-circle-check" aria-hidden="true"></i>{{ trip_action_controls.approve_label }}
+        <i class="ti ti-outlined ti-circle-check" aria-hidden="true"></i>{{ trip_action_controls.approve_label }}
       </button>
     </form>
   {% else %}
     <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="{{ trip_action_controls.approve_disabled_reason }}">
       <button class="btn btn-secondary disabled" type="button" disabled>
-        <i class="ti ti-circle-x" aria-hidden="true"></i>{{ trip_action_controls.approve_label }}
+        <i class="ti ti-outlined ti-circle-x" aria-hidden="true"></i>{{ trip_action_controls.approve_label }}
       </button>
     </span>
   {% endif %}
 
   {% if trip_action_controls.return_to_draft_enabled %}
     <a class="btn btn-outline-primary" href="{% url 'trip_return_to_draft' object.pk %}">
-      <i class="ti ti-arrow-back-up" aria-hidden="true"></i>Return to draft
+      <i class="ti ti-outlined ti-arrow-back-up" aria-hidden="true"></i>Return to draft
     </a>
   {% endif %}
 
   {% if trip_action_controls.cancel_enabled %}
     <a class="btn btn-danger" href="{% url 'trip_cancel' object.pk %}">
-      <i class="ti ti-ban" aria-hidden="true"></i>Cancel trip
+      <i class="ti ti-outlined ti-ban" aria-hidden="true"></i>Cancel trip
     </a>
   {% else %}
     <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="{{ trip_action_controls.cancel_disabled_reason }}">
       <button class="btn btn-secondary disabled" type="button" disabled>
-        <i class="ti ti-ban" aria-hidden="true"></i>Cancel trip
+        <i class="ti ti-outlined ti-ban" aria-hidden="true"></i>Cancel trip
       </button>
     </span>
   {% endif %}
 
   {% if trip_action_controls.close_enabled %}
     <a class="btn btn-success" href="{% url 'trip_close' object.pk %}">
-      <i class="ti ti-flag-check" aria-hidden="true"></i>Close trip
+      <i class="ti ti-outlined ti-flag-check" aria-hidden="true"></i>Close trip
     </a>
   {% else %}
     <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="{{ trip_action_controls.close_disabled_reason }}">
       <button class="btn btn-secondary disabled" type="button" disabled>
-        <i class="ti ti-flag-x" aria-hidden="true"></i>Close trip
+        <i class="ti ti-outlined ti-flag-x" aria-hidden="true"></i>Close trip
       </button>
     </span>
   {% endif %}
 
   {% if trip_action_controls.closeout_correction_enabled %}
     <a class="btn btn-outline-warning" href="{% url 'trip_closeout_correction' object.pk %}">
-      <i class="ti ti-flag-cog" aria-hidden="true"></i>Correct closeout
+      <i class="ti ti-outlined ti-flag-cog" aria-hidden="true"></i>Correct closeout
     </a>
   {% elif object.is_terminal %}
     <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="{{ trip_action_controls.closeout_correction_disabled_reason }}">
       <button class="btn btn-secondary disabled" type="button" disabled>
-        <i class="ti ti-flag-cog" aria-hidden="true"></i>Correct closeout
+        <i class="ti ti-outlined ti-flag-cog" aria-hidden="true"></i>Correct closeout
       </button>
     </span>
   {% endif %}

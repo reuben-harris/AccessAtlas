@@ -33,12 +33,12 @@
     {% if object.is_terminal %}
       <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="Site visits cannot be added to completed or cancelled trips.">
         <button class="btn btn-sm btn-secondary disabled" type="button" disabled>
-          <i class="ti ti-plus" aria-hidden="true"></i>Add site visit
+          <i class="ti ti-outlined ti-plus" aria-hidden="true"></i>Add site visit
         </button>
       </span>
     {% else %}
       <a class="btn btn-sm btn-success" href="{% url 'site_visit_create' object.pk %}">
-        <i class="ti ti-plus" aria-hidden="true"></i>Add site visit
+        <i class="ti ti-outlined ti-plus" aria-hidden="true"></i>Add site visit
       </a>
     {% endif %}
   </div>
@@ -66,20 +66,20 @@
               {% if object.is_terminal %}
                 <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="Site visits cannot be edited on completed or cancelled trips.">
                   <button class="btn btn-icon btn-warning row-edit-button disabled" type="button" aria-label="Edit {{ visit.site }}" title="Edit {{ visit.site }}" disabled>
-                    <i class="ti ti-pencil-off" aria-hidden="true"></i>
+                    <i class="ti ti-outlined ti-pencil-off" aria-hidden="true"></i>
                   </button>
                 </span>
                 <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="Site visits cannot be deleted from completed or cancelled trips.">
                   <button class="btn btn-icon btn-danger row-delete-button disabled" type="button" aria-label="Delete {{ visit.site }}" title="Delete {{ visit.site }}" disabled>
-                    <i class="ti ti-trash-off" aria-hidden="true"></i>
+                    <i class="ti ti-outlined ti-trash-off" aria-hidden="true"></i>
                   </button>
                 </span>
               {% else %}
                 <a class="btn btn-icon btn-warning row-edit-button" href="{% url 'site_visit_update' visit.pk %}" aria-label="Edit {{ visit.site }}" title="Edit {{ visit.site }}">
-                  <i class="ti ti-pencil" aria-hidden="true"></i>
+                  <i class="ti ti-outlined ti-pencil" aria-hidden="true"></i>
                 </a>
                 <a class="btn btn-icon btn-danger row-delete-button" href="{% url 'site_visit_delete' visit.pk %}" aria-label="Delete {{ visit.site }}" title="Delete {{ visit.site }}">
-                  <i class="ti ti-trash" aria-hidden="true"></i>
+                  <i class="ti ti-outlined ti-trash" aria-hidden="true"></i>
                 </a>
               {% endif %}
             </td>

@@ -209,7 +209,7 @@
     const size = markerSize();
     return L.divIcon({
       className: "site-access-map-marker",
-      html: `<span class="site-access-map-marker-pin" style="--site-access-map-marker-color: ${escapeHtml(color)}; --site-access-map-marker-size: ${size.pin}px; --site-access-map-marker-icon-size: ${size.icon}px;"><i class="ti ${escapeHtml(iconClass)}" aria-hidden="true"></i></span>`,
+      html: `<span class="site-access-map-marker-pin" style="--site-access-map-marker-color: ${escapeHtml(color)}; --site-access-map-marker-size: ${size.pin}px; --site-access-map-marker-icon-size: ${size.icon}px;"><i class="ti ti-outlined ${escapeHtml(iconClass)}" aria-hidden="true"></i></span>`,
       iconAnchor: size.anchor,
       iconSize: size.iconSize,
       popupAnchor: [0, -Math.max(size.iconSize[1] / 2, 4)],
@@ -425,7 +425,7 @@
       button.type = "button";
       button.title = "Show access records";
       button.setAttribute("aria-label", "Show access records on map");
-      button.innerHTML = '<i class="ti ti-eye" aria-hidden="true"></i>';
+      button.innerHTML = '<i class="ti ti-outlined ti-eye" aria-hidden="true"></i>';
       this._badge = L.DomUtil.create(
         "span",
         "access-atlas-map-filter-badge access-record-map-layer-badge",

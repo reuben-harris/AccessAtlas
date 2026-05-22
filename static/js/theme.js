@@ -43,7 +43,7 @@
       button.setAttribute("title", label);
 
       if (icon) {
-        icon.className = `ti ${modeIcons[mode]}`;
+        icon.className = `ti ti-outlined ${modeIcons[mode]}`;
       }
     }
   }

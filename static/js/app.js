@@ -597,7 +597,7 @@
 
       button.textContent = successLabel;
       window.setTimeout(() => {
-        button.innerHTML = '<i class="ti ti-copy" aria-hidden="true"></i>';
+        button.innerHTML = '<i class="ti ti-outlined ti-copy" aria-hidden="true"></i>';
         button.append(originalLabel);
       }, 1600);
     });

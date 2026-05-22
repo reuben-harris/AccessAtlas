@@ -335,9 +335,9 @@ def test_jobs_sidebar_exposes_all_compact_actions(logged_in_client):
     assert reverse("job_create") in content
     assert 'aria-label="New job"' in content
     assert "nav-create-link-template" in content
-    assert "ti ti-upload" in content
-    assert "ti ti-template" in content
-    assert "ti ti-plus" in content
+    assert "ti ti-outlined ti-upload" in content
+    assert "ti ti-outlined ti-template" in content
+    assert "ti ti-outlined ti-plus" in content
 
 
 @pytest.mark.django_db
@@ -879,7 +879,7 @@ def test_global_history_warns_for_deleted_related_object_history(client, user):
 
     content = response.content.decode()
     assert "warning-indicator" in content
-    assert "ti-alert-triangle-filled" in content
+    assert "ti-alert-triangle" in content
     assert expected_warning in content
 
 

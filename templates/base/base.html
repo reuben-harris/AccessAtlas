@@ -57,7 +57,7 @@
             <ul class="navbar-nav pt-lg-3">
               <li class="nav-item{% if active_nav_item == 'dashboard' %} active{% endif %}">
                 <a class="nav-link" href="{% url 'dashboard' %}"{% if active_nav_item == 'dashboard' %} aria-current="page"{% endif %}>
-                  <span class="nav-link-icon"><i class="ti ti-layout-dashboard" aria-hidden="true"></i></span>
+                  <span class="nav-link-icon"><i class="ti ti-outlined ti-layout-dashboard" aria-hidden="true"></i></span>
                   <span class="nav-link-title">Dashboard</span>
                 </a>
               </li>
@@ -65,73 +65,73 @@
               <li class="nav-section">Planning</li>
               <li class="nav-item nav-item-with-create{% if active_nav_item == 'trips' %} active{% endif %}">
                 <a class="nav-link" href="{% url 'trip_list' %}"{% if active_nav_item == 'trips' %} aria-current="page"{% endif %}>
-                  <span class="nav-link-icon"><i class="ti ti-route" aria-hidden="true"></i></span>
+                  <span class="nav-link-icon"><i class="ti ti-outlined ti-route" aria-hidden="true"></i></span>
                   <span class="nav-link-title">Trips</span>
                 </a>
                 <a class="nav-create-link" href="{% url 'trip_create' %}" aria-label="New trip" title="New trip">
-                  <i class="ti ti-plus" aria-hidden="true"></i>
+                  <i class="ti ti-outlined ti-plus" aria-hidden="true"></i>
                 </a>
               </li>
               <li class="nav-item nav-item-with-actions nav-item-with-three-actions{% if active_nav_item == 'jobs' %} active{% endif %}">
                 <a class="nav-link" href="{% url 'job_list' %}"{% if active_nav_item == 'jobs' %} aria-current="page"{% endif %}>
-                  <span class="nav-link-icon"><i class="ti ti-briefcase" aria-hidden="true"></i></span>
+                  <span class="nav-link-icon"><i class="ti ti-outlined ti-briefcase" aria-hidden="true"></i></span>
                   <span class="nav-link-title">Jobs</span>
                 </a>
                 <a class="nav-create-link nav-create-link-tertiary nav-create-link-import" href="{% url 'job_import' %}" aria-label="Import jobs" title="Import jobs">
-                  <i class="ti ti-upload" aria-hidden="true"></i>
+                  <i class="ti ti-outlined ti-upload" aria-hidden="true"></i>
                 </a>
                 <a class="nav-create-link nav-create-link-secondary nav-create-link-template" href="{% url 'job_create_from_template' %}" aria-label="New job from template" title="New job from template">
-                  <i class="ti ti-template" aria-hidden="true"></i>
+                  <i class="ti ti-outlined ti-template" aria-hidden="true"></i>
                 </a>
                 <a class="nav-create-link" href="{% url 'job_create' %}" aria-label="New job" title="New job">
-                  <i class="ti ti-plus" aria-hidden="true"></i>
+                  <i class="ti ti-outlined ti-plus" aria-hidden="true"></i>
                 </a>
               </li>
               <li class="nav-item nav-item-with-create{% if active_nav_item == 'work_programmes' %} active{% endif %}">
                 <a class="nav-link" href="{% url 'work_programme_list' %}"{% if active_nav_item == 'work_programmes' %} aria-current="page"{% endif %}>
-                  <span class="nav-link-icon"><i class="ti ti-calendar-due" aria-hidden="true"></i></span>
+                  <span class="nav-link-icon"><i class="ti ti-outlined ti-calendar-due" aria-hidden="true"></i></span>
                   <span class="nav-link-title">Work Programmes</span>
                 </a>
                 <a class="nav-create-link" href="{% url 'work_programme_create' %}" aria-label="New work programme" title="New work programme">
-                  <i class="ti ti-plus" aria-hidden="true"></i>
+                  <i class="ti ti-outlined ti-plus" aria-hidden="true"></i>
                 </a>
               </li>
 
               <li class="nav-section">Library</li>
               <li class="nav-item nav-item-with-actions{% if active_nav_item == 'job_templates' %} active{% endif %}">
                 <a class="nav-link" href="{% url 'job_template_list' %}"{% if active_nav_item == 'job_templates' %} aria-current="page"{% endif %}>
-                  <span class="nav-link-icon"><i class="ti ti-template" aria-hidden="true"></i></span>
+                  <span class="nav-link-icon"><i class="ti ti-outlined ti-template" aria-hidden="true"></i></span>
                   <span class="nav-link-title">Job Templates</span>
                 </a>
                 <a class="nav-create-link nav-create-link-secondary nav-create-link-import" href="{% url 'job_template_import' %}" aria-label="Import job templates" title="Import job templates">
-                  <i class="ti ti-upload" aria-hidden="true"></i>
+                  <i class="ti ti-outlined ti-upload" aria-hidden="true"></i>
                 </a>
                 <a class="nav-create-link" href="{% url 'job_template_create' %}" aria-label="New job template" title="New job template">
-                  <i class="ti ti-plus" aria-hidden="true"></i>
+                  <i class="ti ti-outlined ti-plus" aria-hidden="true"></i>
                 </a>
               </li>
 
               <li class="nav-section">Reference</li>
               <li class="nav-item{% if active_nav_item == 'sites' %} active{% endif %}">
                 <a class="nav-link" href="{% url 'site_list' %}"{% if active_nav_item == 'sites' %} aria-current="page"{% endif %}>
-                  <span class="nav-link-icon"><i class="ti ti-map-pin" aria-hidden="true"></i></span>
+                  <span class="nav-link-icon"><i class="ti ti-outlined ti-map-pin" aria-hidden="true"></i></span>
                   <span class="nav-link-title">Sites</span>
                 </a>
               </li>
               <li class="nav-item nav-item-with-create{% if active_nav_item == 'access_records' %} active{% endif %}">
                 <a class="nav-link" href="{% url 'access_record_list' %}"{% if active_nav_item == 'access_records' %} aria-current="page"{% endif %}>
-                  <span class="nav-link-icon"><i class="ti ti-route-2" aria-hidden="true"></i></span>
+                  <span class="nav-link-icon"><i class="ti ti-outlined ti-route-2" aria-hidden="true"></i></span>
                   <span class="nav-link-title">Access Records</span>
                 </a>
                 <a class="nav-create-link" href="{% url 'access_record_create_global' %}" aria-label="New access record" title="New access record">
-                  <i class="ti ti-plus" aria-hidden="true"></i>
+                  <i class="ti ti-outlined ti-plus" aria-hidden="true"></i>
                 </a>
               </li>
 
               <li class="nav-section">Audit</li>
               <li class="nav-item{% if active_nav_item == 'history' %} active{% endif %}">
                 <a class="nav-link" href="{% url 'global_history' %}"{% if active_nav_item == 'history' %} aria-current="page"{% endif %}>
-                  <span class="nav-link-icon"><i class="ti ti-history" aria-hidden="true"></i></span>
+                  <span class="nav-link-icon"><i class="ti ti-outlined ti-history" aria-hidden="true"></i></span>
                   <span class="nav-link-title">History</span>
                 </a>
               </li>
@@ -145,7 +145,7 @@
           <form class="navbar-form flex-fill" action="{% url 'search' %}" method="get">
             <div class="input-icon w-100">
               <span class="input-icon-addon search-icon-addon">
-                <i class="ti ti-search" aria-hidden="true"></i>
+                <i class="ti ti-outlined ti-search" aria-hidden="true"></i>
               </span>
               <input
                 id="navbar-global-search-input"
@@ -168,7 +168,7 @@
                 aria-label="Report bug"
                 title="Report bug"
               >
-                <i class="ti ti-bug" aria-hidden="true"></i>
+                <i class="ti ti-outlined ti-bug" aria-hidden="true"></i>
               </a>
             {% endif %}
             {% if request.user.is_authenticated %}
@@ -180,11 +180,11 @@
                 aria-label="Swagger docs"
                 title="Swagger docs"
               >
-                <i class="ti ti-api" aria-hidden="true"></i>
+                <i class="ti ti-outlined ti-api" aria-hidden="true"></i>
               </a>
             {% endif %}
             <button class="btn btn-icon btn-outline-secondary header-square-button me-2" type="button" data-theme-cycle data-theme-current-mode="{{ theme_preference.mode|default:'system' }}" data-theme-preference-key="{{ theme_preference_key }}" data-theme-preference-url="{% url 'account_preference' %}" aria-label="Theme: {{ theme_preference.mode|title }}" title="Theme: {{ theme_preference.mode|title }}">
-              <i class="ti ti-device-desktop" aria-hidden="true"></i>
+              <i class="ti ti-outlined ti-device-desktop" aria-hidden="true"></i>
             </button>
             {% if request.user.is_authenticated %}
               <div class="dropdown">
@@ -200,14 +200,14 @@
                   </div>
                   <div class="dropdown-divider"></div>
                   <a class="dropdown-item" href="{% url 'api_token_list' %}">
-                    <i class="ti ti-key" aria-hidden="true"></i>
+                    <i class="ti ti-outlined ti-key" aria-hidden="true"></i>
                     <span>API tokens</span>
                   </a>
                   <div class="dropdown-divider"></div>
                   <form action="{% url 'logout' %}" method="post">
                     {% csrf_token %}
                     <button class="dropdown-item" type="submit">
-                      <i class="ti ti-logout" aria-hidden="true"></i>
+                      <i class="ti ti-outlined ti-logout" aria-hidden="true"></i>
                       <span>Log out</span>
                     </button>
                   </form>

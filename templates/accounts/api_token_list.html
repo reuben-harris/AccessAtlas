@@ -17,7 +17,7 @@
         data-copy-label="Copy"
         data-copy-success-label="Copied"
       >
-        <i class="ti ti-copy" aria-hidden="true"></i>Copy
+        <i class="ti ti-outlined ti-copy" aria-hidden="true"></i>Copy
       </button>
     </div>
   </div>
@@ -31,7 +31,7 @@
     <div class="col-auto">
       <div class="btn-list">
         <a class="btn btn-primary" href="{% url 'api_token_create' %}">
-          <i class="ti ti-plus" aria-hidden="true"></i>New token
+          <i class="ti ti-outlined ti-plus" aria-hidden="true"></i>New token
         </a>
       </div>
     </div>
@@ -77,7 +77,7 @@
                   <form class="api-token-row-action-form" method="post" action="{% url 'api_token_revoke' token.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}">
                     {% csrf_token %}
                     <button class="btn btn-icon btn-outline-danger api-token-row-action" type="submit" aria-label="Revoke {{ token.name }}" title="Revoke {{ token.name }}">
-                      <i class="ti ti-ban" aria-hidden="true"></i>
+                      <i class="ti ti-outlined ti-ban" aria-hidden="true"></i>
                     </button>
                   </form>
                 {% else %}
