@@ -10,7 +10,7 @@ flowchart TD
 
     UnassignedJob --> DirectOutcome["Can be completed or cancelled from job editing"]
     AssignedJob --> MetadataEditable["Normal metadata editable without resetting trip approval"]
-    AssignedJob --> OutcomeFieldsLocked["Site, status, completed date, and closeout note disabled in job editing"]
+    AssignedJob --> OutcomeFieldsLocked["Trip workflow-managed fields disabled in job editing"]
     AssignedJob --> TripCloseout["Trip closeout sets assigned job outcomes"]
 
     DirectOutcome --> CompletedJob["Completed job"]
@@ -34,8 +34,8 @@ flowchart TD
 ## Jobs
 
 Jobs can be planned and edited while active. A job assigned to an active trip can
-still have normal metadata updated without resetting trip approval, but its site
-assignment and outcome fields are owned by the trip workflow:
+still have normal metadata updated without resetting trip approval, but its
+trip workflow-managed fields are protected:
 
 - `site`, `status`, `completed_date`, and `closeout_note` are visible but
   disabled in normal job editing while the job is assigned to a trip.

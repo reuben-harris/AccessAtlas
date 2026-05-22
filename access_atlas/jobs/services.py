@@ -137,12 +137,12 @@ def _bulk_job_blocker_reason(
     if status and job.is_assigned:
         return (
             "Assigned jobs cannot have status changed by bulk edit "
-            "because trip closeout manages them."
+            "because the trip workflow manages that field."
         )
     if clear_completed_date and job.is_assigned:
         return (
             "Assigned jobs cannot have completed date changed by bulk edit "
-            "because trip closeout manages them."
+            "because the trip workflow manages that field."
         )
     return ""
 
