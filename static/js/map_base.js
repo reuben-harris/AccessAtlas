@@ -341,7 +341,7 @@
         button.type = "button";
         button.title = title;
         button.setAttribute("aria-label", ariaLabel);
-        button.innerHTML = `<i class="ti ${iconClass}" aria-hidden="true"></i>`;
+        button.innerHTML = `<i class="ti ti-outlined ${iconClass}" aria-hidden="true"></i>`;
 
         L.DomEvent.disableClickPropagation(container);
         L.DomEvent.on(button, "click", (event) => {
@@ -373,7 +373,7 @@
         button.title = title;
         button.setAttribute("aria-label", ariaLabel);
         button.innerHTML =
-          '<i class="ti ti-adjustments-horizontal" aria-hidden="true"></i>';
+          '<i class="ti ti-outlined ti-adjustments-horizontal" aria-hidden="true"></i>';
         this._badge = L.DomUtil.create("span", "access-atlas-map-filter-badge", button);
 
         L.DomEvent.disableClickPropagation(container);
@@ -431,7 +431,8 @@
         button.setAttribute("aria-haspopup", "menu");
         button.setAttribute("aria-expanded", "false");
         button.setAttribute("aria-controls", menuId);
-        button.innerHTML = '<i class="ti ti-layers-subtract" aria-hidden="true"></i>';
+        button.innerHTML =
+          '<i class="ti ti-outlined ti-layers-subtract" aria-hidden="true"></i>';
 
         menu.id = menuId;
         menu.hidden = true;
@@ -586,7 +587,7 @@
           );
           const check = L.DomUtil.create(
             "i",
-            "ti ti-check access-atlas-map-layer-check",
+            "ti ti-outlined ti-check access-atlas-map-layer-check",
             preview,
           );
           label.textContent = layer.label;
@@ -602,7 +603,7 @@
               preview,
             );
             unavailable.innerHTML =
-              '<i class="ti ti-lock" aria-hidden="true"></i><span>Setup needed</span>';
+              '<i class="ti ti-outlined ti-lock" aria-hidden="true"></i><span>Setup needed</span>';
           }
           itemButtons.set(layer.id, itemButton);
           itemPreviews.set(layer.id, preview);
@@ -989,7 +990,7 @@
           const button = L.DomUtil.create("button", "", container);
           button.type = "button";
           button.setAttribute("aria-label", enabledTitle);
-          button.innerHTML = `<i class="ti ${controlIcon}" aria-hidden="true"></i><span class="access-atlas-map-filter-badge">0</span>`;
+          button.innerHTML = `<i class="ti ti-outlined ${controlIcon}" aria-hidden="true"></i><span class="access-atlas-map-filter-badge">0</span>`;
           this._button = button;
           this._badge = button.querySelector(".access-atlas-map-filter-badge");
 

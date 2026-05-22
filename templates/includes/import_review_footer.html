@@ -4,14 +4,14 @@
       Upload a corrected CSV, or fix referenced app data and refresh the review before importing.
     </div>
     <button class="btn btn-orange" type="button" disabled>
-      <i class="ti ti-upload" aria-hidden="true"></i>{{ confirm_button_label }}
+      <i class="ti ti-outlined ti-upload" aria-hidden="true"></i>{{ confirm_button_label }}
     </button>
   {% else %}
     {% url confirm_url_name as confirm_url %}
     <form method="post" action="{{ confirm_url }}">
       {% csrf_token %}
       <button class="btn btn-orange" type="submit">
-        <i class="ti ti-upload" aria-hidden="true"></i>{{ confirm_button_label }}
+        <i class="ti ti-outlined ti-upload" aria-hidden="true"></i>{{ confirm_button_label }}
       </button>
     </form>
   {% endif %}
@@ -20,7 +20,7 @@
     <form method="post">
       {% csrf_token %}
       <button class="btn btn-outline-primary" type="submit" name="import_action" value="refresh">
-        <i class="ti ti-refresh" aria-hidden="true"></i>Refresh review
+        <i class="ti ti-outlined ti-refresh" aria-hidden="true"></i>Refresh review
       </button>
     </form>
   {% endif %}
@@ -28,7 +28,7 @@
   <form method="post">
     {% csrf_token %}
     <button class="btn btn-outline-secondary" type="submit" name="import_action" value="discard">
-      <i class="ti ti-trash" aria-hidden="true"></i>Discard review
+      <i class="ti ti-outlined ti-trash" aria-hidden="true"></i>Discard review
     </button>
   </form>
 </div>

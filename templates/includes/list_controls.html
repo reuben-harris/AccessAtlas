@@ -76,11 +76,11 @@
                     aria-label="Clear search"
                     title="Clear search"
                   >
-                    <i class="ti ti-x" aria-hidden="true"></i>
+                    <i class="ti ti-outlined ti-x" aria-hidden="true"></i>
                   </a>
                 {% endif %}
                 <button class="btn btn-primary" type="submit">
-                  <i class="ti ti-search" aria-hidden="true"></i>Search
+                  <i class="ti ti-outlined ti-search" aria-hidden="true"></i>Search
                 </button>
               </form>
             </div>
@@ -103,7 +103,7 @@
                     </select>
                   </div>
                   <button class="btn btn-primary" type="submit">
-                    <i class="ti ti-check" aria-hidden="true"></i>Apply
+                    <i class="ti ti-outlined ti-check" aria-hidden="true"></i>Apply
                   </button>
                 </form>
               </div>
@@ -115,12 +115,12 @@
                 {% for chip in active_filter_chips %}
                   <a class="badge bg-primary-lt text-primary-emphasis list-filter-chip" href="{{ chip.clear_url }}">
                     <span>{{ chip.label }}</span>
-                    <i class="ti ti-x" aria-hidden="true"></i>
+                    <i class="ti ti-outlined ti-x" aria-hidden="true"></i>
                   </a>
                 {% endfor %}
                 <a class="badge bg-danger-lt text-danger-emphasis list-filter-chip" href="{{ filter_clear_all_url }}">
                   <span>Clear all</span>
-                  <i class="ti ti-filter-x" aria-hidden="true"></i>
+                  <i class="ti ti-outlined ti-filter-x" aria-hidden="true"></i>
                 </a>
               </div>
               <button
@@ -130,7 +130,7 @@
                 data-bs-target="#list-filter-offcanvas"
                 aria-controls="list-filter-offcanvas"
               >
-                <i class="ti ti-adjustments-horizontal" aria-hidden="true"></i>
+                <i class="ti ti-outlined ti-adjustments-horizontal" aria-hidden="true"></i>
                 <span>Edit filters</span>
               </button>
             </div>
@@ -140,12 +140,12 @@
               {% for chip in active_filter_chips %}
                 <a class="badge bg-primary-lt text-primary-emphasis list-filter-chip" href="{{ chip.clear_url }}">
                   <span>{{ chip.label }}</span>
-                  <i class="ti ti-x" aria-hidden="true"></i>
+                  <i class="ti ti-outlined ti-x" aria-hidden="true"></i>
                 </a>
               {% endfor %}
               <a class="badge bg-danger-lt text-danger-emphasis list-filter-chip" href="{{ filter_clear_all_url }}">
                 <span>Clear all</span>
-                <i class="ti ti-filter-x" aria-hidden="true"></i>
+                <i class="ti ti-outlined ti-filter-x" aria-hidden="true"></i>
               </a>
             </div>
           {% endif %}
@@ -164,12 +164,12 @@
                   {% for chip in active_filter_chips %}
                     <a class="badge bg-primary-lt text-primary-emphasis list-filter-chip" href="{{ chip.clear_url }}">
                       <span>{{ chip.label }}</span>
-                      <i class="ti ti-x" aria-hidden="true"></i>
+                      <i class="ti ti-outlined ti-x" aria-hidden="true"></i>
                     </a>
                   {% endfor %}
                   <a class="badge bg-danger-lt text-danger-emphasis list-filter-chip" href="{{ filter_clear_all_url }}">
                     <span>Clear all</span>
-                    <i class="ti ti-filter-x" aria-hidden="true"></i>
+                    <i class="ti ti-outlined ti-filter-x" aria-hidden="true"></i>
                   </a>
                 </div>
               {% else %}
@@ -182,7 +182,7 @@
                 data-bs-target="#list-filter-offcanvas"
                 aria-controls="list-filter-offcanvas"
               >
-                <i class="ti ti-adjustments-horizontal" aria-hidden="true"></i>
+                <i class="ti ti-outlined ti-adjustments-horizontal" aria-hidden="true"></i>
                 <span>Filters</span>
               </button>
             </div>
@@ -279,10 +279,10 @@
                   <span aria-hidden="true"></span>
                   <div class="btn-list">
                     <button class="btn btn-primary" type="submit">
-                      <i class="ti ti-check" aria-hidden="true"></i>Apply filters
+                      <i class="ti ti-outlined ti-check" aria-hidden="true"></i>Apply filters
                     </button>
                     <a class="btn btn-secondary" href="{{ filter_clear_all_url }}">
-                      <i class="ti ti-filter-x" aria-hidden="true"></i>Clear all
+                      <i class="ti ti-outlined ti-filter-x" aria-hidden="true"></i>Clear all
                     </a>
                   </div>
                 </div>
@@ -321,11 +321,11 @@
                 aria-label="Clear search"
                 title="Clear search"
               >
-                <i class="ti ti-x" aria-hidden="true"></i>
+                <i class="ti ti-outlined ti-x" aria-hidden="true"></i>
               </a>
             {% endif %}
             <button class="btn btn-primary" type="submit">
-              <i class="ti ti-search" aria-hidden="true"></i>Search
+              <i class="ti ti-outlined ti-search" aria-hidden="true"></i>Search
             </button>
           </form>
         </div>
@@ -348,7 +348,7 @@
                 </select>
               </div>
               <button class="btn btn-primary" type="submit">
-                <i class="ti ti-check" aria-hidden="true"></i>Apply
+                <i class="ti ti-outlined ti-check" aria-hidden="true"></i>Apply
               </button>
             </form>
           </div>
@@ -370,7 +370,7 @@
     <div class="offcanvas-header">
       <h2 class="offcanvas-title" id="list-filter-offcanvas-title">Filters</h2>
       <button type="button" class="btn btn-icon btn-secondary offcanvas-close-button" data-bs-dismiss="offcanvas" aria-label="Close">
-        <i class="ti ti-x" aria-hidden="true"></i>
+        <i class="ti ti-outlined ti-x" aria-hidden="true"></i>
       </button>
     </div>
     <form method="get" class="list-filter-form list-filter-offcanvas-form" data-list-filter-form>
@@ -466,10 +466,10 @@
       </div>
       <div class="list-filter-offcanvas-footer">
         <a class="btn btn-secondary" href="{{ filter_clear_all_url }}">
-          <i class="ti ti-filter-x" aria-hidden="true"></i>Clear all
+          <i class="ti ti-outlined ti-filter-x" aria-hidden="true"></i>Clear all
         </a>
         <button class="btn btn-primary" type="submit">
-          <i class="ti ti-check" aria-hidden="true"></i>Apply filters
+          <i class="ti ti-outlined ti-check" aria-hidden="true"></i>Apply filters
         </button>
       </div>
     </form>

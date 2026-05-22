@@ -55,7 +55,7 @@
             </select>
           {% endif %}
           <button class="btn btn-sm btn-primary" type="submit">
-            <i class="ti ti-check" aria-hidden="true"></i>Apply
+            <i class="ti ti-outlined ti-check" aria-hidden="true"></i>Apply
           </button>
         </form>
       </div>
@@ -130,12 +130,12 @@
                   {% if selected_count <= 1 %}
                     <span tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="This is the last selected job, so it cannot be dropped from the bulk edit selection.">
                       <button class="btn btn-sm btn-outline-secondary disabled" type="button" disabled>
-                        <i class="ti ti-x" aria-hidden="true"></i>Drop
+                        <i class="ti ti-outlined ti-x" aria-hidden="true"></i>Drop
                       </button>
                     </span>
                   {% else %}
                     <button class="btn btn-sm btn-outline-secondary" type="submit">
-                      <i class="ti ti-x" aria-hidden="true"></i>Drop
+                      <i class="ti ti-outlined ti-x" aria-hidden="true"></i>Drop
                     </button>
                   {% endif %}
                 </form>

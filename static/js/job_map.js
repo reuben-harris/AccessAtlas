@@ -325,7 +325,7 @@
       return `
         <span class="job-map-popup-checkbox-wrap job-map-popup-checkbox-wrap--locked">
           <input class="form-check-input" type="checkbox" disabled tabindex="-1" aria-hidden="true">
-          <i class="ti ti-lock" aria-hidden="true"></i>
+          <i class="ti ti-outlined ti-lock" aria-hidden="true"></i>
         </span>
       `;
     }
@@ -353,7 +353,7 @@
         ? `
       <span class="job-map-popup-checkbox-wrap job-map-popup-checkbox-wrap--locked">
         <input class="form-check-input" type="checkbox" disabled tabindex="-1" aria-hidden="true">
-        <i class="ti ti-lock" aria-hidden="true"></i>
+        <i class="ti ti-outlined ti-lock" aria-hidden="true"></i>
       </span>
     `
         : `
@@ -442,7 +442,7 @@
             </td>
             <td class="text-end">
               <button class="btn btn-sm btn-outline-secondary" type="button" data-map-bulk-selection-drop value="${escapeHtml(String(job.id))}">
-                <i class="ti ti-x" aria-hidden="true"></i>Drop
+                <i class="ti ti-outlined ti-x" aria-hidden="true"></i>Drop
               </button>
             </td>
           </tr>

@@ -90,7 +90,7 @@
   function accessStartIcon() {
     return L.divIcon({
       className: "trip-map-access-marker",
-      html: '<span class="trip-map-access-marker-pin"><i class="ti ti-route-2" aria-hidden="true"></i></span>',
+      html: '<span class="trip-map-access-marker-pin"><i class="ti ti-outlined ti-route-2" aria-hidden="true"></i></span>',
       iconAnchor: [8, 8],
       iconSize: [16, 16],
       popupAnchor: [0, -8],
