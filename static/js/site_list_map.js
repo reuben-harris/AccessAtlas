@@ -116,6 +116,13 @@
     return "ti-point";
   }
 
+  function markerIconVariant(site) {
+    if (site.hasWarnings || site.syncStatus !== "stale") {
+      return "ti-filled";
+    }
+    return "ti-outlined";
+  }
+
   function markerSize() {
     const scale = markerScaleForZoom(map.getZoom());
     if (scale === "world") {
@@ -133,7 +140,7 @@
       className: "site-list-map-marker",
       html: `
         <span class="site-list-map-marker-pin" style="--site-list-map-marker-color: ${escapeHtml(markerColor(site))}; --site-list-map-marker-size: ${size.pin}px; --site-list-map-marker-icon-size: ${size.icon}px;">
-          <i class="ti ti-outlined ${escapeHtml(markerIconClass(site))}" aria-hidden="true"></i>
+          <i class="ti ${markerIconVariant(site)} ${escapeHtml(markerIconClass(site))}" aria-hidden="true"></i>
         </span>
       `,
       iconAnchor: size.anchor,
