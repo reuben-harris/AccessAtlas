@@ -1,0 +1,101 @@
+{% extends "base/base.html" %}
+{% load status_badges %}
+
+{% block title %}{{ object.name }} Time - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">{{ object.name }}</h2>
+    </div>
+    <div class="col-auto ms-auto">
+      {% include "trips/_trip_actions.html" %}
+    </div>
+  </div>
+</div>
+{% include "includes/detail_section_nav.html" %}
+
+<div class="alert alert-info">
+  <div class="d-flex">
+    <div>
+      <i class="ti ti-info-circle me-2" aria-hidden="true"></i>
+    </div>
+    <div>
+      Known Job estimates are shown here. Access Record durations and travel between Site Visits are not included yet.
+    </div>
+  </div>
+</div>
+
+{% for day in time_days %}
+  <div class="card mb-3">
+    <div class="card-header d-flex flex-wrap justify-content-between gap-2">
+      <h3 class="card-title mb-0">{{ day.label }}</h3>
+      <div class="text-secondary">
+        Job estimate: {{ day.job_estimate_label }}
+        {% if day.missing_job_estimate_count %}
+          <span class="badge bg-warning-lt ms-2">{{ day.missing_job_estimate_count }} missing</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-vcenter">
+        <thead>
+          <tr>
+            <th class="w-1">Time</th>
+            <th>Site Visit</th>
+            <th>Jobs</th>
+            <th class="text-end">Job Estimate</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for visit in day.visits %}
+            <tr>
+              <td class="text-nowrap">
+                <strong>{{ visit.time_label }}</strong>
+                {% if visit.estimate_note %}
+                  <div class="small text-secondary text-wrap">{{ visit.estimate_note }}</div>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{{ visit.site_visit.get_absolute_url }}">{% include "includes/site_label.html" with site=visit.site_visit.site %}</a>
+                <div class="mt-1">
+                  <span class="badge {{ visit.site_visit.status|status_badge_class }}">{{ visit.site_visit.get_status_display }}</span>
+                </div>
+              </td>
+              <td>
+                {% if visit.jobs %}
+                  <ul class="list-unstyled mb-0">
+                    {% for job in visit.jobs %}
+                      <li>
+                        <a href="{{ job.url }}">{{ job.title }}</a>
+                        <span class="text-secondary">({{ job.duration_label }})</span>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <span class="text-secondary">No jobs assigned.</span>
+                {% endif %}
+              </td>
+              <td class="text-end text-nowrap">
+                {{ visit.job_estimate_label }}
+                {% if visit.missing_job_estimate_count %}
+                  <div class="small text-warning">{{ visit.missing_job_estimate_count }} missing</div>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" class="text-secondary">No Site Visits planned.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% empty %}
+  <div class="card">
+    <div class="card-body text-secondary">No trip days found.</div>
+  </div>
+{% endfor %}
+{% endblock %}

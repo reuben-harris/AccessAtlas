@@ -26,6 +26,7 @@ from .detail_views import (
     TripRequirementDeleteView,
     TripRequirementsView,
     TripRequirementUpdateView,
+    TripTimeView,
     TripUpdateView,
     toggle_trip_requirement,
 )
@@ -37,6 +38,7 @@ __all__ = [
     "TripGanttView",
     "TripDetailView",
     "TripMapView",
+    "TripTimeView",
     "TripRequirementsView",
     "TripRequirementCreateView",
     "TripRequirementUpdateView",
