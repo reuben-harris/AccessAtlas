@@ -2051,6 +2051,24 @@ def test_job_template_list_search_filters_results(client):
 
 
 @pytest.mark.django_db
+def test_job_template_list_shows_inactive_templates_by_default(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    JobTemplate.objects.create(title="Active template", is_active=True)
+    JobTemplate.objects.create(title="Inactive template", is_active=False)
+
+    response = client.get(reverse("job_template_list"))
+
+    assert response.status_code == 200
+    object_list = list(response.context["object_list"])
+    assert [template.title for template in object_list] == [
+        "Active template",
+        "Inactive template",
+    ]
+    assert response.context["active_filter_chips"] == []
+
+
+@pytest.mark.django_db
 def test_job_template_list_filters_by_active_state_and_priority(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)

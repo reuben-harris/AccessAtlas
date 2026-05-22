@@ -13,7 +13,6 @@ from access_atlas.core.list_filters import (
     AccessAtlasFilterSet,
     EmptyValueFilter,
     FilterFieldSpec,
-    ensure_querydict,
 )
 from access_atlas.core.status_display import status_filter_choice_attributes
 
@@ -242,31 +241,10 @@ class SiteFilterSet(AccessAtlasFilterSet):
         ),
         FilterFieldSpec("last_seen_at", "Last seen", "date", DATE_OPERATORS),
     )
-    clear_all_overrides = {
-        "sync_status": [SiteSyncStatus.ACTIVE, SiteSyncStatus.STALE],
-    }
 
     class Meta:
         model = Site
         fields: list[str] = []
-
-    def __init__(self, *args, **kwargs):
-        data = kwargs.get("data")
-        data = ensure_querydict(data)
-        kwargs["data"] = data
-        defaulted_filter_params: set[str] = set()
-        if (
-            data is not None
-            and "sync_status" not in data
-            and "sync_status__not" not in data
-        ):
-            data = data.copy()
-            data.setlist("sync_status", [SiteSyncStatus.ACTIVE])
-            kwargs["data"] = data
-            defaulted_filter_params.add("sync_status")
-
-        super().__init__(*args, **kwargs)
-        self.defaulted_filter_params = defaulted_filter_params
 
     def filter_q(self, queryset: QuerySet, _name: str, value: str) -> QuerySet:
         if not value:

@@ -518,7 +518,7 @@ def test_site_list_search_filters_results(client):
 
 
 @pytest.mark.django_db
-def test_site_list_hides_stale_sites_by_default(client):
+def test_site_list_shows_stale_sites_by_default(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
     Site.objects.create(
@@ -543,11 +543,11 @@ def test_site_list_hides_stale_sites_by_default(client):
 
     assert response.status_code == 200
     object_list = list(response.context["object_list"])
-    assert [site.name for site in object_list] == ["Active"]
-    chips = response.context["active_filter_chips"]
-    assert any(chip["label"] == "Status is Active" for chip in chips)
-    assert "sync_status=active" in response.context["filter_clear_all_url"]
-    assert "sync_status=stale" in response.context["filter_clear_all_url"]
+    assert [site.name for site in object_list] == ["Active", "Stale"]
+    assert response.context["active_filter_chips"] == []
+    assert response.context["filter_clear_all_url"] == (
+        f"{reverse('site_list')}?{FILTER_STATE_PARAM}={FILTER_STATE_UPDATE}"
+    )
 
 
 @pytest.mark.django_db
@@ -589,32 +589,29 @@ def test_site_list_can_explicitly_include_stale_sites(client):
 
 
 @pytest.mark.django_db
-def test_site_clear_all_saves_all_sync_statuses_as_filter_preference(client):
+def test_site_clear_all_clears_saved_filter_preference(client):
     user = User.objects.create_user(email="user@example.com")
+    set_user_preference(
+        user,
+        list_filter_preference_key("sites"),
+        {"params": {"sync_status": [SiteSyncStatus.ACTIVE]}},
+    )
     client.force_login(user)
 
     response = client.get(
         reverse("site_list"),
-        {
-            FILTER_STATE_PARAM: FILTER_STATE_UPDATE,
-            "sync_status": [SiteSyncStatus.ACTIVE, SiteSyncStatus.STALE],
-        },
+        {FILTER_STATE_PARAM: FILTER_STATE_UPDATE},
     )
 
     assert response.status_code == 302
-    assert response.url == (
-        f"{reverse('site_list')}?sync_status=active&sync_status=stale"
-    )
+    assert response.url == reverse("site_list")
     assert get_user_preference(user, list_filter_preference_key("sites")) == {
-        "params": {"sync_status": [SiteSyncStatus.ACTIVE, SiteSyncStatus.STALE]}
+        "params": {}
     }
 
     response = client.get(reverse("site_list"))
 
-    assert response.status_code == 302
-    assert response.url == (
-        f"{reverse('site_list')}?sync_status=active&sync_status=stale"
-    )
+    assert response.status_code == 200
 
 
 @pytest.mark.django_db
@@ -739,7 +736,7 @@ def test_site_map_applies_shared_filters_and_preserves_table_link(client):
 
 
 @pytest.mark.django_db
-def test_site_map_includes_sites_and_warning_state(client):
+def test_site_map_shows_stale_sites_by_default(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
     warning_site = Site.objects.create(
@@ -780,10 +777,7 @@ def test_site_map_includes_sites_and_warning_state(client):
         uploaded_by=user,
     )
 
-    response = client.get(
-        reverse("site_map"),
-        {"sync_status": [SiteSyncStatus.ACTIVE, SiteSyncStatus.STALE]},
-    )
+    response = client.get(reverse("site_map"))
 
     assert response.status_code == 200
     content = response.content.decode()
