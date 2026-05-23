@@ -7,11 +7,13 @@ from access_atlas.accounts.models import User
 from access_atlas.core.list_filters import (
     CHOICE_OPERATORS,
     DATE_OPERATORS,
+    RELATIVE_DATE_CHOICES,
     REQUIRED_RELATION_OPERATORS,
     SEARCH_OPERATOR,
     AccessAtlasFilterSet,
     EmptyValueFilter,
     FilterFieldSpec,
+    RelativeDateFilter,
 )
 from access_atlas.core.status_display import status_filter_choice_attributes
 from access_atlas.sites.models import Site
@@ -181,24 +183,24 @@ class SiteVisitFilterSet(AccessAtlasFilterSet):
         queryset=Site.objects.order_by("code", "name"),
         exclude=True,
     )
-    planned_day = django_filters.DateFilter(field_name="planned_day")
-    planned_day__not = django_filters.DateFilter(
+    planned_day = RelativeDateFilter(field_name="planned_day")
+    planned_day__not = RelativeDateFilter(
         field_name="planned_day",
         exclude=True,
     )
-    planned_day__gt = django_filters.DateFilter(
+    planned_day__gt = RelativeDateFilter(
         field_name="planned_day",
         lookup_expr="gt",
     )
-    planned_day__gte = django_filters.DateFilter(
+    planned_day__gte = RelativeDateFilter(
         field_name="planned_day",
         lookup_expr="gte",
     )
-    planned_day__lt = django_filters.DateFilter(
+    planned_day__lt = RelativeDateFilter(
         field_name="planned_day",
         lookup_expr="lt",
     )
-    planned_day__lte = django_filters.DateFilter(
+    planned_day__lte = RelativeDateFilter(
         field_name="planned_day",
         lookup_expr="lte",
     )
@@ -212,7 +214,14 @@ class SiteVisitFilterSet(AccessAtlasFilterSet):
             SEARCH_OPERATOR,
             show_control=False,
         ),
-        FilterFieldSpec("planned_day", "Visit day", "date", DATE_OPERATORS),
+        FilterFieldSpec(
+            "planned_day",
+            "Visit day",
+            "date",
+            DATE_OPERATORS,
+            choices=RELATIVE_DATE_CHOICES,
+            placeholder="YYYY-MM-DD or today",
+        ),
         FilterFieldSpec(
             "status",
             "Status",

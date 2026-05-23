@@ -72,10 +72,13 @@
                   <i class="ti ti-outlined ti-plus" aria-hidden="true"></i>
                 </a>
               </li>
-              <li class="nav-item{% if active_nav_item == 'site_visits' %} active{% endif %}">
+              <li class="nav-item nav-item-with-create{% if active_nav_item == 'site_visits' %} active{% endif %}">
                 <a class="nav-link" href="{% url 'site_visit_list' %}"{% if active_nav_item == 'site_visits' %} aria-current="page"{% endif %}>
                   <span class="nav-link-icon"><i class="ti ti-outlined ti-map-pin-check" aria-hidden="true"></i></span>
                   <span class="nav-link-title">Site Visits</span>
+                </a>
+                <a class="nav-create-link" href="{% url 'site_visit_create' %}" aria-label="New site visit" title="New site visit">
+                  <i class="ti ti-outlined ti-plus" aria-hidden="true"></i>
                 </a>
               </li>
               <li class="nav-item nav-item-with-actions nav-item-with-three-actions{% if active_nav_item == 'jobs' %} active{% endif %}">

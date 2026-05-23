@@ -440,15 +440,25 @@ class SiteVisitCreateView(
     def get_trip(self):
         if hasattr(self, "_trip"):
             return self._trip
-        self._trip = get_object_or_404(Trip, pk=self.kwargs["trip_pk"])
+        trip_pk = self.kwargs.get("trip_pk")
+        self._trip = get_object_or_404(Trip, pk=trip_pk) if trip_pk else None
         return self._trip
 
     def get_approval_trip(self):
-        return self.get_trip()
+        route_trip = self.get_trip()
+        if route_trip is not None:
+            return route_trip
+        trip_pk = self.request.POST.get("trip")
+        if not trip_pk:
+            return None
+        try:
+            return Trip.objects.filter(pk=trip_pk).first()
+        except TypeError, ValueError:
+            return None
 
     def dispatch(self, request, *args, **kwargs):
         trip = self.get_trip()
-        if trip.is_terminal:
+        if trip is not None and trip.is_terminal:
             messages.info(
                 request,
                 "Site visits cannot be added to completed or cancelled trips.",
@@ -458,17 +468,25 @@ class SiteVisitCreateView(
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs["trip"] = self.get_trip()
+        kwargs["include_trip_day_options"] = True
+        trip = self.get_trip()
+        if trip is not None:
+            kwargs["trip"] = trip
         return kwargs
 
     def form_valid(self, form):
         return super().form_valid(form)
 
     def get_success_url(self):
+        if self.get_trip() is None:
+            return self.object.get_absolute_url()
         return self.object.trip.get_absolute_url()
 
     def get_cancel_url(self):
-        return self.get_trip().get_absolute_url()
+        trip = self.get_trip()
+        if trip is None:
+            return reverse("site_visit_list")
+        return trip.get_absolute_url()
 
 
 class SiteVisitUpdateView(
@@ -495,6 +513,11 @@ class SiteVisitUpdateView(
 
     def get_approval_trip(self):
         return self.object.trip
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["include_trip_day_options"] = True
+        return kwargs
 
 
 class TripHistoryDetailView(ObjectHistoryDetailMixin, TripHistoryView):

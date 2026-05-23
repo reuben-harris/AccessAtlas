@@ -26,6 +26,13 @@
       {% csrf_token %}
 
       <div class="mb-3">
+        <label class="form-label" for="{{ form.trip.id_for_label }}">{{ form.trip.label }}{% required_marker form.trip %}</label>
+        {{ form.trip|render_form_field }}
+        {% if form.trip.help_text %}<div class="form-hint">{{ form.trip.help_text }}</div>{% endif %}
+        {% for error in form.trip.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+      </div>
+
+      <div class="mb-3">
         <label class="form-label" for="{{ form.site.id_for_label }}">{{ form.site.label }}{% required_marker form.site %}</label>
         {{ form.site|render_form_field }}
         {% if form.site.help_text %}<div class="form-hint">{{ form.site.help_text }}</div>{% endif %}
@@ -91,4 +98,5 @@
     </form>
   </div>
 </div>
+{{ form.trip_day_options|json_script:"site-visit-trip-day-options" }}
 {% endblock %}

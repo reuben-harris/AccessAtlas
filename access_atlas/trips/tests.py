@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import pytest
 from django.core.exceptions import ValidationError
@@ -167,15 +167,52 @@ def test_site_visit_list_renders_direct_navigation(client):
     assert response.status_code == 200
     assert reverse("site_visit_list") == "/site-visits/"
     assert reverse("site_visit_map") == "/site-visits/map/"
+    assert reverse("site_visit_create") == "/site-visits/new/"
     assert reverse("site_visit_detail", kwargs={"pk": earlier_visit.pk}) == (
         f"/site-visits/{earlier_visit.pk}/"
     )
     assert list(response.context["object_list"]) == [earlier_visit, later_visit]
     content = response.content.decode()
     assert "Site Visits" in content
+    assert "New site visit" in content
     assert reverse("site_visit_map") in content
     assert "First Site" in content
     assert "Second Site" in content
+
+
+@pytest.mark.django_db
+def test_site_visit_list_filters_visit_day_against_relative_today(client):
+    user = User.objects.create_user(email="user@example.com")
+    today = timezone.localdate()
+    trip = Trip.objects.create(
+        name="Current Trip",
+        start_date=today - timedelta(days=1),
+        end_date=today + timedelta(days=1),
+        trip_leader=user,
+    )
+    past_site = create_requirement_site(code="AA-001", name="Past Site")
+    today_site = create_requirement_site(code="AA-002", name="Today Site")
+    future_site = create_requirement_site(code="AA-003", name="Future Site")
+    SiteVisit.objects.create(
+        trip=trip,
+        site=past_site,
+        planned_day=today - timedelta(days=1),
+    )
+    SiteVisit.objects.create(trip=trip, site=today_site, planned_day=today)
+    future_visit = SiteVisit.objects.create(
+        trip=trip,
+        site=future_site,
+        planned_day=today + timedelta(days=1),
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("site_visit_list"), {"planned_day__gt": "today"})
+
+    assert response.status_code == 200
+    assert list(response.context["object_list"]) == [future_visit]
+    content = response.content.decode()
+    assert "Visit day after Today" in content
+    assert 'value="today"' in content
 
 
 @pytest.mark.django_db
@@ -2762,6 +2799,98 @@ def test_site_visit_create_does_not_show_trip_date_hint_on_first_load(client):
     assert response.status_code == 200
     assert b"Select a date and time within the trip dates." not in response.content
     assert b"Unable to save changes" not in response.content
+
+
+@pytest.mark.django_db
+def test_site_visit_create_from_trip_prefills_trip_field(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("site_visit_create", kwargs={"trip_pk": trip.pk}))
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert 'name="trip"' in content
+    assert f'value="{trip.pk}" selected' in content
+    assert "Trip" in content
+
+
+@pytest.mark.django_db
+def test_site_visit_global_create_leaves_trip_blank_and_creates_visit(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    client.force_login(user)
+
+    get_response = client.get(reverse("site_visit_create"))
+    post_response = client.post(
+        reverse("site_visit_create"),
+        {
+            "trip": trip.pk,
+            "site": site.pk,
+            "planned_day": "2026-04-21",
+            "planned_start_time": "",
+            "planned_end_time": "",
+            "status": SiteVisitStatus.PLANNED,
+            "notes": "",
+        },
+    )
+
+    assert get_response.status_code == 200
+    assert b'name="trip"' in get_response.content
+    assert f'value="{trip.pk}" selected' not in get_response.content.decode()
+    site_visit = SiteVisit.objects.get(trip=trip, site=site)
+    assert post_response.status_code == 302
+    assert post_response.url == site_visit.get_absolute_url()
+    assert site_visit.planned_day == date(2026, 4, 21)
+
+
+@pytest.mark.django_db
+def test_site_visit_list_disables_terminal_trip_edit_button(client):
+    user = User.objects.create_user(email="user@example.com")
+    site = Site.objects.create(
+        source_name="dummy",
+        external_id="001",
+        code="AA-001",
+        name="Site A",
+        latitude=-41.1,
+        longitude=174.1,
+    )
+    trip = Trip.objects.create(
+        name="Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+        status=TripStatus.COMPLETED,
+    )
+    site_visit = SiteVisit.objects.create(trip=trip, site=site)
+    client.force_login(user)
+
+    response = client.get(reverse("site_visit_list"))
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert reverse("site_visit_update", kwargs={"pk": site_visit.pk}) not in content
+    assert "ti ti-outlined ti-pencil-off" in content
+    assert "Site visits cannot be edited on completed or cancelled trips." in content
 
 
 @pytest.mark.django_db

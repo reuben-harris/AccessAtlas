@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     path("", views.SiteVisitListView.as_view(), name="site_visit_list"),
     path("map/", views.SiteVisitMapView.as_view(), name="site_visit_map"),
+    path("new/", views.SiteVisitCreateView.as_view(), name="site_visit_create"),
     path("<int:pk>/", views.SiteVisitDetailView.as_view(), name="site_visit_detail"),
     path(
         "<int:pk>/history/",
