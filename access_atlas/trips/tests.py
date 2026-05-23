@@ -129,6 +129,128 @@ def test_trip_gantt_requires_login(client):
 
 
 @pytest.mark.django_db
+def test_site_visit_list_requires_login(client):
+    response = client.get(reverse("site_visit_list"))
+
+    assert response.status_code == 302
+    assert response.url == f"{reverse('login')}?next={reverse('site_visit_list')}"
+
+
+@pytest.mark.django_db
+def test_site_visit_map_requires_login(client):
+    response = client.get(reverse("site_visit_map"))
+
+    assert response.status_code == 302
+    assert response.url == f"{reverse('login')}?next={reverse('site_visit_map')}"
+
+
+@pytest.mark.django_db
+def test_site_visit_list_renders_direct_navigation(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = create_trip(user)
+    first_site = create_requirement_site(code="AA-001", name="First Site")
+    second_site = create_requirement_site(code="AA-002", name="Second Site")
+    later_visit = SiteVisit.objects.create(
+        trip=trip,
+        site=second_site,
+        planned_day=date(2026, 4, 22),
+    )
+    earlier_visit = SiteVisit.objects.create(
+        trip=trip,
+        site=first_site,
+        planned_day=date(2026, 4, 21),
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("site_visit_list"))
+
+    assert response.status_code == 200
+    assert reverse("site_visit_list") == "/site-visits/"
+    assert reverse("site_visit_map") == "/site-visits/map/"
+    assert reverse("site_visit_detail", kwargs={"pk": earlier_visit.pk}) == (
+        f"/site-visits/{earlier_visit.pk}/"
+    )
+    assert list(response.context["object_list"]) == [earlier_visit, later_visit]
+    content = response.content.decode()
+    assert "Site Visits" in content
+    assert reverse("site_visit_map") in content
+    assert "First Site" in content
+    assert "Second Site" in content
+
+
+@pytest.mark.django_db
+def test_site_visit_list_searches_trip_and_site(client):
+    user = User.objects.create_user(email="user@example.com")
+    matching_trip = Trip.objects.create(
+        name="Ridge Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    other_trip = Trip.objects.create(
+        name="Harbour Trip",
+        start_date=date(2026, 4, 21),
+        end_date=date(2026, 4, 22),
+        trip_leader=user,
+    )
+    matching_site = create_requirement_site(code="AA-001", name="Ridge Site")
+    other_site = create_requirement_site(code="AA-002", name="Harbour Site")
+    SiteVisit.objects.create(trip=matching_trip, site=matching_site)
+    SiteVisit.objects.create(trip=other_trip, site=other_site)
+    client.force_login(user)
+
+    response = client.get(reverse("site_visit_list"), {"q": "ridge"})
+
+    assert response.status_code == 200
+    assert [visit.site for visit in response.context["object_list"]] == [matching_site]
+
+
+@pytest.mark.django_db
+def test_site_visit_map_payload_contains_visit_schedule(client):
+    user = User.objects.create_user(email="user@example.com")
+    trip = create_trip(user, status=TripStatus.APPROVED)
+    site = create_requirement_site(code="AA-001", name="Map Site")
+    visit = SiteVisit.objects.create(
+        trip=trip,
+        site=site,
+        planned_day=date(2026, 4, 21),
+        status=SiteVisitStatus.PLANNED,
+    )
+    job = Job.objects.create(site=site, title="Map Job")
+    assign_job_to_site_visit(visit, job)
+    client.force_login(user)
+
+    response = client.get(reverse("site_visit_map"))
+
+    assert response.status_code == 200
+    payload = parse_json_script(response.content.decode(), "site-visit-map-data")
+    assert payload == [
+        {
+            "id": visit.pk,
+            "url": visit.get_absolute_url(),
+            "tripId": trip.pk,
+            "tripName": trip.name,
+            "tripUrl": trip.get_absolute_url(),
+            "tripStatus": TripStatus.APPROVED,
+            "tripStatusLabel": "Approved",
+            "siteId": site.pk,
+            "siteCode": "AA-001",
+            "siteName": "Map Site",
+            "siteUrl": site.get_absolute_url(),
+            "latitude": -41.1,
+            "longitude": 174.1,
+            "plannedDay": "2026-04-21",
+            "plannedDayLabel": "21 Apr 2026",
+            "timeLabel": "Time not set",
+            "status": SiteVisitStatus.PLANNED,
+            "statusLabel": "Planned",
+            "jobCount": 1,
+        }
+    ]
+    assert "site_visit_map.js" in response.content.decode()
+
+
+@pytest.mark.django_db
 def test_job_assignment_requires_matching_site():
     user = User.objects.create_user(email="user@example.com")
     site_a = Site.objects.create(

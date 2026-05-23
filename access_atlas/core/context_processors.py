@@ -10,9 +10,9 @@ EXACT_NAV_ITEMS = {
 
 PREFIX_NAV_ITEMS = (
     ("trip_", "trips"),
-    ("site_visit_", "trips"),
-    ("assign_job", "trips"),
-    ("unassign_job", "trips"),
+    ("site_visit_", "site_visits"),
+    ("assign_job", "site_visits"),
+    ("unassign_job", "site_visits"),
     ("work_programme_", "work_programmes"),
     ("job_template_", "job_templates"),
     ("template_requirement_", "job_templates"),

@@ -43,6 +43,7 @@
 
 .access-atlas-map-card--fill .job-map,
 .access-atlas-map-card--fill .site-list-map,
+.access-atlas-map-card--fill .site-visit-map,
 .access-atlas-map-card--fill .trip-map,
 .access-atlas-map-card--fill .site-access-map {
   flex: 1 1 auto;

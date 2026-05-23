@@ -59,31 +59,4 @@ urlpatterns = [
         views.SiteVisitCreateView.as_view(),
         name="site_visit_create",
     ),
-    path(
-        "site-visits/<int:pk>/",
-        views.SiteVisitDetailView.as_view(),
-        name="site_visit_detail",
-    ),
-    path(
-        "site-visits/<int:pk>/history/",
-        views.SiteVisitHistoryView.as_view(),
-        name="site_visit_history",
-    ),
-    path(
-        "site-visits/<int:pk>/history/<int:history_id>/",
-        views.SiteVisitHistoryDetailView.as_view(),
-        name="site_visit_history_detail",
-    ),
-    path(
-        "site-visits/<int:pk>/edit/",
-        views.SiteVisitUpdateView.as_view(),
-        name="site_visit_update",
-    ),
-    path(
-        "site-visits/<int:pk>/delete/",
-        views.SiteVisitDeleteView.as_view(),
-        name="site_visit_delete",
-    ),
-    path("site-visits/<int:pk>/assign/", views.assign_job, name="assign_job"),
-    path("assignments/<int:pk>/unassign/", views.unassign_job, name="unassign_job"),
 ]

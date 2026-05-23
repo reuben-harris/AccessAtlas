@@ -26,6 +26,7 @@ ALLOWED_PREFERENCE_KEYS = {
 ALLOWED_LIST_SORT_PREFERENCE_PAGES = {
     "api-tokens",
     "sites",
+    "site-visits",
     "trips",
     "jobs",
     "job-templates",
@@ -38,6 +39,7 @@ ALLOWED_LIST_FILTER_PREFERENCE_PAGES = {
     "history",
     "job-templates",
     "jobs",
+    "site-visits",
     "sites",
     "trips",
     "work-programmes",

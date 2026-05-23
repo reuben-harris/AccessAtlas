@@ -31,6 +31,27 @@ def trip_list_views(
     ]
 
 
+def site_visit_list_views(
+    active_view: str,
+    query_string: str = "",
+) -> list[dict[str, str | bool]]:
+    suffix = f"?{query_string}" if query_string else ""
+    return [
+        {
+            "label": "Table",
+            "icon": "ti-table",
+            "url": f"{reverse('site_visit_list')}{suffix}",
+            "is_active": active_view == "table",
+        },
+        {
+            "label": "Map",
+            "icon": "ti-map",
+            "url": f"{reverse('site_visit_map')}{suffix}",
+            "is_active": active_view == "map",
+        },
+    ]
+
+
 def trip_detail_sections(
     trip: Trip, active_section: str
 ) -> list[dict[str, str | bool]]:
@@ -82,6 +103,39 @@ def site_visit_time_label(site_visit: SiteVisit) -> str:
         return date_format(start, "H:i")
     end = timezone.localtime(site_visit.planned_end)
     return f"{date_format(start, 'H:i')} - {date_format(end, 'H:i')}"
+
+
+def build_site_visit_map_data(site_visits: list[SiteVisit]) -> list[dict]:
+    payload = []
+    for site_visit in site_visits:
+        payload.append(
+            {
+                "id": site_visit.pk,
+                "url": site_visit.get_absolute_url(),
+                "tripId": site_visit.trip_id,
+                "tripName": site_visit.trip.name,
+                "tripUrl": site_visit.trip.get_absolute_url(),
+                "tripStatus": site_visit.trip.status,
+                "tripStatusLabel": site_visit.trip.get_status_display(),
+                "siteId": site_visit.site_id,
+                "siteCode": site_visit.site.code,
+                "siteName": site_visit.site.name,
+                "siteUrl": site_visit.site.get_absolute_url(),
+                "latitude": float(site_visit.site.latitude),
+                "longitude": float(site_visit.site.longitude),
+                "plannedDay": site_visit.planned_day.isoformat()
+                if site_visit.planned_day
+                else "",
+                "plannedDayLabel": date_format(site_visit.planned_day, "j M Y")
+                if site_visit.planned_day
+                else "Day not set",
+                "timeLabel": site_visit_time_label(site_visit),
+                "status": site_visit.status,
+                "statusLabel": site_visit.get_status_display(),
+                "jobCount": getattr(site_visit, "job_count", 0),
+            }
+        )
+    return payload
 
 
 def build_trip_map_data(site_visits: list[SiteVisit]) -> dict[str, list[dict]]:

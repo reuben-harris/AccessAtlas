@@ -10,11 +10,13 @@ from access_atlas.core.list_filters import (
     REQUIRED_RELATION_OPERATORS,
     SEARCH_OPERATOR,
     AccessAtlasFilterSet,
+    EmptyValueFilter,
     FilterFieldSpec,
 )
 from access_atlas.core.status_display import status_filter_choice_attributes
+from access_atlas.sites.models import Site
 
-from .models import Trip, TripStatus
+from .models import SiteVisit, SiteVisitStatus, Trip, TripStatus
 
 
 def trip_leader_choices() -> list[tuple[str, str]]:
@@ -24,6 +26,14 @@ def trip_leader_choices() -> list[tuple[str, str]]:
         .order_by("email")
         .distinct()
     ]
+
+
+def site_choices() -> list[tuple[str, str]]:
+    return [(str(site.pk), str(site)) for site in Site.objects.order_by("code", "name")]
+
+
+def trip_choices() -> list[tuple[str, str]]:
+    return [(str(trip.pk), trip.name) for trip in Trip.objects.order_by("name")]
 
 
 class TripFilterSet(AccessAtlasFilterSet):
@@ -130,4 +140,125 @@ class TripFilterSet(AccessAtlasFilterSet):
             | Q(notes__icontains=value)
             | Q(trip_leader__email__icontains=value)
             | Q(trip_leader__display_name__icontains=value)
+        )
+
+
+class SiteVisitFilterSet(AccessAtlasFilterSet):
+    q = django_filters.CharFilter(method="filter_q")
+    status = django_filters.MultipleChoiceFilter(
+        field_name="status",
+        choices=SiteVisitStatus.choices,
+    )
+    status__not = django_filters.MultipleChoiceFilter(
+        field_name="status",
+        choices=SiteVisitStatus.choices,
+        exclude=True,
+    )
+    trip_status = django_filters.MultipleChoiceFilter(
+        field_name="trip__status",
+        choices=TripStatus.choices,
+    )
+    trip_status__not = django_filters.MultipleChoiceFilter(
+        field_name="trip__status",
+        choices=TripStatus.choices,
+        exclude=True,
+    )
+    trip = django_filters.ModelMultipleChoiceFilter(
+        field_name="trip",
+        queryset=Trip.objects.order_by("name"),
+    )
+    trip__not = django_filters.ModelMultipleChoiceFilter(
+        field_name="trip",
+        queryset=Trip.objects.order_by("name"),
+        exclude=True,
+    )
+    site = django_filters.ModelMultipleChoiceFilter(
+        field_name="site",
+        queryset=Site.objects.order_by("code", "name"),
+    )
+    site__not = django_filters.ModelMultipleChoiceFilter(
+        field_name="site",
+        queryset=Site.objects.order_by("code", "name"),
+        exclude=True,
+    )
+    planned_day = django_filters.DateFilter(field_name="planned_day")
+    planned_day__not = django_filters.DateFilter(
+        field_name="planned_day",
+        exclude=True,
+    )
+    planned_day__gt = django_filters.DateFilter(
+        field_name="planned_day",
+        lookup_expr="gt",
+    )
+    planned_day__gte = django_filters.DateFilter(
+        field_name="planned_day",
+        lookup_expr="gte",
+    )
+    planned_day__lt = django_filters.DateFilter(
+        field_name="planned_day",
+        lookup_expr="lt",
+    )
+    planned_day__lte = django_filters.DateFilter(
+        field_name="planned_day",
+        lookup_expr="lte",
+    )
+    planned_day__empty = EmptyValueFilter(field_name="planned_day")
+
+    filter_specs = (
+        FilterFieldSpec(
+            "q",
+            "Search",
+            "search",
+            SEARCH_OPERATOR,
+            show_control=False,
+        ),
+        FilterFieldSpec("planned_day", "Visit day", "date", DATE_OPERATORS),
+        FilterFieldSpec(
+            "status",
+            "Status",
+            "multiselect",
+            CHOICE_OPERATORS,
+            choices=SiteVisitStatus.choices,
+            collapse_chip_when_all_choices=True,
+            all_choices_chip_label="all statuses",
+            choice_attributes=status_filter_choice_attributes,
+        ),
+        FilterFieldSpec(
+            "trip_status",
+            "Trip status",
+            "multiselect",
+            CHOICE_OPERATORS,
+            choices=TripStatus.choices,
+            collapse_chip_when_all_choices=True,
+            all_choices_chip_label="all trip statuses",
+            choice_attributes=status_filter_choice_attributes,
+        ),
+        FilterFieldSpec(
+            "trip",
+            "Trip",
+            "multiselect",
+            REQUIRED_RELATION_OPERATORS,
+            choices=trip_choices,
+        ),
+        FilterFieldSpec(
+            "site",
+            "Site",
+            "multiselect",
+            REQUIRED_RELATION_OPERATORS,
+            choices=site_choices,
+        ),
+    )
+
+    class Meta:
+        model = SiteVisit
+        fields: list[str] = []
+
+    def filter_q(self, queryset: QuerySet, _name: str, value: str) -> QuerySet:
+        if not value:
+            return queryset
+        return queryset.filter(
+            Q(site__code__icontains=value)
+            | Q(site__name__icontains=value)
+            | Q(trip__name__icontains=value)
+            | Q(notes__icontains=value)
         )

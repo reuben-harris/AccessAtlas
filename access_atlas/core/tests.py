@@ -281,7 +281,7 @@ def test_active_nav_item_maps_url_names_to_sidebar_sections():
     cases = {
         "dashboard": "dashboard",
         "trip_detail": "trips",
-        "site_visit_update": "trips",
+        "site_visit_update": "site_visits",
         "job_list": "jobs",
         "requirement_create": "jobs",
         "work_programme_detail": "work_programmes",
@@ -304,6 +304,7 @@ def test_sidebar_highlights_current_top_level_page(logged_in_client):
     cases = [
         ("dashboard", reverse("dashboard")),
         ("trips", reverse("trip_list")),
+        ("site_visits", reverse("site_visit_list")),
         ("jobs", reverse("job_list")),
         ("work_programmes", reverse("work_programme_list")),
         ("job_templates", reverse("job_template_list")),
