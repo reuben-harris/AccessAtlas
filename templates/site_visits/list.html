@@ -1,0 +1,59 @@
+{% extends "base/base.html" %}
+{% load status_badges %}
+
+{% block title %}Site Visits - Access Atlas{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">Site Visits</h2>
+    </div>
+  </div>
+</div>
+
+{% include "site_visits/_view_toolbar.html" %}
+{% include "includes/list_controls.html" %}
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-vcenter">
+      <thead>
+        <tr>
+          {% include "includes/sortable_th.html" with label="Site" sort_key="site" %}
+          {% include "includes/sortable_th.html" with label="Trip" sort_key="trip" %}
+          {% include "includes/sortable_th.html" with label="Visit Day" sort_key="planned-day" %}
+          {% include "includes/sortable_th.html" with label="Time" sort_key="start-time" %}
+          {% include "includes/sortable_th.html" with label="Status" sort_key="status" %}
+          {% include "includes/sortable_th.html" with label="Jobs" sort_key="jobs" %}
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for visit in object_list %}
+          <tr>
+            <td><a href="{{ visit.get_absolute_url }}">{% include "includes/site_label.html" with site=visit.site %}</a></td>
+            <td><a href="{{ visit.trip.get_absolute_url }}">{{ visit.trip }}</a></td>
+            <td>{{ visit.planned_day|date:"Y-m-d"|default:"-" }}</td>
+            <td>
+              {% if visit.planned_start %}
+                {{ visit.planned_start|date:"H:i" }}
+                {% if visit.planned_end %}- {{ visit.planned_end|date:"H:i" }}{% endif %}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td><span class="badge {{ visit.status|status_badge_class }}">{{ visit.get_status_display }}</span></td>
+            <td>{{ visit.job_count }}</td>
+            {% url 'site_visit_update' visit.pk as edit_url %}
+            {% include "includes/row_actions.html" with edit_url=edit_url label=visit %}
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="text-secondary">No site visits found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "includes/pagination_footer.html" %}
+{% endblock %}

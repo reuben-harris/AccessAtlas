@@ -29,12 +29,14 @@ from .detail_views import (
     TripUpdateView,
     toggle_trip_requirement,
 )
-from .list_views import TripGanttView, TripListView
+from .list_views import SiteVisitListView, SiteVisitMapView, TripGanttView, TripListView
 
 __all__ = [
     "LoginRequiredMixin",
     "TripListView",
     "TripGanttView",
+    "SiteVisitListView",
+    "SiteVisitMapView",
     "TripDetailView",
     "TripMapView",
     "TripRequirementsView",

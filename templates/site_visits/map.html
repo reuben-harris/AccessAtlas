@@ -1,0 +1,43 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}Site Visit Map - Access Atlas{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/leaflet.fullscreen/Control.FullScreen.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">Site Visits</h2>
+    </div>
+  </div>
+</div>
+
+<div class="access-atlas-map-page access-atlas-map-page--expanded">
+  {% include "site_visits/_view_toolbar.html" %}
+  {% include "includes/list_controls.html" with filter_layout="map_offcanvas" %}
+
+  <div class="card access-atlas-map-card--fill">
+    <div class="card-body p-0">
+      <div
+        id="site-visit-map"
+        class="site-visit-map"
+        data-filter-count="{{ active_filter_chips|length }}"
+        data-basemap-preference-url="{% url 'account_preference' %}"
+        aria-label="Map of site visits"
+      ></div>
+    </div>
+  </div>
+</div>
+
+{{ site_visit_map_visits|json_script:"site-visit-map-data" }}
+{{ map_basemap_config|json_script:"map-basemap-config" }}
+{{ map_basemap_preference|json_script:"map-basemap-preference" }}
+<script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
+<script src="{% static 'vendor/leaflet.fullscreen/Control.FullScreen.umd.js' %}"></script>
+<script src="{% static 'js/site_visit_map.js' %}"></script>
+{% endblock %}
