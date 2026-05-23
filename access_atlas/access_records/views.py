@@ -17,32 +17,33 @@ from access_atlas.core.mixins import (
     SearchablePaginatedListMixin,
     SortableListMixin,
 )
+from access_atlas.sites.models import Site
 
-from .access_record_services import (
-    create_access_record_from_upload,
-    create_access_record_upload_draft,
-    create_access_record_version_from_upload,
-)
-from .access_record_snapshots import build_access_record_snapshots
-from .access_warnings import build_access_record_warnings
 from .filters import AccessRecordFilterSet
 from .forms import (
     AccessRecordForm,
     AccessRecordUploadForm,
     AccessRecordVersionUploadForm,
 )
-from .models import AccessRecord, Site
+from .models import AccessRecord
 from .presentation import (
     POINT_TYPE_BADGE_CLASS,
     POINT_TYPE_DISPLAY,
     TRACK_SUITABILITY_DISPLAY,
     point_details,
 )
+from .services import (
+    create_access_record_from_upload,
+    create_access_record_upload_draft,
+    create_access_record_version_from_upload,
+)
+from .snapshots import build_access_record_snapshots
 from .view_helpers import (
     access_record_detail_sections,
     access_record_list_views,
     build_site_access_map_data,
 )
+from .warnings import build_access_record_warnings
 
 
 class AccessRecordListView(

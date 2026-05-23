@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from django.db.models import OuterRef, Subquery
 
-from .access_records import (
+from .geojson import (
     AccessRecordGeoJSONError,
     ParsedAccessRecord,
     parse_access_record_geojson,

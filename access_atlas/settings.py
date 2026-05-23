@@ -102,6 +102,7 @@ INSTALLED_APPS = [
     "access_atlas.api.apps.ApiConfig",
     "access_atlas.core.apps.CoreConfig",
     "access_atlas.sites.apps.SitesConfig",
+    "access_atlas.access_records.apps.AccessRecordsConfig",
     "access_atlas.jobs.apps.JobsConfig",
     "access_atlas.trips.apps.TripsConfig",
 ]
@@ -264,8 +265,8 @@ SPECTACULAR_SETTINGS = {
     "REDOC_DIST": "SIDECAR",
     "COMPONENT_SPLIT_REQUEST": True,
     "ENUM_NAME_OVERRIDES": {
-        "AccessRecordStatus": "access_atlas.sites.models.AccessRecordStatus",
-        "ArrivalMethod": "access_atlas.sites.models.ArrivalMethod",
+        "AccessRecordStatus": "access_atlas.access_records.models.AccessRecordStatus",
+        "ArrivalMethod": "access_atlas.access_records.models.ArrivalMethod",
         "JobPriority": "access_atlas.jobs.models.Priority",
         "JobStatus": "access_atlas.jobs.models.JobStatus",
         "RequirementType": "access_atlas.jobs.models.RequirementType",

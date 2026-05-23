@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
 from simple_history.utils import update_change_reason
 
+from access_atlas.access_records.models import AccessRecord, AccessRecordVersion
 from access_atlas.jobs.models import (
     Job,
     JobStatus,
@@ -25,8 +26,6 @@ from access_atlas.jobs.services import (
 from access_atlas.sites.feed import SiteFeedError, sync_configured_site_feed
 from access_atlas.sites.forms import SitePhotoUploadForm
 from access_atlas.sites.models import (
-    AccessRecord,
-    AccessRecordVersion,
     Site,
     SitePhoto,
 )

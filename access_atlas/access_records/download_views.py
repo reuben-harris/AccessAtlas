@@ -5,7 +5,8 @@ from django.shortcuts import get_object_or_404, redirect
 from django.utils.text import slugify
 from django.views.decorators.http import require_GET
 
-from .display import site_code_filename_slug
+from access_atlas.sites.display import site_code_filename_slug
+
 from .kml import convert_geojson_to_kml_bytes
 from .models import AccessRecord, AccessRecordVersion
 

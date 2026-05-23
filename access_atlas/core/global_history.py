@@ -6,10 +6,11 @@ from urllib.parse import urlencode
 from django.core.exceptions import ObjectDoesNotExist
 from django.urls import NoReverseMatch, reverse
 
+from access_atlas.access_records.models import AccessRecord
 from access_atlas.accounts.models import User
 from access_atlas.core.history import history_reason
 from access_atlas.jobs.models import Job, JobTemplate, Requirement, TemplateRequirement
-from access_atlas.sites.models import AccessRecord, Site, SitePhoto
+from access_atlas.sites.models import Site, SitePhoto
 from access_atlas.trips.models import SiteVisit, SiteVisitJob, Trip
 
 

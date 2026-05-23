@@ -2,9 +2,9 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import date_format
 
-from access_atlas.sites.access_record_snapshots import build_access_record_snapshots
-from access_atlas.sites.models import AccessRecord
-from access_atlas.sites.view_helpers import build_site_access_map_data
+from access_atlas.access_records.models import AccessRecord
+from access_atlas.access_records.snapshots import build_access_record_snapshots
+from access_atlas.access_records.view_helpers import build_site_access_map_data
 
 from .models import SiteVisit, Trip, TripStatus
 from .services import user_can_approve_trip
