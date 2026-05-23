@@ -9,6 +9,11 @@
     <div class="col">
       <h2 class="page-title">Site Visits</h2>
     </div>
+    <div class="col-auto ms-auto">
+      <a class="btn btn-success" href="{% url 'site_visit_create' %}">
+        <i class="ti ti-outlined ti-plus" aria-hidden="true"></i>New site visit
+      </a>
+    </div>
   </div>
 </div>
 
@@ -45,8 +50,12 @@
             </td>
             <td><span class="badge {{ visit.status|status_badge_class }}">{{ visit.get_status_display }}</span></td>
             <td>{{ visit.job_count }}</td>
-            {% url 'site_visit_update' visit.pk as edit_url %}
-            {% include "includes/row_actions.html" with edit_url=edit_url label=visit %}
+            {% if visit.trip.is_terminal %}
+              {% include "includes/disabled_row_actions.html" with label=visit disabled_reason="Site visits cannot be edited on completed or cancelled trips." %}
+            {% else %}
+              {% url 'site_visit_update' visit.pk as edit_url %}
+              {% include "includes/row_actions.html" with edit_url=edit_url label=visit %}
+            {% endif %}
           </tr>
         {% empty %}
           <tr><td colspan="7" class="text-secondary">No site visits found.</td></tr>

@@ -241,6 +241,13 @@
                           placeholder="{{ control.placeholder|default:'YYYY-MM-DD' }}"
                           data-filter-value
                         >
+                        {% for choice in control.choices %}
+                          <button
+                            class="btn btn-outline-secondary"
+                            type="button"
+                            data-filter-value-preset="{{ choice.value }}"
+                          >{{ choice.label }}</button>
+                        {% endfor %}
                       {% elif control.input_type == "datetime" or control.input_type == "datetime-local" %}
                         <input
                           id="filter-value-{{ control.name }}"
@@ -428,6 +435,13 @@
                     placeholder="{{ control.placeholder|default:'YYYY-MM-DD' }}"
                     data-filter-value
                   >
+                  {% for choice in control.choices %}
+                    <button
+                      class="btn btn-outline-secondary"
+                      type="button"
+                      data-filter-value-preset="{{ choice.value }}"
+                    >{{ choice.label }}</button>
+                  {% endfor %}
                 {% elif control.input_type == "datetime" or control.input_type == "datetime-local" %}
                   <input
                     id="filter-value-{{ control.name }}"

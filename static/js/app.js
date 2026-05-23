@@ -150,6 +150,29 @@
     }
   }
 
+  function applyFilterValuePreset(button) {
+    const field = button.closest("[data-filter-field]");
+    const valueControl = field?.querySelector("[data-filter-value]");
+    if (
+      !(
+        valueControl instanceof HTMLInputElement ||
+        valueControl instanceof HTMLSelectElement ||
+        valueControl instanceof HTMLTextAreaElement
+      )
+    ) {
+      return;
+    }
+
+    const value = button.dataset.filterValuePreset || "";
+    if (valueControl.tomselect) {
+      valueControl.tomselect.setValue(value, true);
+    } else {
+      valueControl.value = value;
+    }
+    valueControl.dispatchEvent(new Event("input", { bubbles: true }));
+    valueControl.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
   function applyFilterTomSelectItemColors(select) {
     if (!(select instanceof HTMLSelectElement) || !select.tomselect) {
       return;
@@ -214,6 +237,86 @@
         create: false,
         maxItems: 1,
       });
+    }
+  }
+
+  function initializeSiteVisitTripDayChoices() {
+    const optionsScript = document.getElementById("site-visit-trip-day-options");
+    if (!optionsScript) {
+      return;
+    }
+
+    let dayOptionsByTrip = {};
+    try {
+      dayOptionsByTrip = JSON.parse(optionsScript.textContent || "{}");
+    } catch (_error) {
+      return;
+    }
+
+    function selectedSelectValue(select) {
+      if (select.tomselect) {
+        return select.tomselect.getValue();
+      }
+      return select.value;
+    }
+
+    function replaceSelectOptions(select, options) {
+      const currentValue = selectedSelectValue(select);
+      const selectedValue =
+        options.find((option) => option.value === currentValue)?.value ||
+        options[0]?.value ||
+        "";
+      if (select.tomselect) {
+        // TomSelect mirrors the underlying select, so replace choices through
+        // its API to keep keyboard search and rendered labels in sync.
+        select.tomselect.clear(true);
+        select.tomselect.clearOptions();
+        select.tomselect.addOptions(
+          options.map((option) => ({
+            value: option.value,
+            text: option.label,
+          })),
+        );
+        select.tomselect.refreshOptions(false);
+        select.tomselect.setValue(selectedValue, true);
+        select.tomselect.disable();
+        if (options.length) {
+          select.tomselect.enable();
+        }
+      } else {
+        select.replaceChildren(
+          ...options.map((option) => {
+            const element = document.createElement("option");
+            element.value = option.value;
+            element.textContent = option.label;
+            return element;
+          }),
+        );
+        select.value = selectedValue;
+        select.disabled = options.length === 0;
+      }
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    for (const tripSelect of document.querySelectorAll(
+      "[data-site-visit-trip-select]",
+    )) {
+      if (!(tripSelect instanceof HTMLSelectElement)) {
+        continue;
+      }
+      const form = tripSelect.closest("form") || document;
+      const daySelect = form.querySelector("[data-site-visit-day-select]");
+      if (!(daySelect instanceof HTMLSelectElement)) {
+        continue;
+      }
+
+      const syncDayOptions = () => {
+        const tripId = selectedSelectValue(tripSelect);
+        replaceSelectOptions(daySelect, dayOptionsByTrip[tripId] || []);
+      };
+
+      tripSelect.addEventListener("change", syncDayOptions);
+      syncDayOptions();
     }
   }
 
@@ -502,6 +605,7 @@
 
   initializeDatePickers();
   initializeBasicTomSelects();
+  initializeSiteVisitTripDayChoices();
   initializeOffcanvasDismiss();
   initializeBulkSelection();
 
@@ -512,6 +616,11 @@
       const operator = field.querySelector("[data-filter-operator]");
       if (operator instanceof HTMLSelectElement) {
         operator.addEventListener("change", () => setEmptyOperatorState(field));
+      }
+      for (const presetButton of field.querySelectorAll("[data-filter-value-preset]")) {
+        presetButton.addEventListener("click", () =>
+          applyFilterValuePreset(presetButton),
+        );
       }
       setEmptyOperatorState(field);
     }

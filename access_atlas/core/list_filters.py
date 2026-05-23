@@ -4,13 +4,16 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 
 import django_filters
+from django import forms
 from django.db.models import Q, QuerySet
 from django.http import QueryDict
+from django.utils import timezone
 
 ChoiceSource = Iterable[tuple[str, str]] | Callable[[], Iterable[tuple[str, str]]]
 ChoiceAttributeSource = Callable[[str], Mapping[str, str]]
 FILTER_STATE_PARAM = "_filters"
 FILTER_STATE_UPDATE = "update"
+RELATIVE_DATE_CHOICES = (("today", "Today"),)
 
 
 @dataclass(frozen=True)
@@ -155,6 +158,24 @@ class EmptyValueFilter(django_filters.BooleanFilter):
         if value:
             return qs.filter(predicate)
         return qs.exclude(predicate)
+
+
+class RelativeDateField(forms.DateField):
+    """Accept stable relative date tokens for filters saved in URLs/preferences."""
+
+    relative_values = {"today": timezone.localdate}
+
+    def to_python(self, value):
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            resolver = self.relative_values.get(normalized)
+            if resolver is not None:
+                return resolver()
+        return super().to_python(value)
+
+
+class RelativeDateFilter(django_filters.DateFilter):
+    field_class = RelativeDateField
 
 
 class AccessAtlasFilterSet(django_filters.FilterSet):

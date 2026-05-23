@@ -16,7 +16,7 @@ from access_atlas.core.tomselect import (
 from access_atlas.core.widgets import DatePicker, TimePicker
 from access_atlas.jobs.models import JobStatus
 
-from .models import SiteVisit, SiteVisitStatus, Trip
+from .models import SiteVisit, SiteVisitStatus, Trip, TripStatus
 from .scheduling import validate_site_visit_schedule
 from .services import (
     JOB_OUTCOME_CANCELLED,
@@ -66,12 +66,26 @@ class TripDayChoiceField(forms.ChoiceField):
 
 
 class SiteVisitForm(forms.ModelForm):
+    trip = forms.ModelChoiceField(
+        queryset=Trip.objects.none(),
+        widget=forms.Select(
+            attrs={
+                "data-basic-tomselect": "true",
+                "data-site-visit-trip-select": "true",
+            },
+        ),
+    )
     site = TomSelectModelChoiceField(
         config=site_tomselect_config(),
     )
     planned_day = TripDayChoiceField(
         label="Visit day",
-        widget=forms.Select(attrs={"data-basic-tomselect": "true"}),
+        widget=forms.Select(
+            attrs={
+                "data-basic-tomselect": "true",
+                "data-site-visit-day-select": "true",
+            },
+        ),
     )
     planned_start_time = forms.TimeField(
         required=False,
@@ -87,17 +101,26 @@ class SiteVisitForm(forms.ModelForm):
     )
 
     def __init__(self, *args, **kwargs):
-        trip = kwargs.pop("trip", None)
+        route_trip = kwargs.pop("trip", None)
+        include_trip_day_options = kwargs.pop("include_trip_day_options", False)
         super().__init__(*args, **kwargs)
+        self.fields["trip"].queryset = self.available_trip_queryset()
+        trip = self.selected_trip(route_trip)
         if trip is not None:
             self.instance.trip = trip
-        trip = getattr(self.instance, "trip", None) if self.instance.trip_id else trip
+            self.fields["trip"].initial = trip
+        if route_trip is not None or self.instance.pk:
+            self.fields["trip"].disabled = True
+        self.trip_day_options = (
+            self.available_trip_day_options() if include_trip_day_options else {}
+        )
         if trip and trip.start_date and trip.end_date:
             self.fields["planned_day"].choices = list(self.trip_day_choices(trip))
         else:
-            self.fields["planned_day"].choices = []
+            self.fields["planned_day"].choices = [("", "Select a trip first")]
         self.order_fields(
             [
+                "trip",
                 "site",
                 "planned_day",
                 "planned_start_time",
@@ -122,6 +145,46 @@ class SiteVisitForm(forms.ModelForm):
             ).strftime("%H:%M")
 
     @staticmethod
+    def available_trip_queryset():
+        terminal_statuses = (TripStatus.COMPLETED, TripStatus.CANCELLED)
+        return Trip.objects.exclude(status__in=terminal_statuses).order_by(
+            "-start_date",
+            "name",
+        )
+
+    def selected_trip(self, route_trip: Trip | None) -> Trip | None:
+        if route_trip is not None:
+            return route_trip
+        if self.instance.trip_id:
+            return self.instance.trip
+        if self.is_bound:
+            trip_id = self.data.get(self.add_prefix("trip"))
+            if not trip_id:
+                return None
+            try:
+                return self.fields["trip"].queryset.get(pk=trip_id)
+            except TypeError, ValueError, Trip.DoesNotExist:
+                return None
+        initial_trip = self.initial.get("trip")
+        if isinstance(initial_trip, Trip):
+            return initial_trip
+        if initial_trip:
+            try:
+                return self.fields["trip"].queryset.get(pk=initial_trip)
+            except TypeError, ValueError, Trip.DoesNotExist:
+                return None
+        return None
+
+    def available_trip_day_options(self):
+        options = {}
+        for trip in self.fields["trip"].queryset:
+            options[str(trip.pk)] = [
+                {"value": value, "label": label}
+                for value, label in self.trip_day_choices(trip)
+            ]
+        return options
+
+    @staticmethod
     def trip_day_choices(trip: Trip):
         current_day = trip.start_date
         while current_day <= trip.end_date:
@@ -136,7 +199,9 @@ class SiteVisitForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        trip = self.instance.trip
+        trip = cleaned_data.get("trip") or getattr(self.instance, "trip", None)
+        if trip is not None:
+            self.instance.trip = trip
 
         if "planned_day" in self.errors:
             return cleaned_data
@@ -224,6 +289,7 @@ class SiteVisitForm(forms.ModelForm):
     class Meta:
         model = SiteVisit
         fields = [
+            "trip",
             "site",
             "planned_day",
             "status",
