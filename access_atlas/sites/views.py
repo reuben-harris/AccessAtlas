@@ -1,21 +1,3 @@
-from .access_record_views import (
-    AccessRecordCreateView,
-    AccessRecordDetailView,
-    AccessRecordGlobalMapView,
-    AccessRecordHistoryDetailView,
-    AccessRecordHistoryView,
-    AccessRecordListView,
-    AccessRecordMapView,
-    AccessRecordRevisionsView,
-    AccessRecordUpdateView,
-    AccessRecordVersionCreateView,
-)
-from .download_views import (
-    access_record_geojson_download,
-    access_record_kml_download,
-    access_record_version_geojson_download,
-    access_record_version_kml_download,
-)
 from .site_page_views import (
     SiteAccessRecordsView,
     SiteDetailView,
@@ -39,19 +21,5 @@ __all__ = [
     "SitePhotoBulkDownloadView",
     "SiteHistoryView",
     "SiteHistoryDetailView",
-    "AccessRecordCreateView",
-    "AccessRecordListView",
-    "AccessRecordGlobalMapView",
-    "AccessRecordVersionCreateView",
-    "AccessRecordUpdateView",
-    "AccessRecordDetailView",
-    "AccessRecordHistoryView",
-    "AccessRecordHistoryDetailView",
-    "AccessRecordRevisionsView",
-    "AccessRecordMapView",
-    "access_record_geojson_download",
-    "access_record_kml_download",
-    "access_record_version_geojson_download",
-    "access_record_version_kml_download",
     "sync_sites_view",
 ]

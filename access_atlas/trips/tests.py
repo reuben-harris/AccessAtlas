@@ -5,10 +5,11 @@ from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.utils import timezone
 
+from access_atlas.access_records.models import AccessRecord, AccessRecordVersion
 from access_atlas.accounts.models import User
 from access_atlas.core.test_utils import parse_json_script
 from access_atlas.jobs.models import Job, JobStatus, Requirement, RequirementType
-from access_atlas.sites.models import AccessRecord, AccessRecordVersion, Site
+from access_atlas.sites.models import Site
 from access_atlas.trips.forms import AssignJobForm, SiteVisitForm, TripForm
 from access_atlas.trips.models import (
     SiteVisit,

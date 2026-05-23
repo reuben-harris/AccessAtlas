@@ -6,6 +6,15 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from access_atlas.access_records.geojson import (
+    AccessRecordGeoJSONError,
+    parse_access_record_geojson,
+)
+from access_atlas.access_records.models import AccessRecord, AccessRecordVersion
+from access_atlas.access_records.services import (
+    create_access_record_from_upload,
+    create_access_record_version_from_upload,
+)
 from access_atlas.jobs.models import (
     Job,
     JobTemplate,
@@ -18,20 +27,7 @@ from access_atlas.jobs.policies import (
     TRIP_MANAGED_JOB_FIELDS,
     trip_managed_job_field_changed,
 )
-from access_atlas.sites.access_record_services import (
-    create_access_record_from_upload,
-    create_access_record_version_from_upload,
-)
-from access_atlas.sites.access_records import (
-    AccessRecordGeoJSONError,
-    parse_access_record_geojson,
-)
-from access_atlas.sites.models import (
-    AccessRecord,
-    AccessRecordVersion,
-    Site,
-    SitePhoto,
-)
+from access_atlas.sites.models import Site, SitePhoto
 from access_atlas.trips.models import SiteVisit, SiteVisitJob, Trip
 
 User = get_user_model()

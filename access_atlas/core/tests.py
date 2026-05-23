@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import escape
 
+from access_atlas.access_records.models import AccessRecord, AccessRecordVersion
 from access_atlas.accounts.models import User, UserPreference
 from access_atlas.accounts.preferences import (
     ALLOWED_BASEMAP_LAYER_IDS,
@@ -24,11 +25,7 @@ from access_atlas.core.maps import map_basemap_config, map_basemap_preference
 from access_atlas.core.templatetags.form_extras import required_marker
 from access_atlas.core.templatetags.status_badges import status_badge_class
 from access_atlas.jobs.models import Job, JobTemplate, WorkProgramme
-from access_atlas.sites.models import (
-    AccessRecord,
-    AccessRecordVersion,
-    Site,
-)
+from access_atlas.sites.models import Site
 from access_atlas.trips.models import SiteVisit, SiteVisitJob, Trip, TripStatus
 
 

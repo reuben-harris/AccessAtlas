@@ -3,10 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from .access_record_snapshots import AccessRecordSnapshot
-from .access_records import AccessRecordGeoJSONError, parse_access_record_geojson
-from .models import AccessRecord, AccessRecordStatus, Site
+from access_atlas.sites.models import Site
+
+from .geojson import AccessRecordGeoJSONError, parse_access_record_geojson
+from .models import AccessRecord, AccessRecordStatus
 from .presentation import select_primary_access_start
+from .snapshots import AccessRecordSnapshot
 
 COORDINATE_TOLERANCE = 1e-5
 

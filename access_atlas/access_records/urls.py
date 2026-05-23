@@ -1,0 +1,72 @@
+from django.urls import path
+
+from . import download_views, views
+
+urlpatterns = [
+    path("", views.AccessRecordListView.as_view(), name="access_record_list"),
+    path(
+        "map/",
+        views.AccessRecordGlobalMapView.as_view(),
+        name="access_record_global_map",
+    ),
+    path(
+        "new/",
+        views.AccessRecordCreateView.as_view(),
+        name="access_record_create_global",
+    ),
+    path(
+        "<int:pk>/upload/",
+        views.AccessRecordVersionCreateView.as_view(),
+        name="access_record_version_create",
+    ),
+    path(
+        "<int:pk>/edit/",
+        views.AccessRecordUpdateView.as_view(),
+        name="access_record_update",
+    ),
+    path(
+        "<int:pk>/",
+        views.AccessRecordDetailView.as_view(),
+        name="access_record_detail",
+    ),
+    path(
+        "<int:pk>/history/",
+        views.AccessRecordHistoryView.as_view(),
+        name="access_record_history",
+    ),
+    path(
+        "<int:pk>/history/<int:history_id>/",
+        views.AccessRecordHistoryDetailView.as_view(),
+        name="access_record_history_detail",
+    ),
+    path(
+        "<int:pk>/revisions/",
+        views.AccessRecordRevisionsView.as_view(),
+        name="access_record_revisions",
+    ),
+    path(
+        "<int:pk>/map/",
+        views.AccessRecordMapView.as_view(),
+        name="access_record_map",
+    ),
+    path(
+        "<int:pk>/download.geojson",
+        download_views.access_record_geojson_download,
+        name="access_record_geojson_download",
+    ),
+    path(
+        "<int:pk>/download.kml",
+        download_views.access_record_kml_download,
+        name="access_record_kml_download",
+    ),
+    path(
+        "<int:record_pk>/versions/<int:version_pk>/download.geojson",
+        download_views.access_record_version_geojson_download,
+        name="access_record_version_geojson_download",
+    ),
+    path(
+        "<int:record_pk>/versions/<int:version_pk>/download.kml",
+        download_views.access_record_version_kml_download,
+        name="access_record_version_kml_download",
+    ),
+]

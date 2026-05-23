@@ -4,9 +4,10 @@ from dataclasses import dataclass
 from django.db import DatabaseError
 from django.db.models import Q
 
+from access_atlas.access_records.models import AccessRecord
 from access_atlas.jobs.models import Job, JobTemplate, WorkProgramme
 from access_atlas.sites.display import SITE_CODE_PLACEHOLDER, display_site_code
-from access_atlas.sites.models import AccessRecord, Site
+from access_atlas.sites.models import Site
 from access_atlas.trips.models import SiteVisit, Trip
 
 SEARCH_LOOKUP_OPTIONS = (
