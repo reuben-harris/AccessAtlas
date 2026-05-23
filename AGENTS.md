@@ -119,6 +119,10 @@ Django, such as a small nginx/static-file service in Docker Compose.
 - Prefer practical object pages over elaborate planning surfaces unless the user explicitly asks to expand them.
 - Preserve a consistent feel across list, detail, and edit views.
 - Status, history, and planning relationships should be visible without requiring deep navigation.
+- First-class sidebar nav items should own their top-level URL prefix and
+  template folder. Django app/domain ownership can remain with a related domain
+  when a separate app is not justified, but user-facing routes should not be
+  nested under another nav item's path.
 - Prefer small reusable blocks once a UI or workflow pattern appears in more than one place. Use template includes for repeated markup, helper functions for repeated configuration such as TomSelect setup, and services for repeated business workflows. Avoid abstracting one-off layouts, and keep shared blocks narrow enough that local page intent stays clear.
 - Normal Django forms should use the shared form field and error summary includes unless a page needs a deliberate custom layout. Custom layouts should still preserve required markers and server-side error summaries where practical.
 - When adding or reorganizing CSS, include concise comments around sections or non-obvious rules so a human can navigate the stylesheet quickly later.
