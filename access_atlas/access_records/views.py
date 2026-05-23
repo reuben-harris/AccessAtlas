@@ -54,7 +54,7 @@ class AccessRecordListView(
     ListView,
 ):
     model = AccessRecord
-    template_name = "sites/access_record_list.html"
+    template_name = "access_records/list.html"
     search_placeholder = "Search access records"
     filterset_class = AccessRecordFilterSet
     filter_preference_page_key = "access-records"
@@ -92,7 +92,7 @@ class AccessRecordGlobalMapView(
     ListView,
 ):
     model = AccessRecord
-    template_name = "sites/access_record_global_map.html"
+    template_name = "access_records/global_map.html"
     filterset_class = AccessRecordFilterSet
     search_placeholder = "Search access records"
     filter_preference_page_key = "access-records"
@@ -138,7 +138,7 @@ class AccessRecordGlobalMapView(
 
 class AccessRecordCreateView(LoginRequiredMixin, FormView):
     form_class = AccessRecordUploadForm
-    template_name = "sites/access_record_upload.html"
+    template_name = "access_records/upload.html"
 
     def dispatch(self, request, *args, **kwargs):
         self.initial_site = None
@@ -201,7 +201,7 @@ class AccessRecordCreateView(LoginRequiredMixin, FormView):
 
 class AccessRecordDetailView(LoginRequiredMixin, DetailView):
     model = AccessRecord
-    template_name = "sites/access_record_detail.html"
+    template_name = "access_records/detail.html"
 
     def get_queryset(self):
         return AccessRecord.objects.select_related("site").prefetch_related("versions")
@@ -271,7 +271,7 @@ class AccessRecordDetailView(LoginRequiredMixin, DetailView):
 
 class AccessRecordMapView(LoginRequiredMixin, DetailView):
     model = AccessRecord
-    template_name = "sites/access_record_map.html"
+    template_name = "access_records/map.html"
 
     def get_queryset(self):
         return AccessRecord.objects.select_related("site").prefetch_related("versions")
@@ -310,7 +310,7 @@ class AccessRecordHistoryView(
     DetailView,
 ):
     model = AccessRecord
-    template_name = "sites/access_record_history.html"
+    template_name = "access_records/history.html"
 
     def get_queryset(self):
         return AccessRecord.objects.select_related("site").prefetch_related("versions")
@@ -327,7 +327,7 @@ class AccessRecordHistoryView(
 
 class AccessRecordRevisionsView(LoginRequiredMixin, DetailView):
     model = AccessRecord
-    template_name = "sites/access_record_revisions.html"
+    template_name = "access_records/revisions.html"
 
     def get_queryset(self):
         return AccessRecord.objects.select_related("site").prefetch_related("versions")
@@ -371,7 +371,7 @@ class AccessRecordHistoryDetailView(
 
 class AccessRecordVersionCreateView(LoginRequiredMixin, FormView):
     form_class = AccessRecordVersionUploadForm
-    template_name = "sites/access_record_upload.html"
+    template_name = "access_records/upload.html"
 
     def dispatch(self, request, *args, **kwargs):
         self.access_record = get_object_or_404(

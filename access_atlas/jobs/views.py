@@ -162,7 +162,7 @@ class JobTemplateListView(
     ListView,
 ):
     model = JobTemplate
-    template_name = "jobs/job_template_list.html"
+    template_name = "job_templates/list.html"
     search_placeholder = "Search job templates"
     filterset_class = JobTemplateFilterSet
     filter_preference_page_key = "job-templates"
@@ -187,7 +187,7 @@ class WorkProgrammeListView(
     ListView,
 ):
     model = WorkProgramme
-    template_name = "jobs/work_programme_list.html"
+    template_name = "work_programmes/list.html"
     search_placeholder = "Search work programmes"
     filterset_class = WorkProgrammeFilterSet
     filter_preference_page_key = "work-programmes"
@@ -268,7 +268,7 @@ def _job_detail_sections(job: Job, active_section: str) -> list[dict[str, str | 
 
 class JobTemplateDetailView(LoginRequiredMixin, DetailView):
     model = JobTemplate
-    template_name = "jobs/job_template_detail.html"
+    template_name = "job_templates/detail.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -285,7 +285,7 @@ class JobTemplateHistoryView(
     DetailView,
 ):
     model = JobTemplate
-    template_name = "jobs/job_template_history.html"
+    template_name = "job_templates/history.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -299,7 +299,7 @@ class JobTemplateHistoryView(
 
 class WorkProgrammeDetailView(LoginRequiredMixin, DetailView):
     model = WorkProgramme
-    template_name = "jobs/work_programme_detail.html"
+    template_name = "work_programmes/detail.html"
 
     def get_queryset(self):
         return WorkProgramme.objects.prefetch_related("jobs__site")
@@ -338,7 +338,7 @@ class WorkProgrammeHistoryView(
     DetailView,
 ):
     model = WorkProgramme
-    template_name = "jobs/work_programme_history.html"
+    template_name = "work_programmes/history.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -448,7 +448,7 @@ def import_job_templates_view(request):
 
     return render(
         request,
-        "jobs/job_template_import.html",
+        "job_templates/import.html",
         {
             "form": form,
             "example_path": "docs/examples/job-template-test-import.csv",
