@@ -397,7 +397,7 @@ class TripUpdateView(
 
 class SiteVisitDetailView(LoginRequiredMixin, DetailView):
     model = SiteVisit
-    template_name = "trips/site_visit_detail.html"
+    template_name = "site_visits/detail.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -414,7 +414,7 @@ class SiteVisitDetailView(LoginRequiredMixin, DetailView):
 
 class SiteVisitHistoryView(PaginatedObjectHistoryMixin, LoginRequiredMixin, DetailView):
     model = SiteVisit
-    template_name = "trips/site_visit_history.html"
+    template_name = "site_visits/history.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -434,7 +434,7 @@ class SiteVisitCreateView(
     history_action = "Created"
     model = SiteVisit
     form_class = SiteVisitForm
-    template_name = "trips/site_visit_form.html"
+    template_name = "site_visits/form.html"
     approval_reset_reason = "Returned to submitted after site visit creation"
 
     def get_trip(self):
@@ -480,7 +480,7 @@ class SiteVisitUpdateView(
 ):
     model = SiteVisit
     form_class = SiteVisitForm
-    template_name = "trips/site_visit_form.html"
+    template_name = "site_visits/form.html"
     approval_reset_reason = "Returned to submitted after site visit update"
 
     def dispatch(self, request, *args, **kwargs):
