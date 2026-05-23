@@ -217,6 +217,25 @@ def test_work_programme_list_and_detail_render(client):
 
 
 @pytest.mark.django_db
+def test_work_programme_urls_are_top_level(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    work_programme = WorkProgramme.objects.create(name="2026 Field Work")
+
+    assert reverse("work_programme_list") == "/work-programmes/"
+    assert reverse("work_programme_create") == "/work-programmes/new/"
+    assert work_programme.get_absolute_url() == f"/work-programmes/{work_programme.pk}/"
+    assert (
+        reverse("work_programme_update", kwargs={"pk": work_programme.pk})
+        == f"/work-programmes/{work_programme.pk}/edit/"
+    )
+
+    response = client.get("/jobs/work-programmes/")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
 def test_work_programme_list_and_detail_render_missing_dates(client):
     user = User.objects.create_user(email="user@example.com")
     client.force_login(user)
@@ -2125,6 +2144,30 @@ def test_job_template_list_links_to_import(client):
 
     assert response.status_code == 200
     assert reverse("job_template_import") in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_job_template_urls_are_top_level(client):
+    user = User.objects.create_user(email="user@example.com")
+    client.force_login(user)
+    template = JobTemplate.objects.create(title="Inspect cabinet")
+    requirement = TemplateRequirement.objects.create(
+        job_template=template,
+        name="Cabinet key",
+    )
+
+    assert reverse("job_template_list") == "/job-templates/"
+    assert reverse("job_template_import") == "/job-templates/import/"
+    assert reverse("job_template_create") == "/job-templates/new/"
+    assert template.get_absolute_url() == f"/job-templates/{template.pk}/"
+    assert (
+        reverse("template_requirement_update", kwargs={"pk": requirement.pk})
+        == f"/job-templates/requirements/{requirement.pk}/edit/"
+    )
+
+    response = client.get("/jobs/templates/")
+
+    assert response.status_code == 404
 
 
 @pytest.mark.django_db

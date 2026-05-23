@@ -9,41 +9,6 @@ urlpatterns = [
     path("bulk-edit/", views.bulk_edit_jobs_view, name="job_bulk_edit"),
     path("import/", views.import_jobs_view, name="job_import"),
     path("import/confirm/", views.confirm_jobs_import_view, name="job_import_confirm"),
-    path(
-        "work-programmes/",
-        views.WorkProgrammeListView.as_view(),
-        name="work_programme_list",
-    ),
-    path(
-        "work-programmes/new/",
-        views.WorkProgrammeCreateView.as_view(),
-        name="work_programme_create",
-    ),
-    path(
-        "work-programmes/<int:pk>/",
-        views.WorkProgrammeDetailView.as_view(),
-        name="work_programme_detail",
-    ),
-    path(
-        "work-programmes/<int:pk>/history/",
-        views.WorkProgrammeHistoryView.as_view(),
-        name="work_programme_history",
-    ),
-    path(
-        "work-programmes/<int:pk>/history/<int:history_id>/",
-        views.WorkProgrammeHistoryDetailView.as_view(),
-        name="work_programme_history_detail",
-    ),
-    path(
-        "work-programmes/<int:pk>/edit/",
-        views.WorkProgrammeUpdateView.as_view(),
-        name="work_programme_update",
-    ),
-    path(
-        "work-programmes/<int:pk>/assign-job/",
-        views.assign_work_programme_job,
-        name="work_programme_assign_job",
-    ),
     path("new/", views.JobCreateView.as_view(), name="job_create"),
     path(
         "from-template/",
@@ -82,56 +47,5 @@ urlpatterns = [
         "requirements/<int:pk>/delete/",
         views.RequirementDeleteView.as_view(),
         name="requirement_delete",
-    ),
-    path("templates/", views.JobTemplateListView.as_view(), name="job_template_list"),
-    path(
-        "templates/import/",
-        views.import_job_templates_view,
-        name="job_template_import",
-    ),
-    path(
-        "templates/import/confirm/",
-        views.confirm_job_templates_import_view,
-        name="job_template_import_confirm",
-    ),
-    path(
-        "templates/new/",
-        views.JobTemplateCreateView.as_view(),
-        name="job_template_create",
-    ),
-    path(
-        "templates/<int:pk>/",
-        views.JobTemplateDetailView.as_view(),
-        name="job_template_detail",
-    ),
-    path(
-        "templates/<int:pk>/history/",
-        views.JobTemplateHistoryView.as_view(),
-        name="job_template_history",
-    ),
-    path(
-        "templates/<int:pk>/history/<int:history_id>/",
-        views.JobTemplateHistoryDetailView.as_view(),
-        name="job_template_history_detail",
-    ),
-    path(
-        "templates/<int:pk>/edit/",
-        views.JobTemplateUpdateView.as_view(),
-        name="job_template_update",
-    ),
-    path(
-        "templates/<int:template_pk>/requirements/new/",
-        views.TemplateRequirementCreateView.as_view(),
-        name="template_requirement_create",
-    ),
-    path(
-        "templates/requirements/<int:pk>/edit/",
-        views.TemplateRequirementUpdateView.as_view(),
-        name="template_requirement_update",
-    ),
-    path(
-        "templates/requirements/<int:pk>/delete/",
-        views.TemplateRequirementDeleteView.as_view(),
-        name="template_requirement_delete",
     ),
 ]

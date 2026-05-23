@@ -10,9 +10,11 @@ urlpatterns = [
     path("accounts/sso/", include("allauth.urls")),
     path("api/", include("access_atlas.api.urls")),
     path("access-records/", include("access_atlas.access_records.urls")),
+    path("job-templates/", include("access_atlas.jobs.job_template_urls")),
     path("site-visits/", include("access_atlas.trips.site_visit_urls")),
     path("sites/", include("access_atlas.sites.urls")),
     path("jobs/", include("access_atlas.jobs.urls")),
+    path("work-programmes/", include("access_atlas.jobs.work_programme_urls")),
     path("trips/", include("access_atlas.trips.urls")),
 ]
 
