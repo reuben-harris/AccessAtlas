@@ -41,7 +41,7 @@ requires-dist = [
     { name = "django-tomselect", specifier = ">=2026.5.2" },
     { name = "djangorestframework", specifier = ">=3.17.1" },
     { name = "drf-spectacular", specifier = ">=0.29.0" },
-    { name = "drf-spectacular-sidecar", specifier = ">=2026.5.1" },
+    { name = "drf-spectacular-sidecar", specifier = ">=2026.6.1" },
     { name = "geojson2kml", specifier = ">=0.2.0" },
     { name = "gunicorn", specifier = ">=26.0.0" },
     { name = "pillow", specifier = ">=12.2.0" },
@@ -440,14 +440,14 @@ wheels = [
 
 [[package]]
 name = "drf-spectacular-sidecar"
-version = "2026.5.1"
+version = "2026.6.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0b/e9/600a7806111c6d1ba49d7e31bfc978a745682724310ad29b0d2c068f1f73/drf_spectacular_sidecar-2026.5.1.tar.gz", hash = "sha256:cdeca03e32859318a563b5733d5fc196c8b563a178a85fd380e227ed642c19ca", size = 2466161, upload-time = "2026-05-01T12:04:01.118Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7f/d8/735b129e7d55c4f6c682ecedfcc0438816e1d859e5e1837f914ac4544f6d/drf_spectacular_sidecar-2026.6.1.tar.gz", hash = "sha256:e159874fa85ccee39b801e260f2a3585fbe36a0c79bf811824eef9010ab98ea9", size = 2589761, upload-time = "2026-06-01T16:45:30.851Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9c/2e/29e8676c87201a174491d0e1104df99d27258b3b7e0dc15a0e9b11652d86/drf_spectacular_sidecar-2026.5.1-py3-none-any.whl", hash = "sha256:2af264e5b125fedc5d382be1349f7f736f128bc8fa05c3be3fc7f3e5b282d3c4", size = 2488545, upload-time = "2026-05-01T12:03:59.269Z" },
+    { url = "https://files.pythonhosted.org/packages/4f/46/10bcaf965edcb70e7647e62b88b9e0de266f8bea7a7a3224e8f977f77eab/drf_spectacular_sidecar-2026.6.1-py3-none-any.whl", hash = "sha256:4560572773c7e5f636d36cd2903204e2c59560af0548da254e311f94458c51a2", size = 2613235, upload-time = "2026-06-01T16:45:29.031Z" },
 ]
 
 [[package]]
