@@ -38,7 +38,7 @@ requires-dist = [
     { name = "django-filter", specifier = ">=25.2" },
     { name = "django-simple-history", specifier = ">=3.10.1" },
     { name = "django-storages", extras = ["s3"], specifier = ">=1.14.6" },
-    { name = "django-tomselect", specifier = ">=2026.6.1" },
+    { name = "django-tomselect", specifier = ">=2026.6.2" },
     { name = "djangorestframework", specifier = ">=3.17.1" },
     { name = "drf-spectacular", specifier = ">=0.29.0" },
     { name = "drf-spectacular-sidecar", specifier = ">=2026.6.1" },
@@ -356,14 +356,14 @@ s3 = [
 
 [[package]]
 name = "django-tomselect"
-version = "2026.6.1"
+version = "2026.6.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c0/5d/a541bc2722b2f0ce969d6dadcaa563b559ddab5f37b827e527795a7254ee/django_tomselect-2026.6.1.tar.gz", hash = "sha256:9bcd89e8fe8e8d0cb5633078fc73f738b83759a1b1961aaec218e2a0a98dd7f9", size = 283911, upload-time = "2026-06-09T00:47:15.395Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bb/a6/3780a9bc35ca62897bc720a01f575d47b036d8ecc5aea63615479600d760/django_tomselect-2026.6.2.tar.gz", hash = "sha256:584da0f81889da263bf1498484f414b022ae6d4df968bd44169161084084ff1a", size = 285267, upload-time = "2026-06-13T22:23:01.151Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/25/36/0ce81932373b4af84a140a66eec9d9cd2f8bdabdd77f6e20387bd3037fb2/django_tomselect-2026.6.1-py3-none-any.whl", hash = "sha256:592aeea6f07aee9e42e4534318765e8cd40f44f3e547967ad1d307f75d73e002", size = 321629, upload-time = "2026-06-09T00:47:22.245Z" },
+    { url = "https://files.pythonhosted.org/packages/cf/d6/e0b85e7432eaea047e83d475680d47824a6e8215c087df5b2a989904ddbb/django_tomselect-2026.6.2-py3-none-any.whl", hash = "sha256:726f713a203015319045ecd09f4935394e4040357ba52c9bbfaaaf74ff96c501", size = 322977, upload-time = "2026-06-13T22:23:03.201Z" },
 ]
 
 [[package]]
