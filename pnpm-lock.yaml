@@ -33,8 +33,8 @@ importers:
         specifier: 1.3.0
         version: 1.3.0
       leaflet.fullscreen:
-        specifier: 5.3.1
-        version: 5.3.1(leaflet@1.9.4)
+        specifier: 5.3.3
+        version: 5.3.3(leaflet@1.9.4)
       photoswipe:
         specifier: ^5.4.4
         version: 5.4.4
@@ -713,8 +713,8 @@ packages:
   leaflet-ant-path@1.3.0:
     resolution: {integrity: sha512-wgWWcAD4w8QVguRsHh89NGj5eqwLOP6e/HazunW0fQaytqZqEh3WePWYIrmbUeMcOf2cX/+GecHkFfI5tirS1Q==}
 
-  leaflet.fullscreen@5.3.1:
-    resolution: {integrity: sha512-2IO5WJ5xpQWyn2ZLICwwpyiWJ2KdZMuxAUCsrK7b4dj770GZ/zwPp4uVQNKOxqnz9xRWEN1d2VNpLaX4ptSdnA==}
+  leaflet.fullscreen@5.3.3:
+    resolution: {integrity: sha512-ejA/av8y2/pPHl7kPROQziWuoKXoycxyBiBR+vRucnp6CxlTpsSfrXxWuGyYdQICHHJxtMeJlrYp7fwMtNpRhQ==}
     peerDependencies:
       leaflet: ^1.7.0 || >=2.0.0-alpha.1
 
@@ -1936,7 +1936,7 @@ snapshots:
 
   leaflet-ant-path@1.3.0: {}
 
-  leaflet.fullscreen@5.3.1(leaflet@1.9.4):
+  leaflet.fullscreen@5.3.3(leaflet@1.9.4):
     dependencies:
       leaflet: 1.9.4
 
